@@ -45,6 +45,7 @@ class FilterEditorScreen extends StatefulWidget {
 class _FilterEditorScreenState extends State<FilterEditorScreen> {
   final TextEditingController _nameController = TextEditingController(text: "Nuevo Look");
   final TextEditingController _imageController = TextEditingController();
+  final TextEditingController _videoController = TextEditingController();
   String _category = kFilterCategories.first;
   final List<_StepDraft> _steps = [];
 
@@ -68,6 +69,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
         final data = doc.data()!;
         _nameController.text = data['name'] ?? "Look sin nombre";
         _imageController.text = data['image'] ?? "";
+        _videoController.text = data['video_url'] ?? "";
         final category = data['category'] as String?;
         if (category != null && kFilterCategories.contains(category)) {
           _category = category;
@@ -113,6 +115,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
         "steps": steps,
         "updated_at": FieldValue.serverTimestamp(),
         if (_imageController.text.trim().isNotEmpty) "image": _imageController.text.trim(),
+        if (_videoController.text.trim().isNotEmpty) "video_url": _videoController.text.trim(),
       };
 
       if (widget.lookId == null) {
@@ -170,6 +173,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
   void dispose() {
     _nameController.dispose();
     _imageController.dispose();
+    _videoController.dispose();
     for (final step in _steps) {
       step.dispose();
     }
@@ -260,6 +264,12 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
             controller: _imageController,
             style: const TextStyle(color: Colors.white),
             decoration: _fieldDecoration('URL de imagen de portada (opcional)'),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _videoController,
+            style: const TextStyle(color: Colors.white),
+            decoration: _fieldDecoration('URL del video del tutorial (opcional, requiere Premium)'),
           ),
           const SizedBox(height: 28),
           Row(
