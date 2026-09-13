@@ -24,6 +24,7 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
   Map<String, dynamic> _recipe = const {};
   FaceMesh? _detectedMesh;
   Size? _imageSize;
+  int _sensorOrientation = 0;
 
   @override
   bool get isReady => _isCameraInitialized;
@@ -84,9 +85,11 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
       final meshes = await _faceMeshDetector.processImage(inputImage);
 
       _detectedMesh = meshes.isNotEmpty ? meshes.first : null;
-      _imageSize = (camera.sensorOrientation == 90 || camera.sensorOrientation == 270)
-          ? Size(image.height.toDouble(), image.width.toDouble())
-          : Size(image.width.toDouble(), image.height.toDouble());
+      // ML Kit devuelve los puntos en el espacio del buffer crudo del sensor
+      // (sin rotar) — guardamos ese mismo tamaño sin invertir ejes, y la
+      // rotación real se aplica punto por punto en el painter.
+      _imageSize = Size(image.width.toDouble(), image.height.toDouble());
+      _sensorOrientation = camera.sensorOrientation;
       notifyListeners();
     } finally {
       _isProcessing = false;
@@ -114,12 +117,18 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
     return Stack(
       fit: StackFit.expand,
       children: [
-        CameraPreview(_cameraController!),
+        // Espejado para que se sienta como un espejo (selfie), igual que el painter de abajo.
+        Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.rotationY(math.pi),
+          child: CameraPreview(_cameraController!),
+        ),
         if (_isEffectOn && _detectedMesh != null && _recipe.isNotEmpty)
           CustomPaint(
             painter: RealisticMakeupPainter(
               mesh: _detectedMesh!,
               imageSize: _imageSize!,
+              sensorOrientation: _sensorOrientation,
               recipe: _recipe,
               mirrorHorizontal: true,
             ),
@@ -142,7 +151,12 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
 
 class RealisticMakeupPainter extends CustomPainter {
   final FaceMesh mesh;
+  /// Tamaño del buffer crudo de la cámara (sin rotar), tal como lo entrega
+  /// ML Kit junto con los puntos de la malla.
   final Size imageSize;
+  /// `CameraDescription.sensorOrientation` — cuántos grados hay que rotar
+  /// el buffer crudo para que quede "parado" como en la pantalla.
+  final int sensorOrientation;
   final Map<String, dynamic> recipe;
   final bool mirrorHorizontal;
 
@@ -150,14 +164,42 @@ class RealisticMakeupPainter extends CustomPainter {
   late double _offsetX;
   late double _offsetY;
 
-  RealisticMakeupPainter({required this.mesh, required this.imageSize, required this.recipe, this.mirrorHorizontal = true});
+  RealisticMakeupPainter({
+    required this.mesh,
+    required this.imageSize,
+    required this.recipe,
+    this.sensorOrientation = 0,
+    this.mirrorHorizontal = true,
+  });
+
+  /// Tamaño del buffer una vez rotado a orientación "de pantalla".
+  Size get _rotatedImageSize {
+    final degrees = sensorOrientation % 360;
+    return (degrees == 90 || degrees == 270) ? Size(imageSize.height, imageSize.width) : imageSize;
+  }
+
+  /// ML Kit devuelve los puntos en el espacio crudo del sensor: hay que
+  /// rotarlos nosotros mismos para que coincidan con lo que se ve en
+  /// pantalla (que la propia `CameraPreview` sí rota internamente).
+  Offset _rotateRaw(double x, double y) {
+    switch (sensorOrientation % 360) {
+      case 90:
+        return Offset(imageSize.height - y, x);
+      case 180:
+        return Offset(imageSize.width - x, imageSize.height - y);
+      case 270:
+        return Offset(y, imageSize.width - x);
+      default:
+        return Offset(x, y);
+    }
+  }
 
   Offset p(int index, Size size) {
     if (index < 0 || index >= mesh.points.length) return Offset.zero;
     final point = mesh.points[index];
-    // Adaptación a coordenadas absolutas de ML Kit
-    final double mappedX = (point.x * _scale) + _offsetX;
-    final double mappedY = (point.y * _scale) + _offsetY;
+    final rotated = _rotateRaw(point.x, point.y);
+    final double mappedX = (rotated.dx * _scale) + _offsetX;
+    final double mappedY = (rotated.dy * _scale) + _offsetY;
     return Offset(mirrorHorizontal ? size.width - mappedX : mappedX, mappedY);
   }
 
@@ -179,9 +221,10 @@ class RealisticMakeupPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (mesh.points.length < 468) return;
 
-    _scale = math.max(size.width / imageSize.width, size.height / imageSize.height);
-    final double scaledWidth = imageSize.width * _scale;
-    final double scaledHeight = imageSize.height * _scale;
+    final rotatedSize = _rotatedImageSize;
+    _scale = math.max(size.width / rotatedSize.width, size.height / rotatedSize.height);
+    final double scaledWidth = rotatedSize.width * _scale;
+    final double scaledHeight = rotatedSize.height * _scale;
     _offsetX = (size.width - scaledWidth) / 2;
     _offsetY = (size.height - scaledHeight) / 2;
 
