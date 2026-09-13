@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // "looks" es el catálogo: cualquiera lo puede leer (con o sin login),
+    // pero solo un usuario admin puede crear/editar/borrar looks.
+    match /looks/{lookId} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true;
+    }
+
+    // "users" tiene datos personales (correo, edad, fecha de nacimiento).
+    // Cada usuario solo puede leer/escribir SU PROPIO documento.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

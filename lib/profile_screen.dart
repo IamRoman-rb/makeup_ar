@@ -149,9 +149,9 @@ class ProfileScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         children: [
-                          Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network('https://images.unsplash.com/photo-1580481072645-022f9a6d4df8?q=80&w=400&auto=format&fit=crop', height: 180, fit: BoxFit.cover))),
+                          Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network('https://images.unsplash.com/photo-1580481072645-022f9a6d4df8?q=80&w=400&auto=format&fit=crop', height: 180, fit: BoxFit.cover, errorBuilder: _decorativeImageFallback))),
                           const SizedBox(width: 15),
-                          Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=400&auto=format&fit=crop', height: 180, fit: BoxFit.cover))),
+                          Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=400&auto=format&fit=crop', height: 180, fit: BoxFit.cover, errorBuilder: _decorativeImageFallback))),
                         ],
                       ),
                     ),
@@ -255,6 +255,17 @@ class ProfileScreen extends StatelessWidget {
           const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
         ],
       ),
+    );
+  }
+
+  // Las imágenes decorativas son links externos a Unsplash: si el link
+  // vence o cambia (ya pasó), esto evita que la app tire una excepción sin
+  // manejar en vez de simplemente mostrar el espacio vacío.
+  Widget _decorativeImageFallback(BuildContext context, Object error, StackTrace? stackTrace) {
+    return Container(
+      height: 180,
+      color: Colors.grey.shade200,
+      child: Icon(Icons.image_not_supported_outlined, color: Colors.grey.shade400),
     );
   }
 }
