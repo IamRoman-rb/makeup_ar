@@ -4,12 +4,14 @@ import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'splash_screen.dart';
 import 'login_screen.dart';
+import 'vip/vip_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await VipService.configure();
   runApp(const ARMakeupApp());
 }
 

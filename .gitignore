@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# RevenueCat API keys (ver lib/vip/revenue_cat_keys.example.dart)
+/lib/vip/revenue_cat_keys.dart

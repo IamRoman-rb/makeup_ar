@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 
 import 'camera_screen.dart';
 import 'l10n/app_localizations.dart';
+import 'vip/vip_paywall_screen.dart';
 
 class StepByStepScreen extends StatefulWidget {
   final String lookId;
@@ -291,10 +292,10 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
     super.dispose();
   }
 
-  void _showComingSoon() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Muy pronto vas a poder suscribirte a Premium.')),
-    );
+  Future<void> _openVipPaywall() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const VipPaywallScreen()));
+    // El estado de is_premium se refresca solo: viene de un StreamBuilder
+    // sobre el documento del usuario en el screen padre.
   }
 
   @override
@@ -345,19 +346,19 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
       children: [
         const Icon(Icons.lock_outline, color: Color(0xFFD4AF37), size: 35),
         const SizedBox(height: 10),
-        Text('Tutorial Exclusivo', style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        Text('Tutorial VIP', style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 5),
         Text('Desbloquea los secretos de este look.', style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
         const SizedBox(height: 15),
         ElevatedButton(
-          onPressed: _showComingSoon,
+          onPressed: _openVipPaywall,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFD4AF37),
             foregroundColor: Colors.black,
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
           ),
-          child: Text('Mejorar a Premium', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+          child: Text('Hazte VIP', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
         ),
       ],
     );
