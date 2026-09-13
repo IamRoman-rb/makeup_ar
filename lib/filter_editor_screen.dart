@@ -20,18 +20,24 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
   final TextEditingController _imageController = TextEditingController();
   String _category = kFilterCategories.first;
 
+  // Estas claves tienen que coincidir con las que espera
+  // MakeupRecipe.convertLegacy (lib/services/ai_makeup_recipe_service.dart)
+  // y con lo que sabe dibujar RealisticMakeupPainter — si no, el switch no
+  // hace nada visible aunque quede prendido y guardado.
   final Map<String, Map<String, double>> _makeupParams = {
     "lips": {"r": 0.80, "g": 0.52, "b": 0.54, "opacity": 0.45},
     "blush": {"r": 0.82, "g": 0.58, "b": 0.55, "opacity": 0.15},
+    "eyeshadow": {"r": 0.45, "g": 0.33, "b": 0.30, "opacity": 0.18},
+    "eyeliner": {"r": 0.14, "g": 0.11, "b": 0.11, "opacity": 0.42},
     "eyelashes": {"r": 0.15, "g": 0.11, "b": 0.11, "opacity": 0.70},
-    "eyebrows": {"r": 0.19, "g": 0.15, "b": 0.15, "opacity": 0.60},
   };
 
   final Map<String, bool> _activeFeatures = {
     "lips": false,
     "blush": false,
+    "eyeshadow": false,
+    "eyeliner": false,
     "eyelashes": false,
-    "eyebrows": false,
   };
 
   bool _isSaving = false;
@@ -269,8 +275,9 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
           const SizedBox(height: 20),
           _buildParamEditor("Labios", "lips"),
           _buildParamEditor("Rubor", "blush"),
+          _buildParamEditor("Sombra de ojos", "eyeshadow"),
+          _buildParamEditor("Delineador", "eyeliner"),
           _buildParamEditor("Pestañas (HD)", "eyelashes"),
-          _buildParamEditor("Cejas", "eyebrows"),
           const SizedBox(height: 40),
         ],
       ),
