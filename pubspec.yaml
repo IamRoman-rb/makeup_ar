@@ -46,13 +46,8 @@ dependencies:
   image_picker: 1.0.8
   no_screenshot: ^2.0.1
   flutter_launcher_icons: ^0.14.4
-  purchases_flutter: ^10.9.1
   video_player: ^2.14.0
   camera: ^0.12.0+2
-  google_mlkit_face_mesh_detection: ^0.6.1
-  http: ^1.6.0
-  deepar_flutter: ^0.0.5
-  vector_math: ^2.1.4
 dependency_overrides:
   permission_handler: ^11.3.1
   permission_handler_android: ^12.0.1
@@ -80,7 +75,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
-    - assets/ar_effects/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -504,6 +504,12 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get profile;
 
+  /// No description provided for @mirror.
+  ///
+  /// In en, this message translates to:
+  /// **'Mirror'**
+  String get mirror;
+
   /// No description provided for @fillRequiredFields.
   ///
   /// In en, this message translates to:

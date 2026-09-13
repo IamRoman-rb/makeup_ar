@@ -43,6 +43,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# DeepAR license keys (ver lib/ar/deepar_keys.example.dart)
-/lib/ar/deepar_keys.dart

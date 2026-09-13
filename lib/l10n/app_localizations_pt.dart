@@ -219,6 +219,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profile => 'Perfil';
 
   @override
+  String get mirror => 'Espelho';
+
+  @override
   String get fillRequiredFields =>
       'Por favor, preencha todos os campos obrigatórios';
 
