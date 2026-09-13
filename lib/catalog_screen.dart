@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'camera_screen.dart';
+import 'filter_editor_screen.dart';
 import 'shared_bottom_nav.dart';
 import 'l10n/app_localizations.dart'; // <-- 1. Importamos el traductor
 
@@ -51,8 +52,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
       l10n.categoryComplexion,
     ];
 
-    return Scaffold(
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, userSnapshot) {
+        final userData = userSnapshot.data?.data() as Map<String, dynamic>? ?? {};
+        final savedLooks = List<String>.from(userData['saved_looks'] ?? []);
+        final isAdmin = userData['is_admin'] == true;
+
+        return Scaffold(
       backgroundColor: const Color(0xFFFDF7F8),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xFF1A1A1A),
+              tooltip: 'Crear filtro (admin)',
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FilterEditorScreen())),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -122,16 +138,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 const SizedBox(height: 30),
 
                 // LISTA DE FILTROS
-                StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
-                    builder: (context, userSnapshot) {
-                      final userData = userSnapshot.data?.data() as Map<String, dynamic>? ?? {};
-                      final savedLooks = List<String>.from(userData['saved_looks'] ?? []);
-
-                      return StreamBuilder<QuerySnapshot>(
+                StreamBuilder<QuerySnapshot>(
                         stream: FirebaseFirestore.instance.collection('looks').orderBy('order').snapshots(),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
+
+                          if (snapshot.hasError) {
+                            return Padding(padding: const EdgeInsets.all(40.0), child: Text('Error cargando los looks: ${snapshot.error}'));
+                          }
 
                           // Caso de base de datos vacía general
                           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -228,6 +242,25 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                               ),
                                             ),
                                           ),
+                                          if (isAdmin)
+                                            Positioned(
+                                              top: 15,
+                                              left: 15,
+                                              child: GestureDetector(
+                                                onTap: () => Navigator.push(context, MaterialPageRoute(
+                                                  builder: (_) => FilterEditorScreen(lookId: doc.id),
+                                                )),
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withOpacity(0.9),
+                                                    shape: BoxShape.circle,
+                                                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                                                  ),
+                                                  child: const Icon(Icons.edit_outlined, color: Color(0xFF1A1A1A), size: 20),
+                                                ),
+                                              ),
+                                            ),
                                         ],
                                       ),
                                       const SizedBox(height: 15),
@@ -241,9 +274,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                             },
                           );
                         },
-                      );
-                    }
-                ),
+                      ),
                 const SizedBox(height: 40),
               ],
             ),
@@ -251,6 +282,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
         ),
       ),
       bottomNavigationBar: const SharedBottomNav(currentIndex: 0),
+    );
+      },
     );
   }
 }

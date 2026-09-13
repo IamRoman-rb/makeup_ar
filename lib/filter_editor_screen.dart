@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+const List<String> kFilterCategories = ['Lips', 'Eyes', 'Complexion'];
 
 class FilterEditorScreen extends StatefulWidget {
   // 💡 Novedad: Si pasas un ID, edita. Si no pasas nada, crea uno nuevo.
@@ -14,6 +17,8 @@ class FilterEditorScreen extends StatefulWidget {
 
 class _FilterEditorScreenState extends State<FilterEditorScreen> {
   final TextEditingController _nameController = TextEditingController(text: "Nuevo Filtro");
+  final TextEditingController _imageController = TextEditingController();
+  String _category = kFilterCategories.first;
 
   final Map<String, Map<String, double>> _makeupParams = {
     "lips": {"r": 0.80, "g": 0.52, "b": 0.54, "opacity": 0.45},
@@ -49,6 +54,11 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
       if (doc.exists && doc.data() != null) {
         final data = doc.data()!;
         _nameController.text = data['name'] ?? "Filtro sin nombre";
+        _imageController.text = data['image'] ?? "";
+        final category = data['category'] as String?;
+        if (category != null && kFilterCategories.contains(category)) {
+          _category = category;
+        }
 
         if (data.containsKey('makeup_params')) {
           final params = data['makeup_params'] as Map<String, dynamic>;
@@ -85,8 +95,10 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
 
       final filterData = {
         "name": _nameController.text.trim(),
+        "category": _category,
         "makeup_params": finalParams,
         "updated_at": FieldValue.serverTimestamp(),
+        if (_imageController.text.trim().isNotEmpty) "image": _imageController.text.trim(),
       };
 
       if (widget.lookId == null) {
@@ -145,11 +157,44 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _imageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: user == null ? null : FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(backgroundColor: Color(0xFF121212), body: Center(child: CircularProgressIndicator(color: Colors.pinkAccent)));
+        }
+
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
+        final isAdmin = data?['is_admin'] == true;
+
+        if (!isAdmin) {
+          return Scaffold(
+            backgroundColor: const Color(0xFF121212),
+            appBar: AppBar(backgroundColor: Colors.black, elevation: 0),
+            body: Center(
+              child: Text(
+                'Solo un administrador puede crear o editar filtros.',
+                style: GoogleFonts.inter(color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        }
+
+        return _buildEditor(context);
+      },
+    );
+  }
+
+  Widget _buildEditor(BuildContext context) {
     final isEditing = widget.lookId != null;
 
     return Scaffold(
@@ -184,6 +229,37 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
             style: const TextStyle(color: Colors.white, fontSize: 18),
             decoration: InputDecoration(
               labelText: 'Nombre del Filtro',
+              labelStyle: const TextStyle(color: Colors.white54),
+              filled: true,
+              fillColor: Colors.white10,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: _category,
+            dropdownColor: const Color(0xFF1E1E1E),
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+            decoration: InputDecoration(
+              labelText: 'Categoría',
+              labelStyle: const TextStyle(color: Colors.white54),
+              filled: true,
+              fillColor: Colors.white10,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+            items: kFilterCategories
+                .map((category) => DropdownMenuItem(value: category, child: Text(category)))
+                .toList(),
+            onChanged: (value) {
+              if (value != null) setState(() => _category = value);
+            },
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _imageController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'URL de imagen (opcional)',
               labelStyle: const TextStyle(color: Colors.white54),
               filled: true,
               fillColor: Colors.white10,

@@ -23,10 +23,7 @@ class _CameraScreenState extends State<CameraScreen> {
   late final ArMakeupEngine _engine = ArEngineConfig.useDeepAr ? DeepArMakeupEngine() : LegacyCanvasMakeupEngine();
   final AiMakeupRecipeService _recipeService = const AiMakeupRecipeService();
 
-  bool _isGeneratingAI = false;
   bool _isEffectOn = true;
-
-  final TextEditingController _promptController = TextEditingController();
 
   @override
   void initState() {
@@ -45,28 +42,6 @@ class _CameraScreenState extends State<CameraScreen> {
     await _engine.applyRecipe(recipe);
   }
 
-  // 🧠 IA GENERATIVA: Groq (Llama 3) -> Receta -> Motor AR (DeepAR o legacy)
-  Future<void> _generateMakeupFromPrompt(String promptText) async {
-    if (promptText.isEmpty) return;
-    setState(() => _isGeneratingAI = true);
-
-    final recipe = await _recipeService.generateFromPrompt(promptText);
-    if (recipe != null) {
-      await _engine.applyRecipe(recipe);
-      debugPrint('✅ Groq/Llama3 generó el filtro con éxito');
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al generar con IA. Intenta otro prompt.')),
-      );
-    }
-
-    if (mounted) {
-      setState(() => _isGeneratingAI = false);
-      _promptController.clear();
-      FocusScope.of(context).unfocus();
-    }
-  }
-
   void _toggleEffect() {
     setState(() => _isEffectOn = !_isEffectOn);
     _engine.setEffectEnabled(_isEffectOn);
@@ -76,7 +51,6 @@ class _CameraScreenState extends State<CameraScreen> {
   void dispose() {
     _engine.removeListener(_onEngineChanged);
     _engine.dispose();
-    _promptController.dispose();
     super.dispose();
   }
 
@@ -110,7 +84,7 @@ class _CameraScreenState extends State<CameraScreen> {
             child: Align(
               alignment: Alignment.centerRight,
               child: Padding(
-                padding: const EdgeInsets.only(right: 20, bottom: 90), // Elevado para dar espacio a la IA
+                padding: const EdgeInsets.only(right: 20, bottom: 20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -119,45 +93,6 @@ class _CameraScreenState extends State<CameraScreen> {
                     const SizedBox(height: 15),
                     _buildEffectButton(l10n),
                   ],
-                ),
-              ),
-            ),
-          ),
-
-          // 🤖 CAJA DE TEXTO PARA LA IA
-          SafeArea(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.purpleAccent, width: 2),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: TextField(
-                          controller: _promptController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: const InputDecoration(
-                            hintText: 'Ej: "Labios rojos y rubor rosa"',
-                            hintStyle: TextStyle(color: Colors.white54),
-                            border: InputBorder.none,
-                          ),
-                        ),
-                      ),
-                      _isGeneratingAI
-                          ? const Padding(padding: EdgeInsets.all(12.0), child: CircularProgressIndicator(color: Colors.purpleAccent))
-                          : IconButton(
-                        icon: const Icon(Icons.auto_awesome, color: Colors.purpleAccent),
-                        onPressed: () => _generateMakeupFromPrompt(_promptController.text),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),
