@@ -21,6 +21,7 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
   bool _isCameraInitialized = false;
   bool _isProcessing = false;
   bool _isEffectOn = true;
+  bool _disposed = false;
   Map<String, dynamic> _recipe = const {};
   FaceMesh? _detectedMesh;
   Size? _imageSize;
@@ -46,6 +47,7 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
       );
 
       await _cameraController!.initialize();
+      if (_disposed) return;
       _isCameraInitialized = true;
       notifyListeners();
 
@@ -56,7 +58,7 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
   }
 
   Future<void> _processCameraImage(CameraImage image) async {
-    if (_isProcessing) return;
+    if (_isProcessing || _disposed) return;
     _isProcessing = true;
 
     try {
@@ -83,6 +85,7 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
       );
 
       final meshes = await _faceMeshDetector.processImage(inputImage);
+      if (_disposed) return;
 
       _detectedMesh = meshes.isNotEmpty ? meshes.first : null;
       // ML Kit devuelve los puntos en el espacio del buffer crudo del sensor
@@ -99,12 +102,14 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
   @override
   Future<void> applyRecipe(Map<String, dynamic> recipe) async {
     _recipe = recipe;
+    if (_disposed) return;
     notifyListeners();
   }
 
   @override
   Future<void> setEffectEnabled(bool enabled) async {
     _isEffectOn = enabled;
+    if (_disposed) return;
     notifyListeners();
   }
 
@@ -136,6 +141,7 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
 
   @override
   void dispose() {
+    _disposed = true;
     _cameraController?.dispose();
     _faceMeshDetector.close();
     super.dispose();
