@@ -30,6 +30,10 @@ class ProfileScreen extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
               }
 
+              if (snapshot.hasError) {
+                return Center(child: Text('Error cargando el perfil: ${snapshot.error}'));
+              }
+
               if (!snapshot.hasData || !snapshot.data!.exists) {
                 return const Center(child: Text('Error loading user data'));
               }
