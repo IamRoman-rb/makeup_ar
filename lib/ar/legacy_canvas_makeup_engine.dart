@@ -117,12 +117,7 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Espejado para que se sienta como un espejo (selfie), igual que el painter de abajo.
-        Transform(
-          alignment: Alignment.center,
-          transform: Matrix4.rotationY(math.pi),
-          child: CameraPreview(_cameraController!),
-        ),
+        CameraPreview(_cameraController!),
         if (_isEffectOn && _detectedMesh != null && _recipe.isNotEmpty)
           CustomPaint(
             painter: RealisticMakeupPainter(
@@ -130,7 +125,9 @@ class LegacyCanvasMakeupEngine extends ArMakeupEngine {
               imageSize: _imageSize!,
               sensorOrientation: _sensorOrientation,
               recipe: _recipe,
-              mirrorHorizontal: true,
+              // La vista de cámara no está espejada (vista tipo videollamada),
+              // así que el maquillaje tampoco debe espejarse o queda desalineado.
+              mirrorHorizontal: false,
             ),
           ),
       ],
