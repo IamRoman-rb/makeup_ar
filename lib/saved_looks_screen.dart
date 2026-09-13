@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'camera_screen.dart';
+import 'step_by_step_screen.dart';
 import 'l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 
 class SavedLooksScreen extends StatelessWidget {
@@ -98,13 +98,12 @@ class SavedLooksScreen extends StatelessWidget {
                   final name = data['name'] ?? l10n.unknownLook; // <-- Traducido
                   final category = data['category'] ?? 'COMPLEXION & LIPS'; // (Esto viene de DB, se mantiene intacto)
                   final image = data['image'] ?? '';
-                  final path = data['path'] ?? '';
 
                   return GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => CameraScreen(filterPath: path, lookId: doc.id)),
+                        MaterialPageRoute(builder: (context) => StepByStepScreen(lookId: doc.id)),
                       );
                     },
                     child: Container(

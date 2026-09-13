@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'camera_screen.dart';
 import 'filter_editor_screen.dart';
+import 'step_by_step_screen.dart';
 import 'shared_bottom_nav.dart';
 import 'l10n/app_localizations.dart'; // <-- 1. Importamos el traductor
 
@@ -195,14 +195,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
                               final name = data['name'] ?? 'Unknown Look';
                               final category = data['category'] ?? 'COMPLEXION & LIPS';
                               final image = data['image'] ?? defaultImage;
-                              final path = data['path'] ?? '';
 
                               final isSaved = savedLooks.contains(doc.id);
 
                               return GestureDetector(
                                 onTap: () {
                                   Navigator.push(context, MaterialPageRoute(
-                                    builder: (context) => CameraScreen(filterPath: path, lookId: doc.id),
+                                    builder: (context) => StepByStepScreen(lookId: doc.id),
                                   ));
                                 },
                                 child: Container(

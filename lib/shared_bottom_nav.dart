@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'camera_screen.dart';
 import 'catalog_screen.dart';
 import 'profile_screen.dart';
 import 'l10n/app_localizations.dart'; // <-- 1. Importación del traductor
@@ -19,6 +20,9 @@ class SharedBottomNav extends StatelessWidget {
         break;
       case 1:
         nextScreen = const ProfileScreen();
+        break;
+      case 2:
+        nextScreen = const CameraScreen();
         break;
       default:
         return;
@@ -50,6 +54,7 @@ class SharedBottomNav extends StatelessWidget {
       items: [
         BottomNavigationBarItem(icon: const Icon(Icons.grid_view), label: l10n.explore), // <-- Traducido
         BottomNavigationBarItem(icon: const Icon(Icons.person_outline), label: l10n.profile), // <-- Traducido
+        BottomNavigationBarItem(icon: const Icon(Icons.camera_front_outlined), label: l10n.mirror),
       ],
     );
   }

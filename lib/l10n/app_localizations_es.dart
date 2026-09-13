@@ -218,6 +218,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profile => 'Perfil';
 
   @override
+  String get mirror => 'Espejo';
+
+  @override
   String get fillRequiredFields =>
       'Por favor completa todos los campos requeridos';
 

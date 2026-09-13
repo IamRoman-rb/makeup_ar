@@ -185,22 +185,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
-  deepar_flutter:
-    dependency: "direct main"
-    description:
-      name: deepar_flutter
-      sha256: "4d136ba26f6a09c56fc6a2a18ce53a883f4f912cf43de34326c822f7f6692b33"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.5"
-  equatable:
-    dependency: transitive
-    description:
-      name: equatable
-      sha256: "3bce007a596ff8b3119c45d68aaef631272537c03d30e5d4534dd24bf4c5eaa2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.0"
   fake_async:
     dependency: transitive
     description:
@@ -373,22 +357,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.2.1"
-  google_mlkit_commons:
-    dependency: transitive
-    description:
-      name: google_mlkit_commons
-      sha256: "621e94de22fd0f1e902e593b892746d80ab7542b39c2552aa091d904eb82fc6f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.13.0"
-  google_mlkit_face_mesh_detection:
-    dependency: "direct main"
-    description:
-      name: google_mlkit_face_mesh_detection
-      sha256: "92d3e4ec50d837c69dd8ee1d30abae8c5a63a8d22d18ef5d438df7bdf667bfeb"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.6.1"
   hooks:
     dependency: transitive
     description:
@@ -406,7 +374,7 @@ packages:
     source: hosted
     version: "0.15.6"
   http:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: http
       sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
@@ -765,14 +733,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
-  purchases_flutter:
-    dependency: "direct main"
-    description:
-      name: purchases_flutter
-      sha256: c06f7e2e20ae016d4dc2e37254baf0fbfe0643da333d7de6f5f11d05a0b6b5f3
-      url: "https://pub.dev"
-    source: hosted
-    version: "10.9.1"
   record_use:
     dependency: transitive
     description:
@@ -851,7 +811,7 @@ packages:
     source: hosted
     version: "1.4.0"
   vector_math:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: vector_math
       sha256: f36f9f3be64c6198714492bb455c11056e33e2f85d9a0b676a48301e44fdcf47
