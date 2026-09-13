@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "610649629212",
+    "project_id": "armakeupapp",
+    "storage_bucket": "armakeupapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:610649629212:android:fd8fb7c305b04477aa75d9",
+        "android_client_info": {
+          "package_name": "com.example.ar_makeup_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCaV7BDdvbSLHrhVdG26y4au8kpZ430N4o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
