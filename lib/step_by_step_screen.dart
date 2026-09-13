@@ -78,9 +78,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
                   ),
                 ],
               ),
-              body: steps.isEmpty && (videoUrl == null || videoUrl.isEmpty)
-                  ? _buildEmptyState()
-                  : _buildContent(steps, videoUrl, isPremium),
+              body: _buildContent(steps, videoUrl, isPremium),
             );
           },
         );
@@ -88,12 +86,12 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyStepsState() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(30.0),
         child: Text(
-          'Todavía no hay tutorial cargado para este look.',
+          'Todavía no hay pasos cargados para este look.',
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 15),
         ),
@@ -104,11 +102,13 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
   Widget _buildContent(List<Map<String, dynamic>> steps, String? videoUrl, bool isPremium) {
     return Column(
       children: [
-        if (videoUrl != null && videoUrl.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-            child: TutorialVideoSection(videoUrl: videoUrl, isPremium: isPremium),
-          ),
+        // El video/paywall VIP siempre se muestra, tenga o no video este look.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+          child: TutorialVideoSection(videoUrl: videoUrl, isPremium: isPremium),
+        ),
+
+        if (steps.isEmpty) Expanded(child: _buildEmptyStepsState()),
 
         if (steps.isNotEmpty) ...[
           // Indicador de pasos
@@ -236,21 +236,21 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
               ],
             ),
           ),
-        ] else
-          const Spacer(),
+        ],
       ],
     );
   }
 }
 
-/// Video del tutorial completo para este look. Si el usuario no es premium,
-/// muestra un teaser en vez del video real.
+/// Sección de video VIP del tutorial. El botón para hacerse VIP se muestra
+/// siempre que el usuario no sea VIP, tenga o no video cargado este look en
+/// particular.
 ///
-/// TODO: el botón "Mejorar a Premium" todavía no dispara ninguna compra real
-/// — la pasarela de pago para licencias premium/VIP se agrega en un paso
-/// aparte. Por ahora solo avisa que está por venir.
+/// TODO: el botón "Hazte VIP" ya abre la pasarela de pago real
+/// (VipPaywallScreen), pero esta necesita que se configure una cuenta de
+/// RevenueCat con al menos un producto — ver lib/vip/revenue_cat_keys.dart.
 class TutorialVideoSection extends StatefulWidget {
-  final String videoUrl;
+  final String? videoUrl;
   final bool isPremium;
 
   const TutorialVideoSection({super.key, required this.videoUrl, required this.isPremium});
@@ -262,16 +262,18 @@ class TutorialVideoSection extends StatefulWidget {
 class _TutorialVideoSectionState extends State<TutorialVideoSection> {
   VideoPlayerController? _controller;
 
+  bool get _hasVideo => widget.videoUrl != null && widget.videoUrl!.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
-    if (widget.isPremium) _initializeVideo();
+    if (widget.isPremium && _hasVideo) _initializeVideo();
   }
 
   @override
   void didUpdateWidget(covariant TutorialVideoSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isPremium && (!oldWidget.isPremium || oldWidget.videoUrl != widget.videoUrl)) {
+    if (widget.isPremium && _hasVideo && (!oldWidget.isPremium || oldWidget.videoUrl != widget.videoUrl)) {
       _controller?.dispose();
       _controller = null;
       _initializeVideo();
@@ -279,7 +281,7 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
   }
 
   void _initializeVideo() {
-    final controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+    final controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl!));
     _controller = controller;
     controller.initialize().then((_) {
       if (mounted) setState(() {});
@@ -300,13 +302,15 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
 
   @override
   Widget build(BuildContext context) {
+    final showVideoPlayer = widget.isPremium && _hasVideo;
+
     return Container(
       height: 220,
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(20),
-        image: widget.isPremium
+        image: showVideoPlayer
             ? null
             : DecorationImage(
           image: const NetworkImage('https://picsum.photos/800/400?blur=10'),
@@ -315,7 +319,24 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: widget.isPremium ? _buildVideoPlayer() : _buildPremiumPaywall(),
+      child: showVideoPlayer
+          ? _buildVideoPlayer()
+          : widget.isPremium
+              ? _buildNoVideoForThisLook()
+              : _buildPremiumPaywall(),
+    );
+  }
+
+  Widget _buildNoVideoForThisLook() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.videocam_off_outlined, color: Color(0xFFD4AF37), size: 35),
+        const SizedBox(height: 10),
+        Text('Sin video para este look', style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 5),
+        Text('Todavía no cargamos un video para este tutorial.', style: GoogleFonts.inter(color: Colors.white70, fontSize: 13), textAlign: TextAlign.center),
+      ],
     );
   }
 
