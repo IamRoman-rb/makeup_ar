@@ -185,6 +185,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
+  deepar_flutter:
+    dependency: "direct main"
+    description:
+      name: deepar_flutter
+      sha256: "4d136ba26f6a09c56fc6a2a18ce53a883f4f912cf43de34326c822f7f6692b33"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.5"
   equatable:
     dependency: transitive
     description:
@@ -581,14 +589,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.13.0"
-  mediapipe_face_mesh:
-    dependency: "direct main"
-    description:
-      name: mediapipe_face_mesh
-      sha256: ba5309c358b0558983b8ccb72137a21224384d3d3c2902fe0c51e8c5dd32718b
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.8.0"
   meta:
     dependency: transitive
     description:
@@ -851,7 +851,7 @@ packages:
     source: hosted
     version: "1.4.0"
   vector_math:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: vector_math
       sha256: f36f9f3be64c6198714492bb455c11056e33e2f85d9a0b676a48301e44fdcf47

@@ -35,67 +35,88 @@ motor de tracking/renderizado nativo de DeepAR.
 
 ## Fase 0 — Prerrequisitos (fuera del alcance de este agente, acción manual)
 
-- [ ] Crear cuenta en DeepAR y generar license keys para:
-  - Android, `applicationId = com.example.ar_makeup_app`
-  - iOS, bundle id del proyecto (`ios/Runner.xcodeproj`)
+- [x] License keys de DeepAR generadas (Android e iOS) — cargadas en
+      `lib/ar/ar_engine_config.dart`.
 - [ ] Instalar DeepAR Studio y crear `makeup_base.deepar` con los nodos paramétricos
-      descritos arriba (labios, blush, sombra, delineador, pestañas, base/glow).
+      descritos arriba (labios, blush, sombra, delineador, pestañas). **Sigue pendiente:
+      es lo único que falta para poder activar `ArEngineConfig.useDeepAr = true`.**
 
 ## Fase 1 — Dependencias
 
-- [ ] Agregar `deepar_flutter` (paquete oficial) a `pubspec.yaml`.
-- [ ] Quitar `mediapipe_face_mesh` de `pubspec.yaml` (confirmado sin uso).
-- [ ] Registrar `assets/ar_effects/makeup_base.deepar` en la sección `assets:` de
-      `pubspec.yaml`.
-- [ ] Decidir el destino de `android/app/libs/deepar.aar`: eliminarlo si el plugin
-      `deepar_flutter` trae su propia resolución del SDK nativo, o actualizarlo si el
-      plugin todavía requiere vendorizarlo a mano (confirmar contra la doc de la versión
-      instalada).
-- [ ] Limpiar el comentario/workaround "FIX NAMESPACE Y SDK PARA DEEPAR" en
-      `android/build.gradle.kts:16` si deja de ser necesario con el plugin oficial.
+- [x] Agregado `deepar_flutter: ^0.0.5` y `vector_math` a `pubspec.yaml`.
+- [x] Sacado `mediapipe_face_mesh` de `pubspec.yaml` (confirmado sin uso).
+- [x] Registrada la carpeta `assets/ar_effects/` en `pubspec.yaml` (con un README
+      explicando qué va ahí).
+- [x] `android/app/libs/deepar.aar` **se mantiene** — corrección a la suposición original:
+      el propio módulo Gradle del plugin `deepar_flutter` (`:deepar:`) apunta a ese mismo
+      archivo y falla si no está. Lo que sí había que evitar era declarar una dependencia
+      Gradle manual duplicada sobre el mismo `.aar` (rompía con "Namespace 'ai.deepar.ar'
+      is used in multiple modules") — no se agregó ninguna.
+- [ ] El comentario "FIX NAMESPACE Y SDK PARA DEEPAR" en `android/build.gradle.kts:16` se
+      dejó como está a propósito: fuerza `compileSdk`/`minSdk`/`targetSdk` en todos los
+      subproyectos y lo siguen necesitando otros plugins viejos sin namespace propio (ej.
+      `image_picker` 1.0.8), no es exclusivo de DeepAR.
 
 ## Fase 2 — Wiring nativo
 
-- [ ] Android: confirmar que `AndroidManifest.xml` declara el permiso de cámara y que
-      `minSdk`/`compileSdk`/NDK en `android/app/build.gradle.kts` cumplen los mínimos de
-      DeepAR.
-- [ ] Android: agregar la license key de DeepAR según lo pida el plugin (meta-data en
-      manifest o init en Dart).
-- [ ] iOS: confirmar `NSCameraUsageDescription` en `ios/Runner/Info.plist`.
-- [ ] iOS: agregar la license key de DeepAR y el `.xcframework`/pod que instale el plugin
-      vía `pod install`.
-- [ ] iOS: subir el deployment target si DeepAR lo requiere.
+- [x] Android: permiso de cámara ya estaba declarado. Se agregó
+      `READ_EXTERNAL_STORAGE` (maxSdk 32) — `WRITE_EXTERNAL_STORAGE` no hizo falta
+      agregarlo porque `camera_android_camerax` ya lo declara.
+- [x] Android: license key cargada vía `DeepArController.initialize()` en
+      `lib/ar/deepar_makeup_engine.dart` (no como meta-data de manifest).
+- [x] iOS: `NSCameraUsageDescription`/`NSMicrophoneUsageDescription` ya estaban en
+      `Info.plist`.
+- [ ] iOS: **pendiente, requiere Mac.** Este repo nunca tuvo un `ios/Podfile` generado
+      (no hay evidencia de que se haya corrido `pod install` nunca), y no se puede generar
+      ni validar desde Windows. Cuando alguien abra el proyecto en Xcode/macOS por primera
+      vez va a necesitar: `pod install`, agregar `GCC_PREPROCESSOR_DEFINITIONS` para
+      `PERMISSION_CAMERA`/`PERMISSION_MICROPHONE` si el plugin lo pide, y confirmar el
+      deployment target (DeepAR pide iOS 13+).
 
-## Fase 3 — Capa Dart nueva (archivos a crear)
+## Fase 3 — Capa Dart nueva (archivos creados)
 
-- [ ] `lib/ar/ar_makeup_engine.dart` — interfaz común (`initialize`, `startCamera`,
-      `applyRecipe(Map recipe)`, `dispose`, widget de preview).
-- [ ] `lib/ar/deepar_makeup_engine.dart` — implementación con `DeepArController`, carga
+- [x] `lib/ar/ar_makeup_engine.dart` — interfaz común (`initialize`, `buildPreview`,
+      `applyRecipe`, `setEffectEnabled`, `dispose` vía `ChangeNotifier`).
+- [x] `lib/ar/ar_engine_config.dart` — flag `useDeepAr` (en `false` hasta que exista el
+      `.deepar`) + license keys + path del asset base.
+- [x] `lib/ar/deepar_node_mapping.dart` — nombres de game objects/parámetros que el motor
+      DeepAR espera encontrar en el efecto (placeholders a ajustar cuando exista el
+      `.deepar` real).
+- [x] `lib/ar/deepar_makeup_engine.dart` — implementación con `DeepArController`, carga
       `makeup_base.deepar` y traduce la receta a llamadas `changeParameter`.
-- [ ] `lib/ar/legacy_canvas_makeup_engine.dart` — mueve ahí tal cual el código actual de
-      cámara + ML Kit + `RealisticMakeupPainter`, como motor de respaldo.
-- [ ] `lib/services/ai_makeup_recipe_service.dart` — extrae de `camera_screen.dart` la
-      llamada a Groq y el armado del prompt (lógica de negocio, no de UI).
+- [x] `lib/ar/legacy_canvas_makeup_engine.dart` — cámara + ML Kit + `RealisticMakeupPainter`
+      movidos tal cual acá, como motor de respaldo (es el que usa la app hoy, porque
+      `useDeepAr = false`).
+- [x] `lib/services/ai_makeup_recipe_service.dart` — extraída de `camera_screen.dart` la
+      llamada a Groq, el armado del prompt y `MakeupRecipe` (default/legacy conversion).
 
-## Fase 4 — Integración (archivos a modificar)
+## Fase 4 — Integración
 
-- [ ] `lib/camera_screen.dart` — se reduce a UI (botones, caja de prompt) y delega
-      inicialización/renderizado al `ArMakeupEngine` elegido, en vez de tener la cámara,
-      ML Kit y el painter inline.
+- [x] `lib/camera_screen.dart` reescrito: ahora solo tiene UI (botones, caja de prompt) y
+      delega al `ArMakeupEngine` elegido (`DeepArMakeupEngine` o `LegacyCanvasMakeupEngine`
+      según `ArEngineConfig.useDeepAr`).
 
 ## Fase 5 — Verificación
 
-- [ ] Probar en dispositivo Android real: prompt → receta → DeepAR aplica el look en vivo,
-      sin caídas de FPS ni crashes al rotar/pausar la app.
-- [ ] Probar en dispositivo iOS real, mismo checklist.
+- [x] `flutter analyze`: sin errores ni warnings nuevos (solo lints preexistentes de
+      `withOpacity` deprecado, ya presentes antes de esta migración).
+- [x] `flutter build apk --debug`: compila y linkea correctamente contra el `.aar` de
+      DeepAR.
+- [ ] **No probado en un dispositivo/emulador real** (no había ninguno conectado en esta
+      sesión). Con `useDeepAr = false` el comportamiento visible debería ser idéntico al de
+      antes de esta migración — igual conviene confirmarlo en un dispositivo.
+- [ ] Probar en dispositivo iOS real (bloqueado por Fase 2 iOS).
+- [ ] Una vez que exista `makeup_base.deepar` y se active `useDeepAr = true`: probar
+      prompt → receta → DeepAR aplica el look en vivo, sin caídas de FPS ni crashes al
+      rotar/pausar. Ajustar `deepar_node_mapping.dart` contra los nombres reales de los
+      game objects.
 - [ ] Confirmar que los looks guardados viejos en Firestore (`makeup_params` vía
-      `MakeupRecipe.convertLegacy`) se siguen aplicando bien contra el nuevo motor.
+      `MakeupRecipe.convertLegacy`) se siguen aplicando bien contra el motor DeepAR.
 
-## Fase 6 — Limpieza (solo tras validar Fase 5)
+## Fase 6 — Limpieza (solo tras validar Fase 5 con `useDeepAr = true` en producción)
 
 - [ ] Eliminar `lib/ar/legacy_canvas_makeup_engine.dart` y `google_mlkit_face_mesh_detection`
       de `pubspec.yaml` si nada más depende de la malla de puntos cruda.
-- [ ] Actualizar este checklist marcando lo completado.
 
 ## Riesgo/nota abierta
 
