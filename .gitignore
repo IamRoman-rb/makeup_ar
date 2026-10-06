@@ -46,3 +46,7 @@ app.*.map.json
 
 # RevenueCat API keys (ver lib/vip/revenue_cat_keys.example.dart)
 /lib/vip/revenue_cat_keys.dart
+
+# Claude Code: preferencias personales y settings locales
+CLAUDE.local.md
+.claude/settings.local.json

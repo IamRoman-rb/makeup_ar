@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://makeup-ar.local/schemas/makeup-recipe-2.json",
+  "title": "MakeupRecipe v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "name"],
+  "properties": {
+    "schema": { "const": "makeup-recipe/2" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "lips": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color", "opacity"],
+      "properties": {
+        "color": { "$ref": "#/$defs/hex" },
+        "opacity": { "$ref": "#/$defs/unit" },
+        "finish": { "enum": ["matte", "satin", "gloss", "shimmer"] },
+        "gloss": { "$ref": "#/$defs/unit" },
+        "lumaFollow": { "$ref": "#/$defs/unit" },
+        "liner": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "opacity"],
+          "properties": { "color": { "$ref": "#/$defs/hex" }, "opacity": { "$ref": "#/$defs/unit" } }
+        }
+      }
+    },
+    "cheeks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color", "opacity"],
+      "properties": {
+        "color": { "$ref": "#/$defs/hex" },
+        "opacity": { "$ref": "#/$defs/unit" },
+        "spread": { "$ref": "#/$defs/unit" },
+        "placement": { "enum": ["apple", "high", "low"] }
+      }
+    },
+    "eyes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "shadow": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["color", "opacity", "region"],
+            "properties": {
+              "color": { "$ref": "#/$defs/hex" },
+              "opacity": { "$ref": "#/$defs/unit" },
+              "region": { "enum": ["lid", "crease", "outer_v", "inner_corner", "brow_bone"] },
+              "finish": { "enum": ["matte", "satin", "shimmer"] }
+            }
+          }
+        },
+        "liner": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "opacity"],
+          "properties": {
+            "color": { "$ref": "#/$defs/hex" },
+            "opacity": { "$ref": "#/$defs/unit" },
+            "thickness": { "$ref": "#/$defs/unit" },
+            "wing": { "$ref": "#/$defs/unit" }
+          }
+        },
+        "lashes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["opacity"],
+          "properties": {
+            "opacity": { "$ref": "#/$defs/unit" },
+            "length": { "$ref": "#/$defs/unit" },
+            "volume": { "$ref": "#/$defs/unit" }
+          }
+        }
+      }
+    },
+    "skin": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "foundation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "coverage"],
+          "properties": { "color": { "$ref": "#/$defs/hex" }, "coverage": { "$ref": "#/$defs/unit" } }
+        },
+        "contour": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "opacity"],
+          "properties": { "color": { "$ref": "#/$defs/hex" }, "opacity": { "$ref": "#/$defs/unit" } }
+        },
+        "highlight": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "opacity"],
+          "properties": { "color": { "$ref": "#/$defs/hex" }, "opacity": { "$ref": "#/$defs/unit" } }
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "intensity"],
+        "properties": {
+          "type": { "enum": ["freckles", "glitter", "sheen"] },
+          "intensity": { "$ref": "#/$defs/unit" },
+          "region": { "enum": ["cheeks_nose", "eyes", "lips", "full_face"] }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hex": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+    "unit": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}
