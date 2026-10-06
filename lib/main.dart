@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'splash_screen.dart';
-import 'login_screen.dart';
 import 'vip/vip_service.dart';
 
 void main() async {
