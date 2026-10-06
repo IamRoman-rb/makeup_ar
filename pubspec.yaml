@@ -49,6 +49,9 @@ dependencies:
   video_player: ^2.14.0
   purchases_flutter: ^10.9.1
   camera: ^0.12.0+2
+  # Motor AR propio (plugin local, ver packages/makeup_engine).
+  makeup_engine:
+    path: packages/makeup_engine
 dependency_overrides:
   permission_handler: ^11.3.1
   permission_handler_android: ^12.0.1
