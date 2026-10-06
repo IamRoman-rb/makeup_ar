@@ -25,6 +25,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - `flutter pub get` · `flutter analyze` · `flutter test`
 - Medir rendimiento siempre en profile: `flutter run --profile -d <id>`. Nunca en debug.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
+- Paridad del esquema de recetas: `python tools/studio/validate_recipe_cases.py` (requiere `jsonschema`). Si tocás el esquema o `test/fixtures/recipe_v2_cases.json`, corré esto y `flutter test test/features`.
 
 ## Reglas de código (Dart)
 

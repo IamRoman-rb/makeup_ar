@@ -1,0 +1,2024 @@
+{
+  "_comment": "Casos compartidos entre test/features/ar/domain/recipe_validator_test.dart y tools/studio/validate_recipe_cases.py. Los del grupo 'informe' son los 8 casos exactos del §10.11.",
+  "cases": [
+    {
+      "id": "informe_valida",
+      "group": "informe",
+      "valid": true,
+      "description": "Receta válida del §5.8",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "informe_opacidad_1_7",
+      "group": "informe",
+      "valid": false,
+      "description": "lips.opacity 1.7",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 1.7,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "informe_color_rojo",
+      "group": "informe",
+      "valid": false,
+      "description": "lips.color \"rojo\"",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "rojo",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "informe_finish_metalico",
+      "group": "informe",
+      "valid": false,
+      "description": "lips.finish \"metalico\"",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "metalico",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "informe_propiedad_shader",
+      "group": "informe",
+      "valid": false,
+      "description": "propiedad extra \"shader\" en la raíz",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        },
+        "shader": "void main(){}"
+      }
+    },
+    {
+      "id": "informe_5_sombras",
+      "group": "informe",
+      "valid": false,
+      "description": "5 sombras",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "informe_schema_v1",
+      "group": "informe",
+      "valid": false,
+      "description": "schema \"makeup-recipe/1\"",
+      "recipe": {
+        "schema": "makeup-recipe/1",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "informe_nombre_vacio",
+      "group": "informe",
+      "valid": false,
+      "description": "nombre vacío",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "minima",
+      "group": "extra",
+      "valid": true,
+      "description": "Solo schema y name",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "x"
+      }
+    },
+    {
+      "id": "nombre_60_emoji",
+      "group": "extra",
+      "valid": true,
+      "description": "60 code points (120 unidades UTF-16)",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄💄",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "nombre_61",
+      "group": "extra",
+      "valid": false,
+      "description": "61 caracteres",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "nombre_no_texto",
+      "group": "extra",
+      "valid": false,
+      "description": "name numérico",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": 5,
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "opacidad_entera_1",
+      "group": "extra",
+      "valid": true,
+      "description": "opacity entero 1",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 1,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "opacidad_0",
+      "group": "extra",
+      "valid": true,
+      "description": "opacity 0",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "opacidad_negativa",
+      "group": "extra",
+      "valid": false,
+      "description": "opacity -0.1",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": -0.1,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "opacidad_texto",
+      "group": "extra",
+      "valid": false,
+      "description": "opacity \"0.5\"",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": "0.5",
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "opacidad_bool",
+      "group": "extra",
+      "valid": false,
+      "description": "opacity true",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": true,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "finish_null",
+      "group": "extra",
+      "valid": false,
+      "description": "finish null",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": null,
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "labios_sin_opacidad",
+      "group": "extra",
+      "valid": false,
+      "description": "lips sin opacity",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "color_minusculas",
+      "group": "extra",
+      "valid": true,
+      "description": "HEX en minúsculas",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#b3122d",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "color_8_digitos",
+      "group": "extra",
+      "valid": false,
+      "description": "HEX con alfa",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122DFF",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "color_sin_numeral",
+      "group": "extra",
+      "valid": false,
+      "description": "HEX sin #",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "color_salto_final",
+      "group": "extra",
+      "valid": false,
+      "description": "HEX con \"\n\" al final",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D\n",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      },
+      "note": "ECMA-262 (lo que exige JSON Schema) rechaza; el 're' de Python acepta porque '$' coincide antes de un salto final. Dart sigue ECMA."
+    },
+    {
+      "id": "extra_anidada",
+      "group": "extra",
+      "valid": false,
+      "description": "lips.shader",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35,
+          "shader": "x"
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "ojos_vacio",
+      "group": "extra",
+      "valid": true,
+      "description": "eyes {}",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {},
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "piel_vacia",
+      "group": "extra",
+      "valid": true,
+      "description": "skin {}",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {}
+      }
+    },
+    {
+      "id": "sombras_vacias",
+      "group": "extra",
+      "valid": true,
+      "description": "shadow []",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "sombras_4",
+      "group": "extra",
+      "valid": true,
+      "description": "4 sombras",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "sombra_sin_region",
+      "group": "extra",
+      "valid": false,
+      "description": "sombra sin region",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#000000",
+              "opacity": 0.4
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "sombra_region_invalida",
+      "group": "extra",
+      "valid": false,
+      "description": "region \"chin\"",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#000000",
+              "opacity": 0.4,
+              "region": "chin"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "sombra_finish_gloss",
+      "group": "extra",
+      "valid": false,
+      "description": "sombra finish \"gloss\" (solo labios)",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid",
+              "finish": "gloss"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "efectos_3",
+      "group": "extra",
+      "valid": true,
+      "description": "3 efectos",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        },
+        "effects": [
+          {
+            "type": "freckles",
+            "intensity": 0.3,
+            "region": "cheeks_nose"
+          },
+          {
+            "type": "glitter",
+            "intensity": 0.2
+          },
+          {
+            "type": "sheen",
+            "intensity": 0.1,
+            "region": "full_face"
+          }
+        ]
+      }
+    },
+    {
+      "id": "efectos_4",
+      "group": "extra",
+      "valid": false,
+      "description": "4 efectos",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        },
+        "effects": [
+          {
+            "type": "sheen",
+            "intensity": 0.1
+          },
+          {
+            "type": "sheen",
+            "intensity": 0.1
+          },
+          {
+            "type": "sheen",
+            "intensity": 0.1
+          },
+          {
+            "type": "sheen",
+            "intensity": 0.1
+          }
+        ]
+      }
+    },
+    {
+      "id": "efecto_tipo_invalido",
+      "group": "extra",
+      "valid": false,
+      "description": "effect \"tattoo\"",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        },
+        "effects": [
+          {
+            "type": "tattoo",
+            "intensity": 0.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "placement_invalido",
+      "group": "extra",
+      "valid": false,
+      "description": "placement \"chin\"",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7,
+          "placement": "chin"
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "lashes_ok",
+      "group": "extra",
+      "valid": true,
+      "description": "lashes",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          },
+          "lashes": {
+            "opacity": 0.7,
+            "length": 0.5,
+            "volume": 0.5
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "lashes_sin_opacidad",
+      "group": "extra",
+      "valid": false,
+      "description": "lashes sin opacity",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          },
+          "lashes": {
+            "length": 0.5
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "lip_liner_ok",
+      "group": "extra",
+      "valid": true,
+      "description": "lips.liner",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35,
+          "liner": {
+            "color": "#7A1020",
+            "opacity": 0.6
+          }
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "contour_extra",
+      "group": "extra",
+      "valid": false,
+      "description": "contour con prop extra",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          },
+          "contour": {
+            "color": "#7A5A50",
+            "opacity": 0.3,
+            "blend": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "sin_schema",
+      "group": "extra",
+      "valid": false,
+      "description": "falta schema",
+      "recipe": {
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "sin_nombre",
+      "group": "extra",
+      "valid": false,
+      "description": "falta name",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "raiz_lista",
+      "group": "extra",
+      "valid": false,
+      "description": "la raíz es una lista",
+      "recipe": []
+    },
+    {
+      "id": "raiz_null",
+      "group": "extra",
+      "valid": false,
+      "description": "la raíz es null",
+      "recipe": null
+    },
+    {
+      "id": "lips_null",
+      "group": "extra",
+      "valid": false,
+      "description": "lips null",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": null,
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    }
+  ]
+}

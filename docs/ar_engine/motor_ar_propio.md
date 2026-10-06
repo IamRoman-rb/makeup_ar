@@ -569,6 +569,8 @@ Cada receta se renderiza sobre un set pequeño de **caras de prueba con consenti
 - **Esquema:** `docs/ar_engine/recipe_v2.schema.json` (JSON Schema draft 2020-12, `additionalProperties: false` en todos los niveles, enums cerrados, HEX `^#[0-9A-Fa-f]{6}$`, `[0,1]` para todos los factores, máx. 4 sombras y 3 efectos).
 - **Pruebas ejecutadas** con `jsonschema` 4.26: 1 receta válida aceptada y 7 inválidas rechazadas (opacidad 1.7; color `"rojo"`; `finish: "metalico"`; propiedad extra `shader`; 5 sombras; `schema: "makeup-recipe/1"`; nombre vacío). El validador Dart de F1 debe reproducir exactamente estos 8 casos.
 - El esquema valida estructura y rangos, **no calidad estética**: de eso se ocupa el auto-QA (§10.10) y vos en el preview.
+- **Implementado (F1):** `lib/features/ar/domain/` (`MakeupRecipe`, `RecipeValidator`, `RecipePresets`). Los 8 casos del informe más 36 casos borde viven en `test/fixtures/recipe_v2_cases.json`, y los usan **los dos lados**: `flutter test` y `python tools/studio/validate_recipe_cases.py` (jsonschema). Si cambia el esquema o el validador, uno de los dos falla.
+- **Divergencia encontrada:** el `re` de Python acepta `"#B3122D\n"` porque `$` coincide antes de un salto de línea final. JSON Schema exige regex ECMA-262, que lo rechaza. El script ajusta `pattern` a semántica ECMA, y Dart ya la sigue. Para F2, validar en la Cloud Function con un validador ECMA (por ejemplo Ajv en Node), no con el `re` de Python.
 
 ### 10.12 Modelo de datos y reglas de Firestore (esbozo, no probado)
 
