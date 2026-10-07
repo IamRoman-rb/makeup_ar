@@ -78,6 +78,10 @@
     "explore": "Explorar",
     "profile": "Perfil",
     "mirror": "Espejo",
+    "testFilter": "Filtro de prueba",
+    "testFilterNone": "Sin filtro",
+    "testFilterIntensity": "Intensidad",
+    "testFilterNote": "Motor nuevo (beta): por ahora tiñe toda la imagen. El maquillaje por zona llega con el seguimiento facial.",
 
     "fillRequiredFields": "Por favor completa todos los campos requeridos",
     "registrationError": "Error de registro",

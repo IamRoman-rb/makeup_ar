@@ -222,6 +222,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get mirror => 'Espelho';
 
   @override
+  String get testFilter => 'Filtro de teste';
+
+  @override
+  String get testFilterNone => 'Sem filtro';
+
+  @override
+  String get testFilterIntensity => 'Intensidade';
+
+  @override
+  String get testFilterNote =>
+      'Motor novo (beta): por enquanto tinge a imagem inteira. A maquiagem por região chega com o rastreamento facial.';
+
+  @override
   String get fillRequiredFields =>
       'Por favor, preencha todos os campos obrigatórios';
 

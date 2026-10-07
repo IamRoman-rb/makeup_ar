@@ -35,7 +35,7 @@ SurfaceProducer (Flutter) → Texture(textureId)    ← Dart solo lee métricas 
 - **Constantes de rendimiento:** `packages/makeup_engine/android/src/main/cpp/engine_config.h`. Preview máximo 1280×720, AE con techo de 30 fps y ventana de 256 muestras. Kotlin las lee del header por JNI, sin duplicarlas.
 - **Métricas (todas nativas):** intervalo entre frames dibujados, CPU del hilo de render (`updateTexImage` + draw + `eglSwapBuffers`) e intervalo entre timestamps de cámara (fps real del sensor), en p50/p95. **No** mide tiempo de GPU: eso requiere `GL_EXT_disjoint_timer_query` y queda para P2 si el driver del E20 lo expone.
 - **Entrypoint separado:** `lib/main_spike.dart` no carga Firebase ni RevenueCat, así que compila aunque falte `revenue_cat_keys.dart` (hallazgo 4 de `AUDIT.md`).
-- **Rotación:** se calcula con la fórmula de Camera2 a partir de `SENSOR_ORIENTATION`, con espejo para la cámara frontal. Si en el E20 la imagen sale girada, el botón **"Rotar 90°"** prueba las 4 orientaciones. Anotá cuál queda bien.
+- **Rotación (corregida el 2026-10-07):** Camera2 ya corrige la orientación del sensor en la matriz de `SurfaceTexture`, así que en vertical no hay rotación extra; solo el espejo de la cámara frontal. La primera versión aplicaba la orientación del sensor una segunda vez y la imagen salía girada 90°. Se detectó comparando con la vista previa de CameraX en el emulador (las 4 rotaciones lado a lado) y se corrigió en `CameraMath.extraRotation`/`outputSize`. Las pantallas del motor se bloquean en vertical: las orientaciones horizontales no están validadas. Si en el E20 la imagen sale girada, el botón **"Rotar 90°"** del spike prueba las 4 orientaciones.
 - **Decisión de diseño a validar:** hay una llamada JNI Kotlin→C++ por frame (`nativeDrawFrame`). La regla de `native-gles.md` apunta a los cruces **Dart**↔nativo, que acá son cero. Esta llamada es inevitable con `minSdk 24`, porque `SurfaceTexture.updateTexImage()` es API Java (`ASurfaceTexture` en NDK exige API 28).
 
 ## 2. Prueba de humo en el emulador (NO son números del E20)
@@ -50,6 +50,12 @@ Emulador `Medium_Phone` (API 37, x86_64, **GPU por software SwiftShader**, cáma
 | FPS render / cámara | ~28,5 / ~29 |
 | Tinte OKLab al 100% | Cambia la croma y conserva la luminancia: las zonas oscuras siguen oscuras y las claras siguen claras (verificado con capturas de pantalla) |
 | Estrés del ciclo de vida: 3 rondas de 5 reinicios rápidos (cada 300 ms, o sea stop durante start y durante la apertura de cámara) + salir y reabrir + salir enseguida | 21 inicializaciones de GL: **0 crashes, 0 ANR, 0 warnings, 0 hilos del motor vivos al salir** |
+
+## 2.1 Filtro de prueba dentro de la app
+
+En el **Espejo** de la app normal, el botón ✨ de la barra cambia de la cámara de siempre (plugin `camera`) al motor nativo, con chips para los 5 presets locales (el color de labios de cada uno, aplicado como tinte OKLab a toda la imagen) y un slider de intensidad. Todavía no es maquillaje por zona: eso necesita el tracker (P3). Sirve para ver en el teléfono, sin herramientas, que el camino cámara → GLES → `Texture` funciona y a cuántos fps (el badge de arriba a la izquierda).
+
+Probado en el emulador: alternar ida y vuelta (también rápido), cambiar de preset y salir. 0 crashes del motor.
 
 ## 3. Mediciones en el E20 (completar)
 

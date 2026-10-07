@@ -78,6 +78,10 @@
     "explore": "Explorar",
     "profile": "Perfil",
     "mirror": "Espelho",
+    "testFilter": "Filtro de teste",
+    "testFilterNone": "Sem filtro",
+    "testFilterIntensity": "Intensidade",
+    "testFilterNote": "Motor novo (beta): por enquanto tinge a imagem inteira. A maquiagem por região chega com o rastreamento facial.",
 
     "fillRequiredFields": "Por favor, preencha todos os campos obrigatórios",
     "registrationError": "Erro de registro",

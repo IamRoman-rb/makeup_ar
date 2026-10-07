@@ -221,6 +221,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mirror => 'Mirror';
 
   @override
+  String get testFilter => 'Test filter';
+
+  @override
+  String get testFilterNone => 'No filter';
+
+  @override
+  String get testFilterIntensity => 'Intensity';
+
+  @override
+  String get testFilterNote =>
+      'New engine (beta): for now it tints the whole image. Per-area makeup comes with face tracking.';
+
+  @override
   String get fillRequiredFields => 'Please fill all required fields';
 
   @override

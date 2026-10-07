@@ -78,6 +78,10 @@
     "explore": "Explore",
     "profile": "Profile",
     "mirror": "Mirror",
+    "testFilter": "Test filter",
+    "testFilterNone": "No filter",
+    "testFilterIntensity": "Intensity",
+    "testFilterNote": "New engine (beta): for now it tints the whole image. Per-area makeup comes with face tracking.",
 
     "fillRequiredFields": "Please fill all required fields",
     "registrationError": "Registration error",

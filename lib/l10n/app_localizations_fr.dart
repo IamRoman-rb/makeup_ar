@@ -225,6 +225,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mirror => 'Miroir';
 
   @override
+  String get testFilter => 'Filtre de test';
+
+  @override
+  String get testFilterNone => 'Sans filtre';
+
+  @override
+  String get testFilterIntensity => 'Intensité';
+
+  @override
+  String get testFilterNote =>
+      'Nouveau moteur (bêta) : pour l\'instant il teinte toute l\'image. Le maquillage par zone arrivera avec le suivi du visage.';
+
+  @override
   String get fillRequiredFields =>
       'Veuillez remplir tous les champs obligatoires';
 

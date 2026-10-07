@@ -510,6 +510,30 @@ abstract class AppLocalizations {
   /// **'Mirror'**
   String get mirror;
 
+  /// No description provided for @testFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Test filter'**
+  String get testFilter;
+
+  /// No description provided for @testFilterNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No filter'**
+  String get testFilterNone;
+
+  /// No description provided for @testFilterIntensity.
+  ///
+  /// In en, this message translates to:
+  /// **'Intensity'**
+  String get testFilterIntensity;
+
+  /// No description provided for @testFilterNote.
+  ///
+  /// In en, this message translates to:
+  /// **'New engine (beta): for now it tints the whole image. Per-area makeup comes with face tracking.'**
+  String get testFilterNote;
+
   /// No description provided for @fillRequiredFields.
   ///
   /// In en, this message translates to:
