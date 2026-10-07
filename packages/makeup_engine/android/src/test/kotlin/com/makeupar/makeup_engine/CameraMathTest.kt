@@ -39,19 +39,23 @@ class CameraMathTest {
     }
 
     @Test
-    fun `rotación de imagen según Camera2`() {
-        assertEquals(270, CameraMath.imageRotation(270, 0, frontFacing = true))
-        assertEquals(0, CameraMath.imageRotation(270, 90, frontFacing = true))
-        assertEquals(90, CameraMath.imageRotation(90, 0, frontFacing = false))
-        assertEquals(0, CameraMath.imageRotation(90, 90, frontFacing = false))
+    fun `en vertical no hay rotación extra (Camera2 ya corrige el sensor)`() {
+        assertEquals(0, CameraMath.extraRotation(0))
+        assertEquals(270, CameraMath.extraRotation(90))
+        assertEquals(180, CameraMath.extraRotation(180))
+        assertEquals(90, CameraMath.extraRotation(270))
     }
 
     @Test
-    fun `la salida intercambia lados con 90 y 270 grados`() {
+    fun `la salida es vertical con sensor a 270 o 90 y sin rotación extra`() {
         val preview = PixelSize(1280, 720)
-        assertEquals(PixelSize(720, 1280), CameraMath.outputSize(preview, 90))
-        assertEquals(PixelSize(720, 1280), CameraMath.outputSize(preview, 270))
-        assertEquals(preview, CameraMath.outputSize(preview, 180))
+        // Caso real (emulador y Moto E20): sensor frontal a 270°, pantalla vertical.
+        assertEquals(PixelSize(720, 1280), CameraMath.outputSize(preview, sensorOrientation = 270, extraRotation = 0))
+        assertEquals(PixelSize(720, 1280), CameraMath.outputSize(preview, sensorOrientation = 90, extraRotation = 0))
+        assertEquals(preview, CameraMath.outputSize(preview, sensorOrientation = 0, extraRotation = 0))
+        // Una rotación extra de 90° vuelve a intercambiar lados.
+        assertEquals(preview, CameraMath.outputSize(preview, sensorOrientation = 270, extraRotation = 90))
+        assertEquals(PixelSize(720, 1280), CameraMath.outputSize(preview, sensorOrientation = 270, extraRotation = 180))
     }
 
     @Test

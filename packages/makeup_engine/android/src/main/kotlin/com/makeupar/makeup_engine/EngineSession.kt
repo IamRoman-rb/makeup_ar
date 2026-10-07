@@ -116,8 +116,8 @@ internal class EngineSession(
             config[NativeBridge.CONFIG_TARGET_FPS],
         )
         val sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 270
-        val rotation = rotationOverride ?: CameraMath.imageRotation(sensorOrientation, displayRotationDegrees(), true)
-        val outputSize = CameraMath.outputSize(preview, rotation)
+        val rotation = rotationOverride ?: CameraMath.extraRotation(displayRotationDegrees())
+        val outputSize = CameraMath.outputSize(preview, sensorOrientation, rotation)
         val displayMatrix = CameraMath.displayMatrix(rotation, mirror = true)
 
         val newProducer = textures.createSurfaceProducer()

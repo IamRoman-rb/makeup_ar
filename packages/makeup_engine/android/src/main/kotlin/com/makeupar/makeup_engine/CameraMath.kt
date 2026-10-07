@@ -38,20 +38,29 @@ internal object CameraMath {
     }
 
     /**
-     * Grados que hay que rotar la imagen del sensor para verla derecha en una
-     * pantalla girada [displayRotationDegrees] (0, 90, 180, 270). Fórmula de la
-     * documentación de Camera2; la cámara frontal suma porque está espejada.
+     * Rotación extra (uDisplayMatrix) para una pantalla girada
+     * [displayRotationDegrees] (0, 90, 180, 270).
+     *
+     * Camera2 ya corrige la orientación del sensor en la matriz de
+     * SurfaceTexture.getTransformMatrix(): la imagen llega derecha para la
+     * orientación natural del dispositivo (vertical en un teléfono). Por eso en
+     * vertical no hay que rotar nada; es lo mismo que asume Camera2Basic.
+     * Verificado contra la vista previa de CameraX en el emulador (sensor 270°).
+     * Las orientaciones horizontales NO están validadas: las pantallas del motor
+     * se bloquean en vertical.
      */
-    fun imageRotation(sensorOrientation: Int, displayRotationDegrees: Int, frontFacing: Boolean): Int =
-        if (frontFacing) {
-            (sensorOrientation + displayRotationDegrees) % 360
-        } else {
-            (sensorOrientation - displayRotationDegrees + 360) % 360
-        }
+    fun extraRotation(displayRotationDegrees: Int): Int = (360 - displayRotationDegrees % 360) % 360
 
-    /** Tamaño de la salida: si la imagen se rota 90° o 270°, se intercambian lados. */
-    fun outputSize(preview: PixelSize, rotationDegrees: Int): PixelSize =
-        if (rotationDegrees % 180 == 0) preview else PixelSize(preview.height, preview.width)
+    /**
+     * Tamaño de la salida. El buffer llega en la orientación del sensor
+     * ([preview], p. ej. 1280x720) y la matriz de SurfaceTexture lo lleva a la
+     * orientación natural: con un sensor a 90° o 270° se intercambian lados. Una
+     * [extraRotation] de 90° o 270° los vuelve a intercambiar.
+     */
+    fun outputSize(preview: PixelSize, sensorOrientation: Int, extraRotation: Int): PixelSize {
+        val swaps = (sensorOrientation % 180 == 90) != (extraRotation % 180 == 90)
+        return if (swaps) PixelSize(preview.height, preview.width) else preview
+    }
 
     /**
      * Matriz 4x4 column-major (uDisplayMatrix de camera_quad.vert) que lleva un
