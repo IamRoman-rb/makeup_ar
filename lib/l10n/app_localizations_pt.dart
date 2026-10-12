@@ -232,13 +232,29 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get testFilterNote =>
-      'Motor novo (beta). \"Só lábios\" aplica o batom do look com rastreamento facial: na primeira vez leva alguns segundos para carregar.';
-
-  @override
-  String get testFilterLipsOnly => 'Só lábios';
+      'Motor novo (beta): cada look é aplicado por completo com rastreamento facial. Na primeira vez leva alguns segundos para carregar.';
 
   @override
   String get testFilterShowPoints => 'Ver pontos';
+
+  @override
+  String get testFilterZoneAll => 'Tudo';
+
+  @override
+  String get testFilterZoneLips => 'Lábios';
+
+  @override
+  String get testFilterZoneEyes => 'Olhos';
+
+  @override
+  String get testFilterZoneCheeks => 'Bochechas';
+
+  @override
+  String get testFilterZoneSkin => 'Pele';
+
+  @override
+  String get testFilterUnavailable =>
+      'A maquiagem ao vivo não está disponível neste aparelho. Mostrando o espelho normal.';
 
   @override
   String get testFilterCompare => 'Segure para comparar';

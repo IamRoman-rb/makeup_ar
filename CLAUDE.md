@@ -15,7 +15,7 @@ El diseño completo está en `docs/ar_engine/motor_ar_propio.md`. No se importa 
 - Render y ML desacoplados: render a ~30 fps con la última malla + extrapolación; inferencia a 15–20 Hz en otro hilo.
 - El maquillaje se pinta en espacio UV sobre la malla tracked (máscaras por región), mezclando en OKLab. No hay curvas Bézier por frame.
 - Dart solo manda recetas JSON y lee métricas. Cero cruces por Dart por frame.
-- Contrato: `IMakeupRenderer` con implementaciones `NativeGpuMakeupRenderer` y `CustomPainterMakeupRenderer` (respaldo), elegidas por `--dart-define=AR_RENDERER=native|painter`.
+- Contrato: `IMakeupRenderer` con implementaciones `NativeGpuMakeupRenderer` y `MirrorFallbackRenderer` (respaldo: espejo sin maquillaje; el motor Dart viejo con ML Kit no volvió), elegidas por `--dart-define=AR_RENDERER=native|painter`.
 - Tracker detrás de `IFaceTracker`: se puede cambiar el modelo de landmarks sin tocar nada más.
 
 ## Comandos
@@ -26,6 +26,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Medir rendimiento siempre en profile: `flutter run --profile -d <id>`. Nunca en debug.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
 - Benchmark del tracker (LiteRT, GPU vs CPU; imagen sintética): `flutter run --profile -t lib/main_benchmark.dart -d <id>`. Resultados en pantalla y en logcat (`makeup_bench`).
+- Renderer de maquillaje: `--dart-define=AR_RENDERER=native|painter` (por defecto native; `painter` = respaldo sin maquillaje, muestra el espejo con un aviso). Contrato en `lib/features/ar/domain/i_makeup_renderer.dart`.
 - Arnés del tracker (P3; filtro de prueba sin Firebase, línea `TRACK` cada 5 s en logcat): `flutter run --profile -t lib/main_tracker.dart -d <id>`. Protocolo en `docs/ar_engine/TRACKER.md`.
 - Regenerar el mapa UV de labios (si cambia `tools/uv_masks/lips.json` o la malla): `python tools/uv_masks/gen_lips_maps.py`; `--check` verifica que lo versionado esté al día. Vista previa en `docs/ar_engine/img/lips_maps.png`.
 - Regenerar los mapas UV de cara y ojos (base, contorno, iluminador, rubor, sombras, delineado; si cambia `tools/uv_masks/face.json` o la malla): `python tools/uv_masks/gen_face_maps.py`; `--check` igual que el de labios. Vistas previas en `docs/ar_engine/img/{face,eye}_maps.png`.

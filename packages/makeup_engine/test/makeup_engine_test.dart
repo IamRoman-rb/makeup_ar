@@ -99,7 +99,7 @@ void main() {
   });
 
   test('setRenderOptions manda puntos y región', () async {
-    await MakeupEngine().setRenderOptions(showLandmarks: true, region: TintRegion.lips);
+    await MakeupEngine().setRenderOptions(showLandmarks: true, region: TintRegion.makeup);
     expect(calls.single.method, 'setRenderOptions');
     expect(calls.single.arguments, {'showLandmarks': true, 'region': 1});
   });

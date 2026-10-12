@@ -231,13 +231,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get testFilterNote =>
-      'New engine (beta). \"Lips only\" applies the look\'s lipstick with face tracking: the first time it takes a few seconds to load.';
-
-  @override
-  String get testFilterLipsOnly => 'Lips only';
+      'New engine (beta): each look is applied in full with face tracking. The first time it takes a few seconds to load.';
 
   @override
   String get testFilterShowPoints => 'Show points';
+
+  @override
+  String get testFilterZoneAll => 'All';
+
+  @override
+  String get testFilterZoneLips => 'Lips';
+
+  @override
+  String get testFilterZoneEyes => 'Eyes';
+
+  @override
+  String get testFilterZoneCheeks => 'Cheeks';
+
+  @override
+  String get testFilterZoneSkin => 'Skin';
+
+  @override
+  String get testFilterUnavailable =>
+      'Live makeup isn\'t available on this device. Showing the regular mirror.';
 
   @override
   String get testFilterCompare => 'Hold to compare';

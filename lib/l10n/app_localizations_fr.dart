@@ -235,13 +235,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get testFilterNote =>
-      'Nouveau moteur (bêta). « Lèvres seulement » applique le rouge à lèvres du look avec le suivi du visage : la première fois, le chargement prend quelques secondes.';
-
-  @override
-  String get testFilterLipsOnly => 'Lèvres seulement';
+      'Nouveau moteur (bêta) : chaque look est appliqué en entier avec le suivi du visage. La première fois, le chargement prend quelques secondes.';
 
   @override
   String get testFilterShowPoints => 'Voir les points';
+
+  @override
+  String get testFilterZoneAll => 'Tout';
+
+  @override
+  String get testFilterZoneLips => 'Lèvres';
+
+  @override
+  String get testFilterZoneEyes => 'Yeux';
+
+  @override
+  String get testFilterZoneCheeks => 'Joues';
+
+  @override
+  String get testFilterZoneSkin => 'Peau';
+
+  @override
+  String get testFilterUnavailable =>
+      'Le maquillage en direct n\'est pas disponible sur cet appareil. Affichage du miroir normal.';
 
   @override
   String get testFilterCompare => 'Maintenir pour comparer';

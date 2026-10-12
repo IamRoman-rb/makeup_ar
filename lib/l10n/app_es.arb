@@ -70,9 +70,32 @@
     "testFilter": "Filtro de prueba",
     "testFilterNone": "Sin filtro",
     "testFilterIntensity": "Intensidad",
-    "testFilterNote": "Motor nuevo (beta). \"Solo labios\" pinta el labial del look con seguimiento facial: la primera vez tarda unos segundos en cargar.",
-    "testFilterLipsOnly": "Solo labios",
+    "testFilterNote": "Motor nuevo (beta): cada look se aplica completo con seguimiento facial. La primera vez tarda unos segundos en cargar.",
     "testFilterShowPoints": "Ver puntos",
+    "testFilterZoneAll": "Todo",
+    "@testFilterZoneAll": {
+        "description": "Chip del filtro de prueba: muestra todas las regiones del look."
+    },
+    "testFilterZoneLips": "Labios",
+    "@testFilterZoneLips": {
+        "description": "Chip del filtro de prueba: muestra solo los labios del look."
+    },
+    "testFilterZoneEyes": "Ojos",
+    "@testFilterZoneEyes": {
+        "description": "Chip del filtro de prueba: muestra solo los ojos (sombras y delineado)."
+    },
+    "testFilterZoneCheeks": "Mejillas",
+    "@testFilterZoneCheeks": {
+        "description": "Chip del filtro de prueba: muestra solo el rubor."
+    },
+    "testFilterZoneSkin": "Piel",
+    "@testFilterZoneSkin": {
+        "description": "Chip del filtro de prueba: muestra solo la piel (base, contorno, iluminador)."
+    },
+    "testFilterUnavailable": "El maquillaje en vivo no está disponible en este equipo. Se muestra el espejo normal.",
+    "@testFilterUnavailable": {
+        "description": "Aviso cuando el motor de maquillaje en vivo no puede iniciar en el equipo."
+    },
     "testFilterCompare": "Mantené para comparar",
     "@testFilterCompare": {
         "description": "Botón del filtro de prueba: mientras se mantiene apretado muestra la cámara sin maquillaje."

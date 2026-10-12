@@ -56,7 +56,7 @@ internal object NativeBridge {
 
     // Valores de nativeSetRenderOptions(); mismo orden que TintRegion en renderer.h y en Dart.
     const val REGION_FULL = 0
-    const val REGION_LIPS = 1
+    const val REGION_MAKEUP = 1
 
     // [finish] de nativeSetLips(); mismo orden que LipFinish en renderer.h.
     const val LIP_FINISH_MATTE = 0
@@ -105,12 +105,12 @@ internal object NativeBridge {
         mirrored: Boolean,
     )
 
-    /** [region]: REGION_FULL o REGION_LIPS. */
+    /** [region]: REGION_FULL o REGION_MAKEUP. */
     @JvmStatic external fun nativeSetRenderOptions(handle: Long, showLandmarks: Boolean, region: Int)
     @JvmStatic external fun nativeSetTint(handle: Long, r: Float, g: Float, b: Float, amount: Float)
 
     /**
-     * Receta (REGION_LIPS). Cada nativeSet* guarda una región en la receta
+     * Receta (REGION_MAKEUP). Cada nativeSet* guarda una región en la receta
      * pendiente; nativeCommitRecipe() la publica entera al render. Colores sRGB
      * [0,1]; intensidades [0,1]; [enabled] = false apaga la región.
      *

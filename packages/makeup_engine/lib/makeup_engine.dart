@@ -225,14 +225,15 @@ final class TrackerStats {
   double? get hz => _fps(intervalP50Ms);
 }
 
-/// Dónde se aplica el tinte.
+/// Qué se pinta.
 enum TintRegion {
-  /// Tinte de toda la imagen con [MakeupEngine.setTint] (no necesita tracker).
+  /// Tinte de toda la imagen con [MakeupEngine.setTint] (no necesita tracker;
+  /// pantalla del spike).
   full,
 
-  /// Labial de la receta ([MakeupEngine.setRecipe]) sobre la cara (prende el
-  /// tracker).
-  lips,
+  /// Maquillaje de la receta ([MakeupEngine.setRecipe]) sobre la cara (prende
+  /// el tracker).
+  makeup,
 }
 
 /// Latencia de un modelo del tracker con un backend de LiteRT (ver
@@ -326,10 +327,11 @@ final class MakeupEngine {
       });
 
   /// Receta `makeup-recipe/2` ya validada (RecipeValidator en la app; p. ej.
-  /// `recipe.toJson()`). El motor dibuja por ahora solo `lips` (color,
-  /// opacidad, acabado, brillo, lumaFollow) con [TintRegion.lips]; el resto de
-  /// las regiones se ignora. Del lado nativo los valores se vuelven a recortar
-  /// a rango y una receta sin labios válidos apaga el labial.
+  /// `recipe.toJson()`). Con [TintRegion.makeup] el motor dibuja labios,
+  /// rubor, piel (base, contorno, iluminador) y ojos (sombras, delineado);
+  /// pestañas y efectos todavía no. Del lado nativo los valores se vuelven a
+  /// recortar a rango y cada región inválida o ausente se apaga. La receta se
+  /// aplica entera en el mismo frame.
   Future<void> setRecipe(Map<String, Object?> recipe) =>
       _channel.invokeMethod<void>('setRecipe', {'recipe': recipe});
 

@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:makeup_engine/makeup_engine.dart';
 
+import '../data/makeup_renderer_factory.dart';
+import '../domain/i_makeup_renderer.dart';
 import '../domain/makeup_recipe.dart';
+import '../domain/recipe_adjustments.dart';
 import '../domain/recipe_presets.dart';
 
 /// Opción del selector: un preset local o "sin filtro" (paso directo).
@@ -26,8 +28,7 @@ final class TestFilterOption {
   /// null = sin filtro.
   final MakeupRecipe? recipe;
 
-  /// Color del tinte de pantalla completa: el de los labios o, si no hay, el
-  /// de otra región.
+  /// Color de muestra del chip: el de los labios o, si no hay, el de otra región.
   RecipeColor? get color {
     final current = recipe;
     if (current == null) return null;
@@ -43,19 +44,23 @@ final class TestFilterLabels {
     required this.noFilter,
     required this.intensity,
     required this.note,
-    required this.lipsOnly,
     required this.showPoints,
     required this.compare,
     required this.matte,
     required this.satin,
     required this.gloss,
     required this.shimmer,
+    required this.zoneAll,
+    required this.zoneLips,
+    required this.zoneEyes,
+    required this.zoneCheeks,
+    required this.zoneSkin,
+    required this.unavailable,
   });
 
   final String noFilter;
   final String intensity;
   final String note;
-  final String lipsOnly;
   final String showPoints;
 
   /// Botón que, mientras se mantiene apretado, muestra la cámara sin maquillaje.
@@ -64,6 +69,14 @@ final class TestFilterLabels {
   final String satin;
   final String gloss;
   final String shimmer;
+  final String zoneAll;
+  final String zoneLips;
+  final String zoneEyes;
+  final String zoneCheeks;
+  final String zoneSkin;
+
+  /// El maquillaje en vivo no está disponible en este equipo.
+  final String unavailable;
 
   String finish(LipFinish finish) => switch (finish) {
         LipFinish.matte => matte,
@@ -71,29 +84,40 @@ final class TestFilterLabels {
         LipFinish.gloss => gloss,
         LipFinish.shimmer => shimmer,
       };
+
+  String zone(MakeupZone zone) => switch (zone) {
+        MakeupZone.all => zoneAll,
+        MakeupZone.lips => zoneLips,
+        MakeupZone.eyes => zoneEyes,
+        MakeupZone.cheeks => zoneCheeks,
+        MakeupZone.skin => zoneSkin,
+      };
 }
 
-/// Filtro de prueba del motor nativo para el Espejo: cámara frontal → GLES →
-/// `Texture`.
+/// Filtro de prueba del motor de maquillaje para el Espejo.
 ///
-/// "Solo labios" (por defecto) pinta el labial de la receta del preset sobre
-/// la cara (máscara UV, brillo y acabado; ver docs/ar_engine/LIPS.md): el
-/// slider es la opacidad del labial y los chips de acabado lo cambian para
-/// comparar. Apagado, tiñe toda la imagen con el color del preset (OKLab, solo
-/// croma). "Ver puntos" dibuja los landmarks para depurar. El botón de
-/// comparar muestra la cámara sin maquillaje mientras se mantiene apretado.
+/// Cada preset se aplica completo (labios, rubor, piel y ojos; ver
+/// docs/ar_engine/FACE.md). Los chips de zona muestran una región sola para
+/// comparar o capturar; el slider escala todas las opacidades; los chips de
+/// acabado cambian el del labial. "Ver puntos" dibuja los landmarks y el botón
+/// de comparar muestra la cámara sin maquillaje mientras se mantiene apretado.
 ///
-/// Dueña del motor mientras está montada: lo inicia en initState y lo detiene
-/// en dispose. Bloquea la pantalla en vertical, la única orientación validada
-/// del motor (ver CameraMath.extraRotation). Quien la monte tiene que haber
-/// liberado antes cualquier otro uso de la cámara.
+/// Dueña del renderer mientras está montada: lo inicia en initState y lo
+/// detiene en dispose. Si el renderer no puede dibujar en este equipo (o es el
+/// respaldo, `AR_RENDERER=painter`), muestra el aviso y llama a
+/// [onUnavailable] para que quien la monta vuelva al espejo normal. Bloquea la
+/// pantalla en vertical, la única orientación validada del motor. Quien la
+/// monte tiene que haber liberado antes cualquier otro uso de la cámara.
 class TestFilterView extends StatefulWidget {
-  const TestFilterView({super.key, required this.labels, this.engine});
+  const TestFilterView({super.key, required this.labels, this.renderer, this.onUnavailable});
 
   final TestFilterLabels labels;
 
-  /// Inyectable para tests.
-  final MakeupEngine? engine;
+  /// Inyectable para tests; por defecto, el de `AR_RENDERER`.
+  final IMakeupRenderer? renderer;
+
+  /// El renderer no puede mostrar maquillaje (ver [IMakeupRenderer.start]).
+  final VoidCallback? onUnavailable;
 
   @override
   State<TestFilterView> createState() => _TestFilterViewState();
@@ -101,25 +125,23 @@ class TestFilterView extends StatefulWidget {
 
 class _TestFilterViewState extends State<TestFilterView> {
   static const Duration _statsPeriod = Duration(seconds: 1);
-  static const double _defaultTintAmount = 0.45;
 
-  late final MakeupEngine _engine = widget.engine ?? MakeupEngine();
+  late final IMakeupRenderer _renderer = widget.renderer ?? createMakeupRenderer();
   late final List<TestFilterOption> _options = TestFilterOption.fromPresets(widget.labels.noFilter);
-  final ValueNotifier<EngineStats> _stats = ValueNotifier(EngineStats.empty);
+  final ValueNotifier<MakeupRendererStats> _stats = ValueNotifier(MakeupRendererStats.empty);
 
-  EngineStartInfo? _info;
-  String? _error;
+  MakeupSurface? _surface;
+  bool _unavailable = false;
   Timer? _statsTimer;
   bool _statsInFlight = false;
   bool _lookInFlight = false;
   bool _lookDirty = false;
   late TestFilterOption _selected = _options.length > 1 ? _options[1] : _options.first;
-  double _tintAmount = _defaultTintAmount;
-  late double _lipsOpacity = _selected.lips?.opacity ?? 0.0;
+  MakeupZone _zone = MakeupZone.all;
+  double _intensity = 1.0;
 
-  /// Acabado elegido en los chips; null = el del preset.
+  /// Acabado de labial elegido en los chips; null = el del preset.
   LipFinish? _finish;
-  bool _lipsOnly = true;
   bool _showPoints = false;
   bool _comparing = false;
 
@@ -134,27 +156,28 @@ class _TestFilterViewState extends State<TestFilterView> {
   void dispose() {
     _statsTimer?.cancel();
     _stats.dispose();
-    unawaited(_engine.stop());
+    unawaited(_renderer.stop());
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     super.dispose();
   }
 
   Future<void> _start() async {
-    try {
-      final info = await _engine.start();
-      if (!mounted) {
-        await _engine.stop();
-        return;
-      }
-      setState(() => _info = info);
-      await _applyRenderOptions();
-      await _applyLook();
-      // Si se desmontó durante los awaits, dispose() ya pasó: no crear el timer.
-      if (!mounted) return;
-      _statsTimer = Timer.periodic(_statsPeriod, (_) => _pollStats());
-    } on MakeupEngineException catch (e) {
-      if (mounted) setState(() => _error = '${e.code}: ${e.message ?? ''}');
+    final surface = await _renderer.start();
+    if (!mounted) {
+      await _renderer.stop();
+      return;
     }
+    if (surface == null) {
+      debugPrint('TestFilterView: sin maquillaje en vivo (${_renderer.unavailableReason})');
+      setState(() => _unavailable = true);
+      widget.onUnavailable?.call();
+      return;
+    }
+    setState(() => _surface = surface);
+    await _applyLook();
+    // Si se desmontó durante los awaits, dispose() ya pasó: no crear el timer.
+    if (!mounted) return;
+    _statsTimer = Timer.periodic(_statsPeriod, (_) => _pollStats());
   }
 
   /// Nunca hay más de un pedido de métricas en vuelo: los demás se descartan.
@@ -162,18 +185,15 @@ class _TestFilterViewState extends State<TestFilterView> {
     if (_statsInFlight) return;
     _statsInFlight = true;
     try {
-      final stats = await _engine.getStats();
+      final stats = await _renderer.stats();
       if (mounted) _stats.value = stats;
-    } on PlatformException catch (e) {
-      _ignoreEngineError('getStats', e);
     } finally {
       _statsInFlight = false;
     }
   }
 
-  /// Manda el look actual: la receta (solo labios) o el tinte (pantalla
-  /// completa). El slider genera muchos eventos por segundo: solo se envía el
-  /// último estado.
+  /// Manda el look actual. El slider genera muchos eventos por segundo: solo
+  /// se envía el último estado.
   Future<void> _applyLook() async {
     _lookDirty = true;
     if (_lookInFlight) return;
@@ -181,20 +201,12 @@ class _TestFilterViewState extends State<TestFilterView> {
     try {
       while (_lookDirty && mounted) {
         _lookDirty = false;
-        try {
-          if (_lipsOnly) {
-            await _engine.setRecipe(lipsRecipe(_selected, opacity: _comparing ? 0.0 : _lipsOpacity, finish: _finish));
-          } else {
-            final color = _selected.color;
-            if (color == null || _comparing) {
-              await _engine.setTint(r: 0, g: 0, b: 0, amount: 0);
-            } else {
-              await _engine.setTint(r: color.red / 255, g: color.green / 255, b: color.blue / 255, amount: _tintAmount);
-            }
-          }
-        } on PlatformException catch (e) {
-          _ignoreEngineError('look', e);
-        }
+        final recipe = _selected.recipe;
+        await _renderer.applyRecipe(
+          recipe == null || _comparing
+              ? null
+              : adjustRecipe(recipe, zone: _zone, intensity: _intensity, lipFinish: _finish),
+        );
       }
     } finally {
       _lookInFlight = false;
@@ -204,39 +216,19 @@ class _TestFilterViewState extends State<TestFilterView> {
   void _select(TestFilterOption option) {
     setState(() {
       _selected = option;
-      _lipsOpacity = option.lips?.opacity ?? 0.0;
       _finish = null;
     });
     unawaited(_applyLook());
   }
 
-  Future<void> _applyRenderOptions() async {
-    try {
-      await _engine.setRenderOptions(
-        showLandmarks: _showPoints,
-        region: _lipsOnly ? TintRegion.lips : TintRegion.full,
-      );
-    } on PlatformException catch (e) {
-      _ignoreEngineError('renderOptions', e);
-    }
-  }
-
-  /// Los pedidos al motor se lanzan sin esperar (unawaited): si el motor ya
-  /// se detuvo (la vista se desmontó con un pedido en vuelo) o lo rechaza, el
-  /// pedido se descarta; el próximo cambio manda el estado completo.
-  void _ignoreEngineError(String what, PlatformException e) {
-    debugPrint('TestFilterView: $what descartado (${e.code}: ${e.message})');
-  }
-
-  void _setLipsOnly(bool value) {
-    setState(() => _lipsOnly = value);
-    unawaited(_applyRenderOptions());
+  void _setZone(MakeupZone zone) {
+    setState(() => _zone = zone);
     unawaited(_applyLook());
   }
 
   void _setShowPoints(bool value) {
     setState(() => _showPoints = value);
-    unawaited(_applyRenderOptions());
+    unawaited(_renderer.setShowLandmarks(value));
   }
 
   void _setFinish(LipFinish finish) {
@@ -252,36 +244,33 @@ class _TestFilterViewState extends State<TestFilterView> {
 
   @override
   Widget build(BuildContext context) {
-    final info = _info;
+    final surface = _surface;
+    if (_unavailable) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(widget.labels.unavailable, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
+        ),
+      );
+    }
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (info == null)
-          Center(
-            child: _error == null
-                ? const CircularProgressIndicator(color: Colors.pink)
-                : Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(_error ?? '', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
-                  ),
-          )
+        if (surface == null)
+          const Center(child: CircularProgressIndicator(color: Colors.pink))
         else
           // Igual que el espejo: llena la pantalla recortando los bordes.
           ClipRect(
             child: FittedBox(
               fit: BoxFit.cover,
               child: SizedBox(
-                width: info.width.toDouble(),
-                height: info.height.toDouble(),
-                child: Texture(textureId: info.textureId),
+                width: surface.width.toDouble(),
+                height: surface.height.toDouble(),
+                child: Texture(textureId: surface.textureId),
               ),
             ),
           ),
-        Positioned(
-          top: 8,
-          left: 8,
-          child: _FpsBadge(stats: _stats, trackingRequested: _lipsOnly || _showPoints),
-        ),
+        Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
         Positioned(top: 8, right: 8, child: _buildCompareButton()),
         Positioned(left: 0, right: 0, bottom: 0, child: _buildControls()),
       ],
@@ -315,9 +304,9 @@ class _TestFilterViewState extends State<TestFilterView> {
 
   Widget _buildControls() {
     final labels = widget.labels;
+    final recipe = _selected.recipe;
     final lips = _selected.lips;
-    final showLipControls = _lipsOnly && lips != null;
-    final showTintSlider = !_lipsOnly && _selected.color != null;
+    final showFinish = lips != null && (_zone == MakeupZone.all || _zone == MakeupZone.lips);
     final effectiveFinish = _finish ?? lips?.finish ?? LipFinish.satin;
     return Container(
       color: Colors.black54,
@@ -328,12 +317,23 @@ class _TestFilterViewState extends State<TestFilterView> {
         children: [
           Text(labels.note, style: const TextStyle(color: Colors.white70, fontSize: 11)),
           const SizedBox(height: 4),
-          Wrap(
-            spacing: 8,
-            children: [
-              FilterChip(label: Text(labels.lipsOnly), selected: _lipsOnly, onSelected: _setLipsOnly),
-              FilterChip(label: Text(labels.showPoints), selected: _showPoints, onSelected: _setShowPoints),
-            ],
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final zone in MakeupZone.values)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(labels.zone(zone)),
+                      selected: zone == _zone,
+                      onSelected: (_) => _setZone(zone),
+                    ),
+                  ),
+                FilterChip(label: Text(labels.showPoints), selected: _showPoints, onSelected: _setShowPoints),
+              ],
+            ),
           ),
           const SizedBox(height: 4),
           SizedBox(
@@ -349,7 +349,7 @@ class _TestFilterViewState extends State<TestFilterView> {
               ),
             ),
           ),
-          if (showLipControls) ...[
+          if (showFinish) ...[
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
@@ -363,22 +363,17 @@ class _TestFilterViewState extends State<TestFilterView> {
               ],
             ),
           ],
-          if (showLipControls || showTintSlider)
+          if (recipe != null)
             Row(
               children: [
                 Text(labels.intensity, style: const TextStyle(color: Colors.white, fontSize: 12)),
                 Expanded(
                   child: Slider(
-                    value: showLipControls ? _lipsOpacity : _tintAmount,
+                    value: _intensity,
+                    max: kMaxRecipeIntensity,
                     activeColor: Colors.pink,
                     onChanged: (value) {
-                      setState(() {
-                        if (showLipControls) {
-                          _lipsOpacity = value;
-                        } else {
-                          _tintAmount = value;
-                        }
-                      });
+                      setState(() => _intensity = value);
                       unawaited(_applyLook());
                     },
                   ),
@@ -389,26 +384,6 @@ class _TestFilterViewState extends State<TestFilterView> {
       ),
     );
   }
-}
-
-/// Receta que se manda al motor en modo "solo labios": la del preset con la
-/// opacidad del slider y, si se eligió, otro acabado. Sin labios (o "sin
-/// filtro") devuelve una receta sin `lips`, que apaga el labial.
-@visibleForTesting
-Map<String, Object?> lipsRecipe(TestFilterOption option, {required double opacity, LipFinish? finish}) {
-  final recipe = option.recipe;
-  final lips = recipe?.lips;
-  if (recipe == null || lips == null) return const {'schema': 'makeup-recipe/2', 'name': 'none'};
-  final json = recipe.toJson();
-  json['lips'] = LipsSpec(
-    color: lips.color,
-    opacity: opacity.clamp(0.0, 1.0),
-    finish: finish ?? lips.finish,
-    gloss: lips.gloss,
-    lumaFollow: lips.lumaFollow,
-    liner: lips.liner,
-  ).toJson();
-  return json;
 }
 
 class _OptionChip extends StatelessWidget {
@@ -451,24 +426,23 @@ class _OptionChip extends StatelessWidget {
   }
 }
 
-/// FPS reales del motor y estado del tracker (calculados en nativo), y error
-/// asíncrono si lo hay. Texto de depuración: no se traduce.
+/// FPS del render y estado del tracker, y error asíncrono si lo hay. Texto de
+/// depuración: no se traduce.
 class _FpsBadge extends StatelessWidget {
-  const _FpsBadge({required this.stats, required this.trackingRequested});
+  const _FpsBadge({required this.stats});
 
-  final ValueListenable<EngineStats> stats;
-  final bool trackingRequested;
+  final ValueListenable<MakeupRendererStats> stats;
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<EngineStats>(
+    return ValueListenableBuilder<MakeupRendererStats>(
       valueListenable: stats,
       builder: (context, s, _) {
         final fps = s.renderFps;
-        final error = s.error ?? s.tracker.error;
+        final error = s.error;
         final text = error != null
             ? 'Motor: $error'
-            : 'Motor nativo · ${fps == null ? '—' : fps.toStringAsFixed(0)} fps\n${trackerLabel(s.tracker, requested: trackingRequested)}';
+            : 'Motor nativo · ${fps == null ? '—' : fps.toStringAsFixed(0)} fps\n${trackerLabel(s)}';
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
@@ -479,19 +453,20 @@ class _FpsBadge extends StatelessWidget {
   }
 }
 
-/// Una línea con el estado del tracker para el badge. [requested]: alguna
-/// opción de la vista lo necesita.
+/// Una línea con el estado del tracker para el badge. El maquillaje siempre
+/// necesita el tracker: "apagado" solo se ve un instante al iniciar.
 @visibleForTesting
-String trackerLabel(TrackerStats tracker, {required bool requested}) {
-  switch (tracker.state) {
-    case TrackerState.off:
-      if (!requested) return 'Tracker: apagado';
-      return tracker.backend == null ? 'Tracker: cargando modelos…' : 'Tracker: iniciando…';
-    case TrackerState.searching:
+String trackerLabel(MakeupRendererStats stats) {
+  switch (stats.tracking) {
+    case FaceTrackingState.off:
+      return 'Tracker: iniciando…';
+    case FaceTrackingState.loading:
+      return 'Tracker: cargando modelos…';
+    case FaceTrackingState.searching:
       return 'Tracker: buscando cara…';
-    case TrackerState.tracking:
-      final hz = tracker.hz;
-      final ms = tracker.landmarkP50Ms;
+    case FaceTrackingState.tracking:
+      final hz = stats.trackerHz;
+      final ms = stats.landmarkMs;
       return 'Tracker: ${hz == null ? '—' : hz.toStringAsFixed(0)} Hz · '
           '${ms == null ? '—' : ms.toStringAsFixed(0)} ms';
   }

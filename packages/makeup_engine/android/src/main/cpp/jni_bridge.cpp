@@ -82,8 +82,8 @@ void nativeSetGeometry(JNIEnv* env, jclass, jlong handle, jfloatArray display, j
 }
 
 void nativeSetRenderOptions(JNIEnv*, jclass, jlong handle, jboolean showLandmarks, jint region) {
-  const auto tintRegion = region == static_cast<jint>(makeup::TintRegion::kLips)
-                              ? makeup::TintRegion::kLips
+  const auto tintRegion = region == static_cast<jint>(makeup::TintRegion::kMakeup)
+                              ? makeup::TintRegion::kMakeup
                               : makeup::TintRegion::kFull;
   fromHandle(handle)->renderer.setRenderOptions(showLandmarks == JNI_TRUE, tintRegion);
 }

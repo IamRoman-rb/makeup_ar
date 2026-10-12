@@ -315,15 +315,15 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   // Malla del tracker extrapolada a este frame (si alguna opción la usa).
   const bool showLandmarks = showLandmarks_.load(std::memory_order_relaxed);
   const auto region = static_cast<TintRegion>(region_.load(std::memory_order_relaxed));
-  const bool wantLips = region == TintRegion::kLips && drawLips_.enabled && drawLips_.opacity > 0.0f;
-  const bool wantFace = region == TintRegion::kLips && (drawFace_.any() || drawEyes_.any());
+  const bool wantLips = region == TintRegion::kMakeup && drawLips_.enabled && drawLips_.opacity > 0.0f;
+  const bool wantFace = region == TintRegion::kMakeup && (drawFace_.any() || drawEyes_.any());
   float frameDt = lastFrameStartNs_ > 0
                       ? static_cast<float>(frameStartNs - lastFrameStartNs_) / kNsPerSecond
                       : 0.0f;
   frameDt = std::clamp(frameDt, 0.0f, kMaxFrameDtSeconds);
   lastFrameStartNs_ = frameStartNs;
   RenderLandmarks landmarks;
-  const bool hasMesh = (showLandmarks || region == TintRegion::kLips) && tracking_ != nullptr &&
+  const bool hasMesh = (showLandmarks || region == TintRegion::kMakeup) && tracking_ != nullptr &&
                        tracking_->landmarksForRender(cameraTimestampNs, frameDt, &landmarks);
   // px de imagen -> clip de la salida, con el espejo de la pantalla.
   const float sx = (drawMirrored_ ? -2.0f : 2.0f) / static_cast<float>(width);

@@ -339,7 +339,7 @@ internal class EngineSession(
     /**
      * Hilo de plataforma. Receta `makeup-recipe/2` como mapa (ver RecipeParams);
      * las regiones que faltan se apagan (null apaga todo). Se dibuja con
-     * REGION_LIPS. El render recibe la receta entera en el commit.
+     * REGION_MAKEUP. El render recibe la receta entera en el commit.
      */
     fun setRecipe(recipe: Map<*, *>?) {
         if (released) return
@@ -380,7 +380,7 @@ internal class EngineSession(
     fun setRenderOptions(showLandmarks: Boolean, region: Int) {
         if (released) return
         NativeBridge.nativeSetRenderOptions(nativeHandle, showLandmarks, region)
-        setTrackingEnabled(showLandmarks || region == NativeBridge.REGION_LIPS)
+        setTrackingEnabled(showLandmarks || region == NativeBridge.REGION_MAKEUP)
     }
 
     /**

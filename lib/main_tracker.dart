@@ -84,14 +84,19 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
               labels: TestFilterLabels(
                 noFilter: 'Sin filtro',
                 intensity: 'Intensidad',
-                note: 'Arnés P3/P4: tracker + labios. Métricas en logcat (TRACK).',
-                lipsOnly: 'Solo labios',
+                note: 'Arnés P3-P5: tracker + maquillaje completo. Métricas en logcat (TRACK).',
                 showPoints: 'Ver puntos',
                 compare: 'Mantené para comparar',
                 matte: 'Mate',
                 satin: 'Satinado',
                 gloss: 'Brillo',
                 shimmer: 'Shimmer',
+                zoneAll: 'Todo',
+                zoneLips: 'Labios',
+                zoneEyes: 'Ojos',
+                zoneCheeks: 'Mejillas',
+                zoneSkin: 'Piel',
+                unavailable: 'Maquillaje en vivo no disponible (AR_RENDERER=painter o el motor no pudo iniciar).',
               ),
             )
           : Center(

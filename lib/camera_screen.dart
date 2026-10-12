@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
@@ -104,6 +105,14 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     }
   }
 
+  /// El motor no puede dibujar en este equipo (o es el respaldo,
+  /// AR_RENDERER=painter): se vuelve al espejo normal con un aviso.
+  void _onEngineUnavailable(String message) {
+    if (!mounted || !_useNativeEngine) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    unawaited(_toggleNativeEngine());
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -123,14 +132,20 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           noFilter: l10n.testFilterNone,
           intensity: l10n.testFilterIntensity,
           note: l10n.testFilterNote,
-          lipsOnly: l10n.testFilterLipsOnly,
           showPoints: l10n.testFilterShowPoints,
           compare: l10n.testFilterCompare,
           matte: l10n.testFilterFinishMatte,
           satin: l10n.testFilterFinishSatin,
           gloss: l10n.testFilterFinishGloss,
           shimmer: l10n.testFilterFinishShimmer,
+          zoneAll: l10n.testFilterZoneAll,
+          zoneLips: l10n.testFilterZoneLips,
+          zoneEyes: l10n.testFilterZoneEyes,
+          zoneCheeks: l10n.testFilterZoneCheeks,
+          zoneSkin: l10n.testFilterZoneSkin,
+          unavailable: l10n.testFilterUnavailable,
         ),
+        onUnavailable: () => _onEngineUnavailable(l10n.testFilterUnavailable),
       );
     } else if (_isCameraInitialized && controller != null) {
       body = Stack(

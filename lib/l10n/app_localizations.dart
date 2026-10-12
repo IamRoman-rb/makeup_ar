@@ -531,20 +531,50 @@ abstract class AppLocalizations {
   /// No description provided for @testFilterNote.
   ///
   /// In en, this message translates to:
-  /// **'New engine (beta). \"Lips only\" applies the look\'s lipstick with face tracking: the first time it takes a few seconds to load.'**
+  /// **'New engine (beta): each look is applied in full with face tracking. The first time it takes a few seconds to load.'**
   String get testFilterNote;
-
-  /// No description provided for @testFilterLipsOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Lips only'**
-  String get testFilterLipsOnly;
 
   /// No description provided for @testFilterShowPoints.
   ///
   /// In en, this message translates to:
   /// **'Show points'**
   String get testFilterShowPoints;
+
+  /// No description provided for @testFilterZoneAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get testFilterZoneAll;
+
+  /// No description provided for @testFilterZoneLips.
+  ///
+  /// In en, this message translates to:
+  /// **'Lips'**
+  String get testFilterZoneLips;
+
+  /// No description provided for @testFilterZoneEyes.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyes'**
+  String get testFilterZoneEyes;
+
+  /// No description provided for @testFilterZoneCheeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Cheeks'**
+  String get testFilterZoneCheeks;
+
+  /// No description provided for @testFilterZoneSkin.
+  ///
+  /// In en, this message translates to:
+  /// **'Skin'**
+  String get testFilterZoneSkin;
+
+  /// No description provided for @testFilterUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Live makeup isn\'t available on this device. Showing the regular mirror.'**
+  String get testFilterUnavailable;
 
   /// No description provided for @testFilterCompare.
   ///

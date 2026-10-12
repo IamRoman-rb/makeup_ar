@@ -32,8 +32,8 @@ enum FrameFlag : int {
 
 // Qué se pinta. Mismo orden que TintRegion en Dart.
 //   kFull: tinte de pantalla completa (setTint).
-//   kLips: maquillaje de la receta (set* + commitRecipe) sobre la malla tracked.
-enum class TintRegion : int { kFull = 0, kLips = 1 };
+//   kMakeup: maquillaje de la receta (set* + commitRecipe) sobre la malla tracked.
+enum class TintRegion : int { kFull = 0, kMakeup = 1 };
 
 // Acabado del labial. Mismo orden que LIP_FINISH_* en NativeBridge.kt.
 enum class LipFinish : int { kMatte = 0, kSatin = 1, kGloss = 2, kShimmer = 3 };
@@ -71,7 +71,7 @@ class Renderer {
   // intensidad [0,1]. amount == 0 usa el shader de paso directo.
   void setTint(float r, float g, float b, float amount);
 
-  // Receta (TintRegion::kLips): cada set* guarda la región en una receta
+  // Receta (TintRegion::kMakeup): cada set* guarda la región en una receta
   // pendiente; commitRecipe() la publica entera, así el render nunca dibuja
   // media receta. Los valores se recortan a rango.
   void setLips(const LipStyle& style);
