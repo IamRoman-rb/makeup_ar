@@ -122,7 +122,7 @@ void main() {
     final lips = json['lips'] as Map<String, Object?>;
     expect(lips['opacity'], 0.5);
     expect(lips['finish'], 'matte');
-    expect(lips['lumaFollow'], 0.35);
+    expect(lips['lumaFollow'], 0.9);
     expect(json['name'], 'Rojo clásico');
     expect(lipsRecipe(TestFilterOption.fromPresets('x').first, opacity: 1).containsKey('lips'), isFalse);
   });

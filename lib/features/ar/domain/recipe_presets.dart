@@ -91,7 +91,7 @@ abstract final class RecipePresets {
       json: {
         'schema': kMakeupRecipeSchemaV2,
         'name': 'Natural',
-        'lips': {'color': '#B9786E', 'opacity': 0.6, 'finish': 'satin', 'gloss': 0.2, 'lumaFollow': 0.2},
+        'lips': {'color': '#B9786E', 'opacity': 0.6, 'finish': 'satin', 'gloss': 0.2, 'lumaFollow': 0.6},
         'cheeks': {'color': '#E39A8C', 'opacity': 0.2, 'spread': 0.7, 'placement': 'apple'},
         'eyes': {
           'shadow': [
@@ -107,7 +107,7 @@ abstract final class RecipePresets {
       json: {
         'schema': kMakeupRecipeSchemaV2,
         'name': 'Rojo clásico',
-        'lips': {'color': '#B3122D', 'opacity': 0.85, 'finish': 'satin', 'gloss': 0.3, 'lumaFollow': 0.35},
+        'lips': {'color': '#B3122D', 'opacity': 0.85, 'finish': 'satin', 'gloss': 0.3, 'lumaFollow': 0.9},
         'cheeks': {'color': '#E8837A', 'opacity': 0.25, 'spread': 0.7},
         'eyes': {
           'liner': {'color': '#111111', 'opacity': 0.9, 'thickness': 0.5, 'wing': 0.4},
@@ -121,7 +121,7 @@ abstract final class RecipePresets {
       json: {
         'schema': kMakeupRecipeSchemaV2,
         'name': 'Gótico',
-        'lips': {'color': '#3B0A1E', 'opacity': 0.9, 'finish': 'matte', 'gloss': 0.0, 'lumaFollow': 0.5},
+        'lips': {'color': '#3B0A1E', 'opacity': 0.9, 'finish': 'matte', 'gloss': 0.0, 'lumaFollow': 1.0},
         'eyes': {
           'shadow': [
             {'color': '#2B1B2E', 'opacity': 0.6, 'region': 'lid', 'finish': 'matte'},
@@ -141,7 +141,7 @@ abstract final class RecipePresets {
       json: {
         'schema': kMakeupRecipeSchemaV2,
         'name': 'Glam dorado',
-        'lips': {'color': '#A4544A', 'opacity': 0.75, 'finish': 'gloss', 'gloss': 0.6, 'lumaFollow': 0.25},
+        'lips': {'color': '#A4544A', 'opacity': 0.75, 'finish': 'gloss', 'gloss': 0.6, 'lumaFollow': 0.85},
         'cheeks': {'color': '#D9826B', 'opacity': 0.3, 'spread': 0.6, 'placement': 'high'},
         'eyes': {
           'shadow': [
@@ -166,7 +166,7 @@ abstract final class RecipePresets {
       json: {
         'schema': kMakeupRecipeSchemaV2,
         'name': 'Rosado fresco',
-        'lips': {'color': '#D9607E', 'opacity': 0.7, 'finish': 'gloss', 'gloss': 0.7, 'lumaFollow': 0.2},
+        'lips': {'color': '#D9607E', 'opacity': 0.7, 'finish': 'gloss', 'gloss': 0.7, 'lumaFollow': 0.8},
         'cheeks': {'color': '#F08A9B', 'opacity': 0.32, 'spread': 0.75, 'placement': 'apple'},
         'eyes': {
           'shadow': [

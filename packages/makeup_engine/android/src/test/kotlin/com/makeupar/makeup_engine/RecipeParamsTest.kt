@@ -35,7 +35,7 @@ class RecipeParamsTest {
         val matte = LipParams.fromMap(mapOf("color" to "#3B0A1E", "opacity" to 0.9, "finish" to "matte"))
         assertEquals(NativeBridge.LIP_FINISH_MATTE, matte.finish)
         assertNear(0f, matte.gloss)
-        assertNear(0.3f, matte.lumaFollow)
+        assertNear(0.8f, matte.lumaFollow)
         val noFinish = LipParams.fromMap(mapOf("color" to "#3B0A1E", "opacity" to 1))
         assertEquals(NativeBridge.LIP_FINISH_SATIN, noFinish.finish)
         assertNear(0.3f, noFinish.gloss)

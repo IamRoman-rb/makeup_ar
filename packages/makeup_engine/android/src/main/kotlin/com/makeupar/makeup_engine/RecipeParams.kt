@@ -36,7 +36,7 @@ internal data class LipParams(
             NativeBridge.LIP_FINISH_GLOSS to 0.6f,
             NativeBridge.LIP_FINISH_SHIMMER to 0.5f,
         )
-        private const val DEFAULT_LUMA_FOLLOW = 0.3f
+        private const val DEFAULT_LUMA_FOLLOW = 0.8f
         private val FINISHES = mapOf(
             "matte" to NativeBridge.LIP_FINISH_MATTE,
             "satin" to NativeBridge.LIP_FINISH_SATIN,
