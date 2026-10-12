@@ -102,7 +102,7 @@ adb logcat -s flutter | grep TRACK
 
 | Prueba | Fecha | Render fps | Tracker Hz | Landmarks p50/p95 ms | Jitter px | Notas |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| Primera prueba con cara real (no es el protocolo completo) | 2026-10-12 | 28 | 15 | 22–26 (badge) | sin medir | Los puntos caen sobre la cara y la siguen. "Solo labios" con Rojo clásico pinta solo los labios. Landmarks más lentos que en P1 (16,9 ms con E/S): la GPU se comparte con el render |
 
 **Palancas, en orden, si el render baja de 24 fps:**
 
