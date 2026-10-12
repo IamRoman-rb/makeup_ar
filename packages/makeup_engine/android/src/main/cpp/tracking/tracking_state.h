@@ -65,10 +65,12 @@ struct FaceAppearance {
   float lipLightness = NAN;   // L OKLab mediana del labio [0, 1]; NaN = sin medir
   float skinLightness = NAN;  // L OKLab mediana de las mejillas [0, 1]
   // Dirección hacia la cámara en coordenadas de la malla canónica (x a la
-  // derecha de la imagen, y hacia arriba), [-1, 1]. De frente: (0, 0). Es
-  // donde cae el brillo especular de una luz junto a la cámara.
+  // derecha de la imagen, y hacia arriba, z hacia la cámara), unitaria. De
+  // frente: (0, 0, 1). x/y dicen dónde cae el brillo especular de una luz
+  // junto a la cámara; con z, qué parte de la malla queda de espaldas.
   float viewX = 0.0f;
   float viewY = 0.0f;
+  float viewZ = 1.0f;
 };
 
 struct RenderLandmarks {
@@ -136,7 +138,7 @@ class TrackingState {
   void publishLost(int64_t timestampNs);
   void resetFilters();
   // Pose para stats y dirección de vista para el render; false si no se pudo resolver.
-  bool updatePose(const float* points, float* viewX, float* viewY);
+  bool updatePose(const float* points, float view[3]);
   // Mide labio y piel sobre el recorte y los suaviza entre resultados.
   void updateAppearance(const float* tensorLandmarks, int size);
 

@@ -2,6 +2,7 @@
 #include <tuple>
 
 #include "mesh/canonical_mesh.h"
+#include "mesh/mesh_normals.h"
 #include "test_harness.h"
 #include "tracking/umeyama.h"
 
@@ -63,4 +64,32 @@ TEST(malla_procrustesRecuperaPose) {
   CHECK_NEAR(pose.scale, 20.0, 1e-3);
   CHECK_NEAR(makeup::eulerFromRotation(pose.rotation).yaw, 0.3, 1e-4);
   CHECK_NEAR(pose.translation[0], 300.0, 1e-2);
+}
+
+// Normales unitarias hacia afuera: la nariz y el centro de los labios miran a
+// la cámara; las comisuras, hacia su lado. Con la cara girada 60° la comisura
+// lejana queda de espaldas (coseno <= ~0) y la cercana de frente.
+TEST(malla_normalesHaciaAfuera) {
+  float normals[mesh::kVertexCount * mesh::kNormalComponents];
+  mesh::computeVertexNormals(normals);
+  for (int v = 0; v < mesh::kVertexCount; ++v) {
+    const float* n = normals + v * 3;
+    CHECK_NEAR(std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]), 1.0, 1e-4);
+  }
+  CHECK(normals[4 * 3 + 2] > 0.9f);   // punta de nariz
+  CHECK(normals[0 * 3 + 2] > 0.9f);   // centro del labio superior
+  CHECK(normals[17 * 3 + 2] > 0.8f);  // centro del labio inferior
+  const int leftCorner = 91;          // contorno externo, izquierda de la imagen
+  const int rightCorner = 321;
+  CHECK(normals[leftCorner * 3] < -0.4f);
+  CHECK(normals[rightCorner * 3] > 0.4f);
+
+  const float yaw = 1.047f;  // 60°: la cámara queda a la derecha de la malla
+  const float view[3] = {std::sin(yaw), 0.0f, std::cos(yaw)};
+  const auto facing = [&](int v) {
+    const float* n = normals + v * 3;
+    return n[0] * view[0] + n[1] * view[1] + n[2] * view[2];
+  };
+  CHECK(facing(leftCorner) < 0.05f);
+  CHECK(facing(rightCorner) > 0.8f);
 }

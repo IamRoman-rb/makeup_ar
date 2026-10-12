@@ -113,6 +113,7 @@ class Renderer {
     GLint sharpness = -1;
     GLint light = -1;
     GLint glossShift = -1;
+    GLint view = -1;
     GLint time = -1;     // solo SHIMMER
     GLint sparkle = -1;  // solo SHIMMER
     uint32_t uploadedDisplayVersion = 0;
@@ -158,6 +159,7 @@ class Renderer {
   GlVertexArray lipsVao_;
   GlBuffer meshVbo_;
   GlBuffer uvVbo_;
+  GlBuffer normalVbo_;
   GlBuffer lipsIbo_;
   GlTexture lipsMap_;
 

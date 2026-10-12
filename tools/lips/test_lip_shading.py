@@ -96,6 +96,34 @@ class ShadeTest(unittest.TestCase):
         matte = shade(camera, np.ones(2), np.array([1.0, 0.0]), self.params(gloss=0.0))
         np.testing.assert_allclose(matte[0], matte[1])
 
+    def test_sombreado_del_labio_escala_l_y_croma(self):
+        # Con lumaFollow 1, el labial bajo la luz de cada píxel es el color de
+        # la receta escalado por L_píxel / L_labio: la sombra queda más oscura
+        # y menos saturada, con el mismo tono (no un color plano).
+        camera = np.array([[0.75, 0.50, 0.48], [0.45, 0.28, 0.27]])
+        in_l = srgb_to_oklab(camera)[:, 0]
+        lip_l = float(in_l.mean())
+        # Color poco saturado: así ningún píxel sale de gamut (ahí baja la croma).
+        p = self.params(luma_follow=1.0, lip_lightness=lip_l, target_lab=srgb_to_oklab(hex_to_srgb("#B9786E")))
+        out_lab = to_ok(np.power(shade(camera, np.ones(2), np.zeros(2), p), 2.2))
+        chroma = np.hypot(out_lab[:, 1], out_lab[:, 2])
+        self.assertAlmostEqual(out_lab[0, 0] / out_lab[1, 0], in_l[0] / in_l[1], delta=0.05)
+        self.assertAlmostEqual(chroma[0] / chroma[1], in_l[0] / in_l[1], delta=0.1)
+        self.assertAlmostEqual(float(out_lab[:, 0].mean()), p.target_lab[0], delta=0.03)
+        for row in out_lab:
+            self.assertLess(abs(hue(row) - hue(p.target_lab)), 0.1)
+
+    def test_brillo_no_aparece_en_las_sombras(self):
+        lit = np.array([[0.70, 0.45, 0.43]])
+        lip_l = float(srgb_to_oklab(lit[0])[0])
+        dark = np.array([[0.35, 0.22, 0.21]])  # pliegue: ~0,6 de la L del labio
+        on = self.params(gloss=0.8, lip_lightness=lip_l)
+        off = self.params(gloss=0.0, lip_lightness=lip_l)
+        gain_lit = shade(lit, np.ones(1), np.ones(1), on) - shade(lit, np.ones(1), np.ones(1), off)
+        gain_dark = shade(dark, np.ones(1), np.ones(1), on) - shade(dark, np.ones(1), np.ones(1), off)
+        self.assertGreater(float(gain_lit.mean()), 0.05)
+        np.testing.assert_allclose(gain_dark, 0.0, atol=1e-9)
+
     def test_salida_siempre_en_rango(self):
         rng = np.random.default_rng(3)
         camera = rng.uniform(0, 1, size=(2000, 3))

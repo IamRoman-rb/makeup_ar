@@ -189,11 +189,11 @@ void TrackingState::submitLandmarks(const float* landmarks, int floatCount, floa
     std::lock_guard<std::mutex> lock(statsMutex_);
     jitter_.push(jitterSum / static_cast<float>(mesh::kProcrustesCount));
   }
-  float viewX = 0.0f;
-  float viewY = 0.0f;
-  if (updatePose(filtered_.data(), &viewX, &viewY)) {
-    appearance_.viewX = viewX;
-    appearance_.viewY = viewY;
+  float view[3] = {0.0f, 0.0f, 1.0f};
+  if (updatePose(filtered_.data(), view)) {
+    appearance_.viewX = view[0];
+    appearance_.viewY = view[1];
+    appearance_.viewZ = view[2];
   }
 
   LandmarkFrame& frame = frames_.writeBuffer();
@@ -269,7 +269,7 @@ void TrackingState::updateAppearance(const float* tensorLandmarks, int size) {
   appearance_.skinLightness = smooth(appearance_.skinLightness, skin);
 }
 
-bool TrackingState::updatePose(const float* points, float* viewX, float* viewY) {
+bool TrackingState::updatePose(const float* points, float view[3]) {
   // La malla canónica tiene y hacia arriba y z hacia la cámara; la imagen, y
   // hacia abajo y z (de FaceMesh) creciendo al alejarse: se invierten ambas.
   for (int n = 0; n < mesh::kProcrustesCount; ++n) {
@@ -285,8 +285,9 @@ bool TrackingState::updatePose(const float* points, float* viewX, float* viewY) 
   }
   // destino = s·R·malla + t, con la cámara mirando por +z del destino: la
   // dirección a la cámara en la malla es Rᵀ·(0, 0, 1), la fila 2 de R.
-  *viewX = pose.rotation[6];
-  *viewY = pose.rotation[7];
+  view[0] = pose.rotation[6];
+  view[1] = pose.rotation[7];
+  view[2] = pose.rotation[8];
   const EulerAngles angles = eulerFromRotation(pose.rotation);
   std::lock_guard<std::mutex> lock(statsMutex_);
   pitchDeg_ = angles.pitch * kRadToDeg;

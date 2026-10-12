@@ -3,12 +3,17 @@
 // Labial fotorrealista (informe §5.5) sobre la malla tracked. Especificación y
 // tests: tools/lips/lip_shading.py (shade); si cambia uno, cambia el otro.
 //
-//   w     = máscara · opacidad               (cobertura del labial en el píxel)
-//   L     = L_labio + (L_color - L_labio_medio) · w · lumaFollow
-//           (corre la media del labio hacia la L del color; conserva textura)
-//   (a,b) = mix((a,b)_labio, (a,b)_color, w)
+//   w     = máscara · opacidad · orientación  (cobertura del labial en el píxel)
+//   s     = L_píxel / L_labio_medio            (sombreado del labio real)
+//   L     = mix(L_píxel, L_color · s, w · lumaFollow)
+//   (a,b) = mix((a,b)_píxel, (a,b)_color · s, w)
+//           OKLab es homogéneo: escalar la luz lineal por k escala (L, a, b)
+//           por k^(1/3). El labial bajo la luz del labio es color · s: las
+//           sombras y pliegues quedan oscuros y menos saturados, los reflejos
+//           más claros (sin eso el color plano parece una calcomanía).
 //   color = OKLab -> lineal bajando croma si sale de gamut (color.glsl)
-//   + brillo: (mapa^nitidez [+ destellos]) · gloss · luz · w, aditivo en lineal
+//   + brillo: (mapa^nitidez [+ destellos]) · gloss · luz · w · iluminado(s),
+//           aditivo en lineal; no aparece en las sombras del labio.
 //
 // Variantes (Renderer las compila con #define):
 //   sin SHIMMER  mate / satinado / brillo (cambian uGloss y uSharpness).
@@ -23,8 +28,10 @@
 //   uTargetLab     vec3   OKLab del color del labial (L en [0,1], a/b en ±0,4);
 //                         se calcula una vez en CPU.
 //   uOpacity       float  opacidad de la receta × fundido del tracker, [0,1].
-//   uLumaFollow    float  cuánto se acerca la L del labio a la del color, [0,1].
-//   uLipLightness  float  L OKLab media medida del labio, [0,1] (o 0,55 si no hay).
+//   uLumaFollow    float  cuánto sigue la L del labio a la del color, [0,1]
+//                         (1: cubre el tono del labio; 0: solo croma).
+//   uLipLightness  float  L OKLab media medida del labio, [0,1] (o 0,55 si no
+//                         hay); Renderer la limita a >= 0,1.
 //   uGloss         float  intensidad del brillo, [0,1] (0 en mate).
 //   uSharpness     float  exponente sobre el mapa de brillo, [1,8]: más alto,
 //                         brillo más chico y concentrado.
@@ -68,9 +75,18 @@ highp float hash12(highp vec2 p) {
 }
 #endif
 
+// Tope del sombreado relativo (reflejos fuertes del labio sin labial) y
+// rango de sombreado en el que aparece el brillo (lip_shading.py).
+#define SHADING_MAX 1.6
+#define GLOSS_SHADING_LOW 0.75
+#define GLOSS_SHADING_HIGH 1.05
+
 // highp: coordenadas de textura (ver camera_quad.vert).
 in highp vec2 vTexCoord;
 in highp vec2 vMapUv;
+// Orientación hacia la cámara [0,1] (lips.vert): 0 en la mitad del labio que
+// queda de espaldas al girar la cabeza.
+in float vFacing;
 out vec4 fragColor;
 
 void main() {
@@ -78,7 +94,7 @@ void main() {
   vec3 camera = texture(uCamera, vTexCoord).rgb;
   float mask = texture(uLipsMap, vMapUv).r;
   float glossMap = texture(uLipsMap, vMapUv - uGlossShift).g;
-  float w = clamp(mask * uOpacity, 0.0, 1.0);
+  float w = clamp(mask * uOpacity * vFacing, 0.0, 1.0);
   // Fuera del labio (el borde de la zona dibujada): el mismo píxel que dibujó
   // el quad. La rama es coherente por zonas grandes.
   if (w <= 0.0) {
@@ -88,9 +104,10 @@ void main() {
 
   // highp: entrada de oklabToLinearInGamut (ver color.glsl).
   highp vec3 lab = linearToOklab(srgbToLinear(camera));
-  highp float lightness =
-      clamp(lab.x + (uTargetLab.x - uLipLightness) * w * uLumaFollow, 0.0, 1.0);
-  highp vec2 ab = mix(lab.yz, uTargetLab.yz, w);
+  highp float shading = clamp(lab.x / uLipLightness, 0.0, SHADING_MAX);
+  highp vec3 lit = uTargetLab * shading;
+  highp float lightness = clamp(mix(lab.x, lit.x, w * uLumaFollow), 0.0, 1.0);
+  highp vec2 ab = mix(lab.yz, lit.yz, w);
   vec3 outLinear = oklabToLinearInGamut(vec3(lightness, ab));
 
   // uSharpness >= 1 y glossMap >= 0: pow está definido.
@@ -101,7 +118,7 @@ void main() {
   float sparkle = step(1.0 - SPARKLE_DENSITY, hash12(cell + tick * 17.0));
   spec += sparkle * uSparkle;
 #endif
-  spec *= uGloss * uLight * w;
+  spec *= uGloss * uLight * w * smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading);
   outLinear = min(outLinear + vec3(spec), vec3(1.0));
   fragColor = vec4(linearToSrgb(outLinear), 1.0);
 }

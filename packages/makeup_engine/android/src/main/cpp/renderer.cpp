@@ -3,14 +3,17 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2ext.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <ctime>
+#include <vector>
 
 #include "color_math.h"
 #include "gl_program.h"
 #include "mesh/canonical_mesh.h"
 #include "mesh/lips_maps.h"
+#include "mesh/mesh_normals.h"
 #include "shader_sources.h"
 
 namespace makeup {
@@ -27,6 +30,7 @@ constexpr int kLipsMapTextureUnit = 1;
 // Ubicaciones de atributos de la capa de labios.
 constexpr GLuint kPointAttribute = 0;
 constexpr GLuint kUvAttribute = 1;
+constexpr GLuint kNormalAttribute = 2;
 constexpr float kNsPerSecond = 1.0e9f;
 // Si pasó más que esto entre frames (pausa, primer frame), el fundido avanza
 // como si fuera un frame normal.
@@ -155,10 +159,10 @@ bool Renderer::buildMeshProgram() {
 
 bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
   std::string error;
-  // Mismo orden que kPointAttribute / kUvAttribute.
-  const char* attributes[] = {"aPoint", "aUv"};
+  // Mismo orden que kPointAttribute / kUvAttribute / kNormalAttribute.
+  const char* attributes[] = {"aPoint", "aUv", "aNormal"};
   GlProgram program =
-      buildGlProgram(shaders::k_lips_vert, shaders::k_lips_frag, attributes, 2, &error, defines);
+      buildGlProgram(shaders::k_lips_vert, shaders::k_lips_frag, attributes, 3, &error, defines);
   if (!program) {
     setError(error);
     return false;
@@ -175,6 +179,7 @@ bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
   out.sharpness = glGetUniformLocation(id, "uSharpness");
   out.light = glGetUniformLocation(id, "uLight");
   out.glossShift = glGetUniformLocation(id, "uGlossShift");
+  out.view = glGetUniformLocation(id, "uView");
   out.time = glGetUniformLocation(id, "uTime");
   out.sparkle = glGetUniformLocation(id, "uSparkle");
   // Constantes de la sesión: samplers y la transformación UV -> mapa.
@@ -184,6 +189,8 @@ bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
   glUniform1i(glGetUniformLocation(id, "uLipsMap"), kLipsMapTextureUnit);
   glUniform4f(glGetUniformLocation(id, "uMapTransform"), 1.0f / rect[2], 1.0f / rect[3],
               -rect[0] / rect[2], -rect[1] / rect[3]);
+  glUniform2f(glGetUniformLocation(id, "uFacingFade"), EngineConfig::kLipsFacingFadeStart,
+              EngineConfig::kLipsFacingFadeEnd);
   if (out.sparkle >= 0) glUniform1f(out.sparkle, EngineConfig::kLipsSparkle);
   glUseProgram(0);
   out.uploadedDisplayVersion = 0;
@@ -193,24 +200,33 @@ bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
 }
 
 // VBO dinámico con los puntos tracked (se actualiza por frame sin realocar),
-// VBO estático con las UV canónicas e IBO estático con los triángulos de la
-// zona de labios. meshVao_ (puntos) e lipsVao_ (puntos + UV + IBO) comparten
-// el VBO de puntos.
+// VBOs estáticos con las UV y las normales canónicas e IBO estático con los
+// triángulos de la zona de labios. meshVao_ (puntos) e lipsVao_ (puntos + UV
+// + normales + IBO) comparten el VBO de puntos.
 bool Renderer::buildMeshGeometry() {
   GLuint vaos[2] = {0, 0};
   glGenVertexArrays(2, vaos);
   meshVao_.reset(vaos[0]);
   lipsVao_.reset(vaos[1]);
-  GLuint buffers[3] = {0, 0, 0};
-  glGenBuffers(3, buffers);
+  GLuint buffers[4] = {0, 0, 0, 0};
+  glGenBuffers(4, buffers);
   meshVbo_.reset(buffers[0]);
   uvVbo_.reset(buffers[1]);
-  lipsIbo_.reset(buffers[2]);
+  normalVbo_.reset(buffers[2]);
+  lipsIbo_.reset(buffers[3]);
 
   glBindBuffer(GL_ARRAY_BUFFER, meshVbo_.get());
   glBufferData(GL_ARRAY_BUFFER, sizeof(meshPoints_), nullptr, GL_DYNAMIC_DRAW);
   glBindBuffer(GL_ARRAY_BUFFER, uvVbo_.get());
   glBufferData(GL_ARRAY_BUFFER, sizeof(mesh::kUvs), mesh::kUvs, GL_STATIC_DRAW);
+  {
+    // Una vez por contexto GL (no por frame): ~5,6 KB temporales.
+    std::vector<float> normals(static_cast<size_t>(mesh::kVertexCount) * mesh::kNormalComponents);
+    mesh::computeVertexNormals(normals.data());
+    glBindBuffer(GL_ARRAY_BUFFER, normalVbo_.get());
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(normals.size() * sizeof(float)),
+                 normals.data(), GL_STATIC_DRAW);
+  }
 
   glBindVertexArray(meshVao_.get());
   glBindBuffer(GL_ARRAY_BUFFER, meshVbo_.get());
@@ -224,6 +240,9 @@ bool Renderer::buildMeshGeometry() {
   glBindBuffer(GL_ARRAY_BUFFER, uvVbo_.get());
   glEnableVertexAttribArray(kUvAttribute);
   glVertexAttribPointer(kUvAttribute, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glBindBuffer(GL_ARRAY_BUFFER, normalVbo_.get());
+  glEnableVertexAttribArray(kNormalAttribute);
+  glVertexAttribPointer(kNormalAttribute, mesh::kNormalComponents, GL_FLOAT, GL_FALSE, 0, nullptr);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lipsIbo_.get());
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(mesh::kLipsRegionTriangles),
                mesh::kLipsRegionTriangles, GL_STATIC_DRAW);
@@ -378,8 +397,10 @@ void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToCl
                         const float* texMatrix, int64_t frameStartNs) {
   LipsProgram& program = drawLips_.shimmer ? lipsShimmer_ : lips_;
   const FaceAppearance& look = landmarks.appearance;
-  const float lipLightness = std::isnan(look.lipLightness) ? EngineConfig::kLipsFallbackLightness
-                                                           : look.lipLightness;
+  // El shader divide por ella (sombreado relativo del labio).
+  const float lipLightness = std::isnan(look.lipLightness)
+                                 ? EngineConfig::kLipsFallbackLightness
+                                 : std::max(look.lipLightness, EngineConfig::kLipsMinLightness);
   // Sin medición todavía: luz plena (no apagar el brillo por falta de dato).
   const float light =
       std::isnan(look.skinLightness)
@@ -415,6 +436,7 @@ void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToCl
   glUniform1f(program.sharpness, drawLips_.sharpness);
   glUniform1f(program.light, light);
   glUniform2f(program.glossShift, shiftU / rect[2], shiftV / rect[3]);
+  glUniform3f(program.view, look.viewX, look.viewY, look.viewZ);
   if (program.time >= 0) {
     const double seconds = static_cast<double>(frameStartNs) / 1.0e9;
     glUniform1f(program.time, static_cast<float>(std::fmod(seconds, kTimeWrapSeconds)));
@@ -453,6 +475,7 @@ void Renderer::releaseGl() {
   quadVao_.reset();
   meshVbo_.reset();
   uvVbo_.reset();
+  normalVbo_.reset();
   lipsIbo_.reset();
   meshVao_.reset();
   lipsVao_.reset();

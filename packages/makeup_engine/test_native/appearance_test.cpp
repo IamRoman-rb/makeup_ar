@@ -135,6 +135,7 @@ TEST(apariencia_llegaAlRenderConLaVista) {
   // Cara girada a la derecha: la cámara queda hacia la izquierda de la malla.
   CHECK_NEAR(rendered.appearance.viewX, -std::sin(yaw), 0.03);
   CHECK_NEAR(rendered.appearance.viewY, 0.0, 0.03);
+  CHECK_NEAR(rendered.appearance.viewZ, std::cos(yaw), 0.03);
 
   // Un segundo resultado con labios más claros se acerca con la EMA, sin saltar.
   const uint8_t lighter[3] = {200, 120, 130};

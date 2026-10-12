@@ -63,6 +63,13 @@ struct EngineConfig {
 
   // L OKLab del labio si todavía no se midió (valor del informe §5.5).
   static constexpr float kLipsFallbackLightness = 0.55f;
+  // Piso de la L medida: el shader divide por ella (sombreado relativo).
+  static constexpr float kLipsMinLightness = 0.1f;
+  // Orientación (coseno normal·vista) en que el labial empieza y termina de
+  // aparecer. De frente el labio está entre 0,77 y 0,99; a 60° de giro la
+  // comisura lejana queda en ~0 y se desvanece, la cercana sigue entera.
+  static constexpr float kLipsFacingFadeStart = 0.0f;
+  static constexpr float kLipsFacingFadeEnd = 0.3f;
   // Desplazamiento del brillo por unidad de dirección de vista (UV canónico):
   // con ~1 cm de radio de curvatura del labio y el labio de ~0,236 UV para
   // ~5 cm, girar 20° corre el reflejo ~0,016 UV. Tope para giros grandes.

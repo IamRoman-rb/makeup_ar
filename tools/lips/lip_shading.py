@@ -20,6 +20,11 @@ from sample_region_reference import from_ok, lin_to_srgb, srgb_to_lin, to_ok  # 
 
 
 GAMUT_STEPS = 6  # color.glsl: GAMUT_STEPS
+# lips.frag: SHADING_MAX, LIP_LIGHTNESS_MIN, GLOSS_SHADING_LOW/HIGH.
+SHADING_MAX = 1.6
+LIP_LIGHTNESS_MIN = 0.1
+GLOSS_SHADING_LOW = 0.75
+GLOSS_SHADING_HIGH = 1.05
 
 
 def _in_gamut(rgb_lin: np.ndarray) -> np.ndarray:
@@ -66,15 +71,26 @@ def shade(camera_srgb: np.ndarray, mask: np.ndarray, gloss_map: np.ndarray, p: L
     """
     w = np.clip(mask * p.opacity, 0.0, 1.0)
     lab = to_ok(srgb_to_lin(camera_srgb))
-    # L: se conserva la textura del labio y se corre su media hacia la L del
-    # color, en la medida de lumaFollow.
-    lightness = np.clip(lab[..., 0] + (p.target_lab[0] - p.lip_lightness) * w * p.luma_follow, 0.0, 1.0)
-    ab = lab[..., 1:] + (p.target_lab[1:] - lab[..., 1:]) * w[..., None]
+    # Sombreado del píxel relativo al labio medio. OKLab es homogéneo: escalar
+    # la luz lineal por k escala (L, a, b) por k^(1/3), así que el labial bajo
+    # la misma luz es target · shading (sombras menos saturadas, como en un
+    # labio real; el color plano parece una calcomanía).
+    shading = np.clip(lab[..., 0] / max(p.lip_lightness, LIP_LIGHTNESS_MIN), 0.0, SHADING_MAX)
+    lit = p.target_lab * shading[..., None]
+    lightness = np.clip(lab[..., 0] + (lit[..., 0] - lab[..., 0]) * w * p.luma_follow, 0.0, 1.0)
+    ab = lab[..., 1:] + (lit[..., 1:] - lab[..., 1:]) * w[..., None]
     out = oklab_to_linear_in_gamut(np.concatenate([lightness[..., None], ab], axis=-1))
-    spec = (np.power(gloss_map, p.sharpness) + sparkle) * p.gloss * p.light * w
+    # El brillo necesita luz: no aparece en las sombras y pliegues del labio.
+    lit_gate = _smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading)
+    spec = (np.power(gloss_map, p.sharpness) + sparkle) * p.gloss * p.light * w * lit_gate
     out = np.minimum(out + spec[..., None], 1.0)
     # Fuera de la máscara el shader devuelve la cámara tal cual.
     return np.where((w > 0.0)[..., None], lin_to_srgb(out), camera_srgb)
+
+
+def _smoothstep(edge0: float, edge1: float, x: np.ndarray) -> np.ndarray:
+    t = np.clip((x - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
 
 
 def hex_to_srgb(value: str) -> np.ndarray:
