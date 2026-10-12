@@ -3,18 +3,45 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Admin = campo is_admin == true en SU documento de users. Ese campo solo
+    // se puede poner desde la consola de Firebase o con el Admin SDK: el
+    // cliente nunca lo puede escribir (ver match /users).
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('is_admin', false) == true;
+    }
+
     // "looks" es el catálogo: cualquiera lo puede leer (con o sin login),
     // pero solo un usuario admin puede crear/editar/borrar looks.
     match /looks/{lookId} {
       allow read: if true;
-      allow write: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true;
+      allow write: if isAdmin();
     }
 
     // "users" tiene datos personales (correo, edad, fecha de nacimiento).
-    // Cada usuario solo puede leer/escribir SU PROPIO documento.
+    // Cada usuario solo puede leer/escribir SU PROPIO documento, y NUNCA el
+    // campo is_admin: antes cualquiera podía ponerse is_admin: true y editar
+    // o borrar todo el catálogo (docs/ar_engine/AUDIT.md §5.1).
+    //
+    // is_premium sigue escribible por el cliente a propósito: VipService lo
+    // sincroniza tras una compra de RevenueCat. Bloquearlo exige mover esa
+    // sincronización al servidor (webhook de RevenueCat -> Cloud Function);
+    // pendiente de decisión (AUDIT.md §5.2).
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.get('is_admin', false) == false;
+      allow update: if isOwner(userId)
+        && request.resource.data.get('is_admin', false) == resource.data.get('is_admin', false);
+      allow delete: if isOwner(userId);
     }
   }
 }

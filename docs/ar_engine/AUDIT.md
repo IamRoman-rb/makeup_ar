@@ -9,7 +9,7 @@ Ningún archivo del proyecto se modificó para esta auditoría; este documento e
 
 | # | Hallazgo | Severidad | Acción |
 |---|---|---|---|
-| 1 | `firestore.rules` deja que cualquier usuario se ponga `is_admin: true` en su propio documento → puede editar/borrar todo el catálogo | **Crítica** | Cambiar reglas (necesita tu OK, ver §5.1) |
+| 1 | `firestore.rules` deja que cualquier usuario se ponga `is_admin: true` en su propio documento → puede editar/borrar todo el catálogo | **Crítica** | **Corregido en el repo (2026-10-12), falta desplegar:** `firebase deploy --only firestore:rules --project armakeupapp`. Tests: `firestore-tests/rules.test.mjs` (15/15 con las reglas nuevas; las viejas fallan los 5 de escalada) |
 | 2 | Mismo agujero con `is_premium` → cualquiera se hace VIP gratis; además `video_url` de los looks es de lectura pública | **Alta** | Reglas + validar VIP en servidor (§5.2) |
 | 3 | El repo es **público** y su historial contiene `deepar.aar` (37,6 MB) y `makeup_base.deepar` (5,2 MB) | Media (licencia) | Revisar licencia de DeepAR; opcional purgar historial (§4.3) |
 | 4 | Un clon limpio **no compila**: `lib/vip/revenue_cat_keys.dart` está en `.gitignore` y `vip_service.dart` lo importa | Media | Pasar a `--dart-define` (§5.3) |

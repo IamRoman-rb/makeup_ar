@@ -27,6 +27,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
 - Spike del motor nativo: `flutter run --profile -t lib/main_spike.dart -d <id>` (no carga Firebase ni RevenueCat).
 - Tests del plugin: `flutter test` dentro de `packages/makeup_engine` (Dart) y `android/gradlew.bat :makeup_engine:testDebugUnitTest` (JVM; necesita `JAVA_HOME` apuntando al JBR de Android Studio).
+- Reglas de Firestore (emulador, sin dependencias npm; necesita `JAVA_HOME` al JBR de Android Studio): `firebase emulators:exec --only firestore --project demo-armakeup "node --test --test-reporter=tap firestore-tests/rules.test.mjs"`.
 - Paridad del esquema de recetas: `python tools/studio/validate_recipe_cases.py` (requiere `jsonschema`). Si tocás el esquema o `test/fixtures/recipe_v2_cases.json`, corré esto y `flutter test test/features`.
 
 ## Reglas de código (Dart)
