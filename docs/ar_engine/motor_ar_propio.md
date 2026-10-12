@@ -291,6 +291,8 @@ void main() {
 
 (`0.55` es un L de referencia de un labio medio; debe calibrarse y exponerse como uniform una vez medido con tonos de piel reales.)
 
+> **Implementado en P4 con cambios** (ver `docs/ar_engine/LIPS.md`): la L del labio se mide en el tracker en lugar del 0,55 fijo, y el labial se escala por el sombreado relativo del píxel (`L_píxel / L_labio`) en L y en croma, porque el color plano se veía como una calcomanía en el E20.
+
 ### 5.6 Oclusión y segmentación (fase 2)
 
 Orden por costo/beneficio:

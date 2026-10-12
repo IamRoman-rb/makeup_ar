@@ -6,7 +6,7 @@ Diseño del tracker (informe §5.2–5.3) tal como quedó implementado, la desvi
 
 En el Espejo → **Filtro de prueba**:
 
-- **Solo labios** (por defecto): el tinte OKLab se aplica únicamente dentro de los labios. Es una versión provisional: máscara de triángulos de la malla, con el borde suavizado por la máscara de baja resolución. El labial fotorrealista (máscara UV, brillo, `uLumaFollow`) es P4.
+- **Solo labios** (por defecto): el labial de la receta sobre la malla tracked. Desde P4 es el labial fotorrealista (máscara UV, brillo, acabados): ver `LIPS.md`. La máscara de pantalla provisional de P3 ya no existe.
 - **Ver puntos**: dibuja los 478 landmarks (depuración).
 - El badge muestra fps del render y el estado del tracker: `cargando modelos…`, `buscando cara…`, `NN Hz · NN ms`.
 
@@ -103,6 +103,7 @@ adb logcat -s flutter | grep TRACK
 | Prueba | Fecha | Render fps | Tracker Hz | Landmarks p50/p95 ms | Jitter px | Notas |
 |---|---|---|---|---|---|---|
 | Primera prueba con cara real (no es el protocolo completo) | 2026-10-12 | 28 | 15 | 22–26 (badge) | sin medir | Los puntos caen sobre la cara y la siguen. "Solo labios" con Rojo clásico pinta solo los labios. Landmarks más lentos que en P1 (16,9 ms con E/S): la GPU se comparte con el render |
+| Con el labial de P4 (capturas, no el protocolo completo) | 2026-10-12 | 28–29 | 14 | 20–24 (badge) | sin medir | El labial de P4 no baja el render. Detalle en `LIPS.md` §6 |
 
 **Palancas, en orden, si el render baja de 24 fps:**
 
@@ -127,8 +128,12 @@ Ningún hallazgo crítico. Se corrigió:
   - Precisión explícita de `uMask` y `vOutputUv`.
   - Los puntos se mezclan sin tocar el alpha del framebuffer (`glBlendFuncSeparate`).
 
-Queda para P4:
+Hecho en P4 (`LIPS.md`):
 
-- Recorte de gamut del tinte (hoy es un clamp por canal).
-- Máscara de labios más fina en las comisuras.
+- Recorte de gamut del tinte: bisección de croma con L y tono fijos, en lugar del clamp por canal.
+- Comisuras: máscara UV con borde difuminado sobre contornos suavizados, en lugar de la máscara de pantalla.
+
+Sigue pendiente:
+
 - Watchdog si el delegado GPU se cuelga en `run()`.
+- Protocolo completo de 10 minutos (jitter, memoria, térmica).
