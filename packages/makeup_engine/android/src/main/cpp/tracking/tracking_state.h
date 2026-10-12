@@ -9,7 +9,7 @@
 // se comparte a la vez y no hace falta mutex en el camino caliente.
 //
 // Hilos:
-//   tracker: start, stop, readyCropKind, fillInput, submitDetections, submitLandmarks
+//   tracker: start, stop, readyCropKind, fillInput, submitDetections, submitLandmarks, abortCrop
 //   render:  setImageSize, takeCropRequest, cropPixels, cropReady, cropFailed, landmarksForRender
 //   cualquiera: snapshotStats
 // Sin allocations después del constructor.
@@ -55,6 +55,7 @@ enum TrackerStatIndex : int {
   kTrackStatYawDeg,
   kTrackStatRollDeg,
   kTrackStatReadbackMs,      // último recorte: de pedirlo en GPU a tenerlo en CPU
+  kTrackStatCropFailures,    // recortes descartados (fence fallido o timeout: GPU ocupada)
   kTrackStatCount,
 };
 
@@ -85,6 +86,9 @@ class TrackingState {
   // Salidas de landmarks: [landmarks] >= kFloats floats (x, y, z en px del
   // tensor) y el logit de presencia.
   void submitLandmarks(const float* landmarks, int floatCount, float presenceLogit, float inferenceMs);
+  // El recorte listo no se pudo inferir (entrada o salidas inválidas): se
+  // descarta y se vuelve al detector. Sin esto el ciclo quedaría en kReady.
+  void abortCrop();
 
   // --- Hilo de render ---
   // Si el tracker pidió un recorte y el throttle lo permite, lo toma (pasa a
@@ -151,6 +155,7 @@ class TrackingState {
   TripleBuffer<LandmarkFrame> frames_;
 
   std::atomic<float> readbackMs_{NAN};
+  std::atomic<uint32_t> cropFailures_{0};
 
   // Stats: tracker escribe, cualquiera lee.
   std::mutex statsMutex_;

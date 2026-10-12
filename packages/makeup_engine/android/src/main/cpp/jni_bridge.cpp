@@ -130,6 +130,8 @@ void nativeTrackerStart(JNIEnv*, jclass, jlong handle) { fromHandle(handle)->tra
 
 void nativeTrackerStop(JNIEnv*, jclass, jlong handle) { fromHandle(handle)->tracking.stop(); }
 
+void nativeTrackerAbort(JNIEnv*, jclass, jlong handle) { fromHandle(handle)->tracking.abortCrop(); }
+
 jint nativeTrackerReadyKind(JNIEnv*, jclass, jlong handle) {
   return static_cast<jint>(fromHandle(handle)->tracking.readyCropKind());
 }
@@ -152,6 +154,7 @@ void nativeTrackerSubmitDetections(JNIEnv* env, jclass, jlong handle, jfloatArra
   if (regressors == nullptr || scores == nullptr ||
       env->GetArrayLength(regressors) < Engine::kRegressorCount ||
       env->GetArrayLength(scores) < makeup::BlazeFaceDecoder::kAnchorCount) {
+    engine->tracking.abortCrop();  // salidas inesperadas: no dejar el ciclo trabado
     return;
   }
   env->GetFloatArrayRegion(regressors, 0, Engine::kRegressorCount, engine->regressors.data());
@@ -162,7 +165,10 @@ void nativeTrackerSubmitDetections(JNIEnv* env, jclass, jlong handle, jfloatArra
 void nativeTrackerSubmitLandmarks(JNIEnv* env, jclass, jlong handle, jfloatArray landmarks,
                                   jfloat presenceLogit, jfloat inferenceMs) {
   Engine* engine = fromHandle(handle);
-  if (landmarks == nullptr) return;
+  if (landmarks == nullptr) {
+    engine->tracking.abortCrop();
+    return;
+  }
   // Si el modelo devuelve menos puntos, submitLandmarks lo trata como cara perdida.
   const jsize count = std::min<jsize>(env->GetArrayLength(landmarks), TrackingState::kFloats);
   env->GetFloatArrayRegion(landmarks, 0, count, engine->landmarks.data());
@@ -186,6 +192,7 @@ const JNINativeMethod kMethods[] = {
     {"nativeDestroy", "(J)V", reinterpret_cast<void*>(nativeDestroy)},
     {"nativeTrackerStart", "(J)V", reinterpret_cast<void*>(nativeTrackerStart)},
     {"nativeTrackerStop", "(J)V", reinterpret_cast<void*>(nativeTrackerStop)},
+    {"nativeTrackerAbort", "(J)V", reinterpret_cast<void*>(nativeTrackerAbort)},
     {"nativeTrackerReadyKind", "(J)I", reinterpret_cast<void*>(nativeTrackerReadyKind)},
     {"nativeTrackerFillInput", "(J[FFF)Z", reinterpret_cast<void*>(nativeTrackerFillInput)},
     {"nativeTrackerSubmitDetections", "(J[F[FF)V",

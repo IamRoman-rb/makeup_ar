@@ -168,10 +168,18 @@ internal class LiteRtFaceTracker(
     private fun process() {
         if (released || !running) return
         try {
-            when (NativeBridge.nativeTrackerReadyKind(nativeHandle)) {
+            val ok = when (NativeBridge.nativeTrackerReadyKind(nativeHandle)) {
                 NativeBridge.CROP_DETECTOR -> runDetector()
                 NativeBridge.CROP_LANDMARKS -> runLandmarks()
+                else -> true
             }
+            if (!ok) {
+                // Sin esto el recorte quedaría tomado y el ciclo, trabado para siempre.
+                NativeBridge.nativeTrackerAbort(nativeHandle)
+                error = "el recorte no coincide con la entrada del modelo"
+                return
+            }
+            if (consecutiveErrors > 0) error = null
             consecutiveErrors = 0
         } catch (e: Exception) {
             // El recorte quedó tomado: reiniciar el ciclo (vuelve a buscar la cara).
@@ -186,11 +194,12 @@ internal class LiteRtFaceTracker(
         }
     }
 
-    private fun runDetector() {
-        val model = detector ?: return
+    /** Devuelve false si el recorte no se pudo convertir en entrada del modelo. */
+    private fun runDetector(): Boolean {
+        val model = detector ?: return false
         val start = System.nanoTime()
         // BlazeFace espera la imagen en [-1, 1].
-        if (!NativeBridge.nativeTrackerFillInput(nativeHandle, detectorInput, 2f, -1f)) return
+        if (!NativeBridge.nativeTrackerFillInput(nativeHandle, detectorInput, 2f, -1f)) return false
         model.inputs[0].writeFloat(detectorInput)
         model.model.run(model.inputs, model.outputs)
         val first = model.outputs[0].readFloat()
@@ -200,13 +209,15 @@ internal class LiteRtFaceTracker(
         val scores = if (first.size >= second.size) second else first
         val ms = ((System.nanoTime() - start) / 1e6).toFloat()
         NativeBridge.nativeTrackerSubmitDetections(nativeHandle, regressors, scores, ms)
+        return true
     }
 
-    private fun runLandmarks() {
-        val model = landmarker ?: return
+    /** Devuelve false si el recorte no se pudo convertir en entrada del modelo. */
+    private fun runLandmarks(): Boolean {
+        val model = landmarker ?: return false
         val start = System.nanoTime()
         // FaceMesh-V2 espera la imagen en [0, 1].
-        if (!NativeBridge.nativeTrackerFillInput(nativeHandle, landmarkInput, 1f, 0f)) return
+        if (!NativeBridge.nativeTrackerFillInput(nativeHandle, landmarkInput, 1f, 0f)) return false
         model.inputs[0].writeFloat(landmarkInput)
         model.model.run(model.inputs, model.outputs)
         var landmarks = EMPTY
@@ -221,6 +232,7 @@ internal class LiteRtFaceTracker(
         }
         val ms = ((System.nanoTime() - start) / 1e6).toFloat()
         NativeBridge.nativeTrackerSubmitLandmarks(nativeHandle, landmarks, presenceLogit, ms)
+        return true
     }
 
     private companion object {

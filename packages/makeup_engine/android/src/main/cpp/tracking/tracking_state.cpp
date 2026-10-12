@@ -59,6 +59,14 @@ void TrackingState::stop() {
   state_ = 0;
 }
 
+void TrackingState::abortCrop() {
+  if (stage_.load(std::memory_order_acquire) != kReady) return;
+  if (hasFace_) publishLost(lastLandmarkNs_);
+  hasFace_ = false;
+  requestDetector();
+  finishSubmit();
+}
+
 CropKind TrackingState::readyCropKind() const {
   if (stage_.load(std::memory_order_acquire) != kReady) return CropKind::kNone;
   return inFlight_.kind;
@@ -259,15 +267,22 @@ void TrackingState::updatePose(const float* points) {
 
 bool TrackingState::takeCropRequest(int64_t cameraTimestampNs, CropRequest* out) {
   if (stage_.load(std::memory_order_acquire) != kWaitRender) return false;
+  // request_ se lee recién con el stage tomado (kGpu): así el tracker no puede
+  // reescribirlo a la vez (stop() + start() entre la lectura y el CAS).
+  int expected = kWaitRender;
+  if (!stage_.compare_exchange_strong(expected, kGpu, std::memory_order_acq_rel)) return false;
   const CropRequest request = request_;
   const float maxHz = request.kind == CropKind::kDetector ? EngineConfig::kDetectorMaxHz
                                                           : EngineConfig::kTrackerMaxHz;
   const auto minIntervalNs = static_cast<int64_t>(kNsPerSecond / maxHz);
   // Tolerancia de 2 ms: con cámara a 30 fps los frames llegan cada ~33 ms y
   // sin margen un pedido a 20 Hz podría saltearse un frame de más.
-  if (lastCropNs_ > 0 && cameraTimestampNs - lastCropNs_ < minIntervalNs - 2000000) return false;
-  int expected = kWaitRender;
-  if (!stage_.compare_exchange_strong(expected, kGpu, std::memory_order_acq_rel)) return false;
+  if (lastCropNs_ > 0 && cameraTimestampNs - lastCropNs_ < minIntervalNs - 2000000) {
+    // Todavía no: se devuelve el pedido (si el tracker paró mientras, queda en kIdle).
+    expected = kGpu;
+    stage_.compare_exchange_strong(expected, kWaitRender, std::memory_order_acq_rel);
+    return false;
+  }
   inFlight_ = request;
   inFlightTimestampNs_ = cameraTimestampNs;
   lastCropNs_ = cameraTimestampNs;
@@ -282,6 +297,7 @@ void TrackingState::cropReady(float readbackMs) {
 }
 
 void TrackingState::cropFailed() {
+  cropFailures_.fetch_add(1, std::memory_order_relaxed);
   int expected = kGpu;
   stage_.compare_exchange_strong(expected, kWaitRender, std::memory_order_acq_rel);
 }
@@ -333,6 +349,7 @@ void TrackingState::snapshotStats(float* out) {
   out[kTrackStatYawDeg] = yawDeg_;
   out[kTrackStatRollDeg] = rollDeg_;
   out[kTrackStatReadbackMs] = readbackMs_.load(std::memory_order_relaxed);
+  out[kTrackStatCropFailures] = static_cast<float>(cropFailures_.load(std::memory_order_relaxed));
 }
 
 void TrackingState::resetStats() {
@@ -345,6 +362,7 @@ void TrackingState::resetStats() {
   landmarkRuns_ = 0;
   detectorRuns_ = 0;
   losses_ = 0;
+  cropFailures_.store(0, std::memory_order_relaxed);
 }
 
 }  // namespace makeup

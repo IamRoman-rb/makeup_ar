@@ -10,6 +10,10 @@
 //                        cámara frontal. Se sube solo cuando cambia.
 //   uTexMatrix     mat4  SurfaceTexture.getTransformMatrix(); se sube por
 //                        frame (el productor puede cambiar crop/transformación).
+// Salidas:
+//   vTexCoord      vec2  coordenada en la textura de cámara.
+//   vOutputUv      vec2  UV de salida [0,1] (origen abajo a la izquierda), para
+//                        máscaras alineadas con la pantalla.
 
 // highp: coordenadas de textura. En mediump (fp16) el paso entre valores
 // representables cerca de 1.0 es ~1/2048: a 1280 px da hasta ~0,3 px de error

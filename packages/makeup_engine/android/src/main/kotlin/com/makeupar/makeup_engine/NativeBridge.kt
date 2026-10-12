@@ -48,7 +48,8 @@ internal object NativeBridge {
     const val TRACK_STAT_YAW_DEG = 12
     const val TRACK_STAT_ROLL_DEG = 13
     const val TRACK_STAT_READBACK_MS = 14
-    const val TRACK_STAT_COUNT = 15
+    const val TRACK_STAT_CROP_FAILURES = 15
+    const val TRACK_STAT_COUNT = 16
 
     // Bits de nativeDrawFrame(); mismo valor que FrameFlag en renderer.h.
     const val FRAME_FLAG_CROP_READY = 1
@@ -103,6 +104,9 @@ internal object NativeBridge {
     @JvmStatic external fun nativeTrackerStart(handle: Long)
     @JvmStatic external fun nativeTrackerStop(handle: Long)
     @JvmStatic external fun nativeTrackerReadyKind(handle: Long): Int
+
+    /** El recorte listo no se pudo inferir: se descarta y se vuelve al detector. */
+    @JvmStatic external fun nativeTrackerAbort(handle: Long)
 
     /** RGBA8 del recorte listo -> [out] RGB float (byte / 255 · scale + offset). */
     @JvmStatic external fun nativeTrackerFillInput(handle: Long, out: FloatArray, scale: Float, offset: Float): Boolean

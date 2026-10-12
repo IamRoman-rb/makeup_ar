@@ -146,6 +146,7 @@ final class TrackerStats {
     this.yawDeg,
     this.rollDeg,
     this.readbackMs,
+    this.cropFailures = 0,
     this.initMs,
     this.backend,
     this.error,
@@ -169,6 +170,7 @@ final class TrackerStats {
       yawDeg: _double(map['yawDeg']),
       rollDeg: _double(map['rollDeg']),
       readbackMs: _double(map['readbackMs']),
+      cropFailures: _double(map['cropFailures'])?.round() ?? 0,
       initMs: _double(map['initMs']),
       backend: map['backend'] as String?,
       error: map['error'] as String?,
@@ -209,6 +211,9 @@ final class TrackerStats {
 
   /// Último recorte: de pedirlo a la GPU a tenerlo en CPU.
   final double? readbackMs;
+
+  /// Recortes descartados (fence fallido o la GPU no terminó a tiempo).
+  final int cropFailures;
 
   /// Carga de los modelos (la primera vez incluye compilar para la GPU).
   final double? initMs;

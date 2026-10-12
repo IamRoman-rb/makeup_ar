@@ -210,3 +210,29 @@ TEST(tracking_extrapolaYMideJitter) {
   CHECK(stats[makeup::kTrackStatJitterP50Px] > 0.0f);
   CHECK_NEAR(stats[makeup::kTrackStatIntervalP50Ms], 50.0, 0.01);
 }
+
+// Un recorte que no se puede inferir no traba el ciclo: abortCrop vuelve al
+// detector y un recorte fallido en GPU se cuenta y se reintenta.
+TEST(tracking_seRecuperaDeRecortesInvalidos) {
+  auto state = std::make_unique<TrackingState>();
+  state->setImageSize(kWidth, kHeight);
+  state->start();
+  CropRequest request;
+  CHECK(renderCrop(*state, kStart, &request));
+  CHECK(state->readyCropKind() == CropKind::kDetector);
+  state->abortCrop();
+  CHECK(state->readyCropKind() == CropKind::kNone);
+  // El throttle del detector (10 Hz) devuelve el pedido sin perderlo.
+  CHECK(!state->takeCropRequest(kStart + 30 * kMs, &request));
+  CHECK(state->takeCropRequest(kStart + 100 * kMs, &request));
+  CHECK(request.kind == CropKind::kDetector);
+  state->cropFailed();
+  CHECK(state->takeCropRequest(kStart + 200 * kMs, &request));
+
+  float stats[makeup::kTrackStatCount];
+  state->snapshotStats(stats);
+  CHECK_NEAR(stats[makeup::kTrackStatCropFailures], 1.0, 0.0);
+  state->resetStats();
+  state->snapshotStats(stats);
+  CHECK_NEAR(stats[makeup::kTrackStatCropFailures], 0.0, 0.0);
+}

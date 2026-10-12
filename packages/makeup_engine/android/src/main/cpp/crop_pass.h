@@ -27,8 +27,9 @@ class CropPass {
   // [quadVao]: quad de pantalla completa con aPosition en la ubicación 0.
   // [displayMatrix]: UV de salida -> UV de cámara SIN espejo.
   // [imageWidth]/[imageHeight]: tamaño de la imagen (= salida) en px.
-  // Deja enlazado el framebuffer 0.
-  void issue(const CropRequest& request, GLuint quadVao, GLuint cameraTexture, const float* texMatrix,
+  // Deja enlazado el framebuffer 0. Devuelve false si no se pudo poner el
+  // fence (el recorte no está en vuelo: hay que avisar cropFailed()).
+  bool issue(const CropRequest& request, GLuint quadVao, GLuint cameraTexture, const float* texMatrix,
              const float* displayMatrix, int imageWidth, int imageHeight, int64_t nowNs);
 
   // Si el recorte en vuelo terminó, copia size² · 4 bytes a [dst] y devuelve kDone.

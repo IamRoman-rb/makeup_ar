@@ -112,6 +112,8 @@ class _TestFilterViewState extends State<TestFilterView> {
       setState(() => _info = info);
       await _applyRenderOptions();
       await _applyTint();
+      // Si se desmontó durante los awaits, dispose() ya pasó: no crear el timer.
+      if (!mounted) return;
       _statsTimer = Timer.periodic(_statsPeriod, (_) => _pollStats());
     } on MakeupEngineException catch (e) {
       if (mounted) setState(() => _error = '${e.code}: ${e.message ?? ''}');

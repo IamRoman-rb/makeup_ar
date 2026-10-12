@@ -78,7 +78,7 @@ bool CropPass::buildTarget(Target& out, int size, std::string* error) {
   return true;
 }
 
-void CropPass::issue(const CropRequest& request, GLuint quadVao, GLuint cameraTexture,
+bool CropPass::issue(const CropRequest& request, GLuint quadVao, GLuint cameraTexture,
                      const float* texMatrix, const float* displayMatrix, int imageWidth,
                      int imageHeight, int64_t nowNs) {
   const bool detector = request.kind == CropKind::kDetector;
@@ -110,9 +110,11 @@ void CropPass::issue(const CropRequest& request, GLuint quadVao, GLuint cameraTe
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   MAKEUP_GL_CHECK("CropPass::issue");
 
+  if (fence_ == nullptr) return false;  // contexto perdido o sin memoria en el driver
   pendingBytes_ = target.size * target.size * 4;
   framesWaiting_ = 0;
   issuedNs_ = nowNs;
+  return true;
 }
 
 CropPass::Poll CropPass::poll(uint8_t* dst, float* readbackMs, int64_t nowNs) {

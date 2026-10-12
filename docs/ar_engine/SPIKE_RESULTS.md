@@ -75,6 +75,8 @@ Nunca medir en debug. Antes de cada corrida anotá: brillo de pantalla, si está
 | Tinte OKLab 100% | | | | |
 | Tinte OKLab 100% a los 10 min | | | | |
 
+**Observación del usuario en el E20 (2026-10-12), app normal → Espejo → Filtro de prueba (build profile):** tinte de pantalla completa con los 5 presets, **~28 fps** en el badge, imagen fluida, sin calor ni tirones, slider de intensidad sin problemas. No es la sesión de 10 min de esta tabla (no hay p95 ni memoria), pero confirma el camino nativo en el dispositivo real.
+
 Línea de GL del overlay (vendor | renderer | versión | GLSL): `____________`
 
 ### 3.3 Memoria y térmica (sesión de 10 min con tinte al 100%)

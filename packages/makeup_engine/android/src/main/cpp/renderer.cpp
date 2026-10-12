@@ -172,7 +172,12 @@ bool Renderer::buildMeshGeometry() {
 bool Renderer::ensureMask(int width, int height) {
   const int maskWidth = std::max(1, width / EngineConfig::kMaskDownscale);
   const int maskHeight = std::max(1, height / EngineConfig::kMaskDownscale);
-  if (maskFramebuffer_ && maskWidth == maskWidth_ && maskHeight == maskHeight_) return true;
+  if (maskWidth == maskWidth_ && maskHeight == maskHeight_) {
+    // Ya creada, o ya falló con este tamaño: no se reintenta en cada frame.
+    return static_cast<bool>(maskFramebuffer_);
+  }
+  maskWidth_ = maskWidth;
+  maskHeight_ = maskHeight;
   maskFramebuffer_.reset();
   maskTexture_.reset();
   GLuint texture = 0;
@@ -199,8 +204,6 @@ bool Renderer::ensureMask(int width, int height) {
     setError("FBO de máscara incompleto");
     return false;
   }
-  maskWidth_ = maskWidth;
-  maskHeight_ = maskHeight;
   MAKEUP_GL_CHECK("ensureMask");
   return true;
 }
@@ -298,9 +301,10 @@ void Renderer::runCropPass(const float* texMatrix, int width, int height,
       break;
   }
   CropRequest request;
-  if (!crop_.inFlight() && tracking_->takeCropRequest(cameraTimestampNs, &request)) {
-    crop_.issue(request, quadVao_.get(), cameraTexture_.get(), texMatrix,
-                drawTrackerMatrix_.data(), width, height, nowNs);
+  if (!crop_.inFlight() && tracking_->takeCropRequest(cameraTimestampNs, &request) &&
+      !crop_.issue(request, quadVao_.get(), cameraTexture_.get(), texMatrix,
+                   drawTrackerMatrix_.data(), width, height, nowNs)) {
+    tracking_->cropFailed();
   }
 }
 
@@ -333,7 +337,9 @@ void Renderer::drawLipsMask(float alpha, const float* imageToClip) {
 void Renderer::drawLandmarks(float alpha, const float* imageToClip, int width, int height) {
   glViewport(0, 0, width, height);
   glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // El alpha del framebuffer queda en 1: Flutter compone la Texture con alpha
+  // y, si bajara durante el fundido, se vería el fondo a través de los puntos.
+  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
   glUseProgram(mesh_.program.get());
   glUniform4fv(mesh_.imageToClip, 1, imageToClip);
   glUniform1f(mesh_.pointSize, EngineConfig::kLandmarkPointSizePx);
