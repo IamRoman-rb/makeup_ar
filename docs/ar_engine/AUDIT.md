@@ -16,7 +16,7 @@ Ningún archivo del proyecto se modificó para esta auditoría; este documento e
 | 5 | `test/widget_test.dart` está roto (referencia `MyApp`, que no existe) → `flutter test` falla | Baja | Reemplazar el test (§5.3) |
 | 6 | Tu checkout local de `main` tiene `lib/ar/deepar_keys.dart` (sin trackear) con license keys de DeepAR que ya no se usan | Baja | Revocar en el panel de DeepAR y borrar el archivo |
 | 7 | No hay **ninguna** key de Groq en el historial | — | Nada que revocar en Groq por el repo |
-| 8 | El Espejo actual (plugin `camera`, `camera_android_camerax 0.7.4+6`) crashea al salir de la app con *FlutterJNI is not attached to native* (3/3 en el emulador; no ocurre con el motor nativo, 0/3) | Media | Probar `camera_android_camerax 0.7.5+1` (necesita tu OK por ser cambio de dependencia) o reemplazar el Espejo por el motor nativo |
+| 8 | El Espejo actual (plugin `camera`, `camera_android_camerax 0.7.4+6`) crashea al salir de la app con *FlutterJNI is not attached to native* (3/3 en el emulador; no ocurre con el motor nativo, 0/3) | Media | **Resuelto (2026-10-12):** la causa no era el plugin (actualizar a `camera_android_camerax 0.7.5+1` no lo arreglaba: 3/3 seguía crasheando) sino que `CameraScreen` no liberaba la cámara al pasar a segundo plano, como pide la documentación del plugin. Con `WidgetsBindingObserver` (liberar en `inactive`, reabrir en `resumed`): 0/3 crashes, y segundo plano → volver funciona en los dos modos |
 
 ---
 

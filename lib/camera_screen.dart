@@ -16,7 +16,7 @@ class CameraScreen extends StatefulWidget {
   State<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _CameraScreenState extends State<CameraScreen> {
+class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver {
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
 
@@ -26,10 +26,35 @@ class _CameraScreenState extends State<CameraScreen> {
   /// Evita alternar de nuevo mientras se libera o se abre la cámara.
   bool _switching = false;
 
+  /// false mientras la app no está en primer plano: no se usa la cámara.
+  bool _inForeground = true;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
+  }
+
+  /// Como pide la documentación del plugin camera: la cámara se libera al
+  /// pasar a segundo plano y se vuelve a abrir al regresar. Sin esto, al salir
+  /// con "atrás" la cámara seguía mandando frames a un FlutterEngine ya
+  /// desacoplado y la app crasheaba ("FlutterJNI is not attached to native").
+  /// En modo motor, desmontar TestFilterView detiene el motor nativo.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive) {
+      if (!_inForeground) return;
+      _inForeground = false;
+      final controller = _cameraController;
+      _cameraController = null;
+      setState(() => _isCameraInitialized = false);
+      controller?.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_inForeground) return;
+      setState(() => _inForeground = true);
+      if (!_useNativeEngine) _initializeCamera();
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -43,7 +68,13 @@ class _CameraScreenState extends State<CameraScreen> {
       final controller = CameraController(frontCamera, ResolutionPreset.high, enableAudio: false);
       _cameraController = controller;
       await controller.initialize();
-      if (!mounted || _useNativeEngine) return;
+      // Si mientras se abría se pasó al motor, a segundo plano o se cerró la
+      // pantalla, este controller ya no corresponde.
+      if (!mounted || _useNativeEngine || !_inForeground || _cameraController != controller) {
+        if (_cameraController == controller) _cameraController = null;
+        await controller.dispose();
+        return;
+      }
       setState(() => _isCameraInitialized = true);
     } catch (e) {
       debugPrint('Error cámara: $e');
@@ -66,7 +97,7 @@ class _CameraScreenState extends State<CameraScreen> {
         setState(() => _useNativeEngine = true);
       } else {
         setState(() => _useNativeEngine = false);
-        await _initializeCamera();
+        if (_inForeground) await _initializeCamera();
       }
     } finally {
       _switching = false;
@@ -75,6 +106,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _cameraController?.dispose();
     super.dispose();
   }
@@ -85,7 +117,7 @@ class _CameraScreenState extends State<CameraScreen> {
     final controller = _cameraController;
 
     final Widget body;
-    if (_useNativeEngine) {
+    if (_useNativeEngine && _inForeground) {
       body = TestFilterView(
         noFilterLabel: l10n.testFilterNone,
         intensityLabel: l10n.testFilterIntensity,
@@ -113,12 +145,18 @@ class _CameraScreenState extends State<CameraScreen> {
         elevation: 0,
         title: Text(l10n.mirror, style: const TextStyle(color: Colors.white)),
         actions: [
-          IconButton(
-            tooltip: l10n.testFilter,
-            onPressed: _toggleNativeEngine,
-            icon: Icon(
-              _useNativeEngine ? Icons.auto_awesome : Icons.auto_awesome_outlined,
-              color: _useNativeEngine ? Colors.pink : Colors.white,
+          // Con texto: solo el ícono pasaba desapercibido en el teléfono.
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton.icon(
+              onPressed: _toggleNativeEngine,
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: _useNativeEngine ? Colors.pink : Colors.white12,
+                shape: const StadiumBorder(),
+              ),
+              icon: const Icon(Icons.auto_awesome, size: 18),
+              label: Text(l10n.testFilter),
             ),
           ),
         ],
