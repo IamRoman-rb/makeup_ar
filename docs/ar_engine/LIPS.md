@@ -138,7 +138,10 @@ flutter run --profile -t lib/main_tracker.dart -d <id-del-E20>
 
 | Fecha | Render fps | Tracker Hz | Landmarks ms | Notas |
 |---|---|---|---|---|
-| 2026-10-12 | 28–29 | 14 | 20–24 (badge) | Primera versión. Shaders sin errores en el Mali-G57. No pinta dientes ni el interior de la boca; los acabados y el comparar andan. **Problemas** (capturas): el rojo salía rojo-naranja y más claro que la muestra; el color plano parecía calcomanía; de perfil (~60°) la mitad lejana del labio se pintaba por fuera de la cara; con la lengua afuera se pinta la lengua donde el tracker cree que está el labio inferior. Corregido con el sombreado relativo, los `lumaFollow` nuevos y el desvanecido por orientación (§4). **Falta medir esta versión** |
+| 2026-10-12 | 28–29 | 14 | 20–24 (badge) | Primera versión. Shaders sin errores en el Mali-G57. No pinta dientes ni el interior de la boca; los acabados y el comparar andan. **Problemas** (capturas): el rojo salía rojo-naranja y más claro que la muestra; el color plano parecía calcomanía; de perfil (~60°) la mitad lejana del labio se pintaba por fuera de la cara; con la lengua afuera se pinta la lengua donde el tracker cree que está el labio inferior. Corregido con el sombreado relativo, los `lumaFollow` nuevos y el desvanecido por orientación (§4) |
+| 2026-10-12 | 28 | 14 | 20–21 (badge) | Versión con sombreado relativo y desvanecido. Rojo clásico satinado a intensidad 1: el labio conserva sus sombras y pliegues (línea de la boca, labio superior más oscuro) y ya no se ve plano. Boca abierta: el interior sigue sin pintar. Perfil (~45°): el labial queda dentro de la cara. El render no bajó. |
+
+El protocolo de 10 minutos (jitter, memoria, térmica) no se va a correr: queda fuera de P4 por decisión del responsable del proyecto (2026-10-12). Las métricas de arriba son del badge durante las capturas.
 
 ## 7. Revisiones de cierre (`perf-auditor` y `shader-reviewer`, 2026-10-12)
 

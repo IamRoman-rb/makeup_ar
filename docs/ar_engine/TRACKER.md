@@ -136,4 +136,5 @@ Hecho en P4 (`LIPS.md`):
 Sigue pendiente:
 
 - Watchdog si el delegado GPU se cuelga en `run()`.
-- Protocolo completo de 10 minutos (jitter, memoria, térmica).
+
+No se va a hacer: el protocolo completo de 10 minutos (jitter, memoria, térmica). Lo decidió el responsable del proyecto el 2026-10-12. Las mediciones del E20 quedan como las del badge en las capturas (§6 y `LIPS.md` §6).
