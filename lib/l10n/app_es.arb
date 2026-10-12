@@ -81,7 +81,9 @@
     "testFilter": "Filtro de prueba",
     "testFilterNone": "Sin filtro",
     "testFilterIntensity": "Intensidad",
-    "testFilterNote": "Motor nuevo (beta): por ahora tiñe toda la imagen. El maquillaje por zona llega con el seguimiento facial.",
+    "testFilterNote": "Motor nuevo (beta). \"Solo labios\" usa el seguimiento facial: la primera vez tarda unos segundos en cargar.",
+    "testFilterLipsOnly": "Solo labios",
+    "testFilterShowPoints": "Ver puntos",
 
     "fillRequiredFields": "Por favor completa todos los campos requeridos",
     "registrationError": "Error de registro",

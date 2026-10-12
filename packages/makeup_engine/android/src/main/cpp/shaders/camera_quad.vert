@@ -23,10 +23,14 @@ uniform mat4 uDisplayMatrix;
 uniform mat4 uTexMatrix;
 
 out vec2 vTexCoord;
+// UV de salida [0,1] (abajo a la izquierda): para muestrear máscaras alineadas
+// con la pantalla (tint_oklab.frag con MASKED). Los shaders sin máscara lo ignoran.
+out vec2 vOutputUv;
 
 void main() {
   gl_Position = vec4(aPosition, 0.0, 1.0);
   vec2 outputUv = aPosition * 0.5 + 0.5;
+  vOutputUv = outputUv;
   vec4 cameraUv = uDisplayMatrix * vec4(outputUv, 0.0, 1.0);
   vTexCoord = (uTexMatrix * vec4(cameraUv.xy, 0.0, 1.0)).xy;
 }

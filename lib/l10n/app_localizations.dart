@@ -531,8 +531,20 @@ abstract class AppLocalizations {
   /// No description provided for @testFilterNote.
   ///
   /// In en, this message translates to:
-  /// **'New engine (beta): for now it tints the whole image. Per-area makeup comes with face tracking.'**
+  /// **'New engine (beta). \"Lips only\" uses face tracking: the first time it takes a few seconds to load.'**
   String get testFilterNote;
+
+  /// No description provided for @testFilterLipsOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Lips only'**
+  String get testFilterLipsOnly;
+
+  /// No description provided for @testFilterShowPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Show points'**
+  String get testFilterShowPoints;
 
   /// No description provided for @fillRequiredFields.
   ///

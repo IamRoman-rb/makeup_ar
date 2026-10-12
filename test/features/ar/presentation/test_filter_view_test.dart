@@ -3,6 +3,7 @@ import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:makeup_engine/makeup_engine.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +31,13 @@ void main() {
 
   Widget app() => const MaterialApp(
         home: Scaffold(
-          body: TestFilterView(noFilterLabel: 'Sin filtro', intensityLabel: 'Intensidad', note: 'nota'),
+          body: TestFilterView(
+            noFilterLabel: 'Sin filtro',
+            intensityLabel: 'Intensidad',
+            note: 'nota',
+            lipsOnlyLabel: 'Solo labios',
+            showPointsLabel: 'Ver puntos',
+          ),
         ),
       );
 
@@ -74,6 +81,34 @@ void main() {
     await tester.pumpAndSettle();
     expect(tintCalls().last['amount'], 0.0);
     expect(find.byType(Slider), findsNothing);
+  });
+
+  List<Map<Object?, Object?>> optionCalls() =>
+      calls.where((c) => c.method == 'setRenderOptions').map((c) => c.arguments as Map<Object?, Object?>).toList();
+
+  testWidgets('arranca en "solo labios" sin puntos y los chips cambian las opciones', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    expect(optionCalls().last, {'showLandmarks': false, 'region': TintRegion.lips.index});
+
+    await tester.tap(find.text('Ver puntos'));
+    await tester.pumpAndSettle();
+    expect(optionCalls().last, {'showLandmarks': true, 'region': TintRegion.lips.index});
+
+    await tester.tap(find.text('Solo labios'));
+    await tester.pumpAndSettle();
+    expect(optionCalls().last, {'showLandmarks': true, 'region': TintRegion.full.index});
+  });
+
+  test('etiqueta del tracker según su estado', () {
+    expect(trackerLabel(TrackerStats.empty, requested: false), 'Tracker: apagado');
+    expect(trackerLabel(TrackerStats.empty, requested: true), 'Tracker: cargando modelos…');
+    expect(trackerLabel(const TrackerStats(backend: 'detector=gpu'), requested: true), 'Tracker: iniciando…');
+    expect(trackerLabel(const TrackerStats(state: TrackerState.searching), requested: true), 'Tracker: buscando cara…');
+    expect(
+      trackerLabel(const TrackerStats(state: TrackerState.tracking, intervalP50Ms: 50, landmarkP50Ms: 17.2), requested: true),
+      'Tracker: 20 Hz · 17 ms',
+    );
   });
 
   testWidgets('detiene el motor al desmontarse', (tester) async {

@@ -28,6 +28,7 @@ inline void deleteGlProgram(GLuint id) { glDeleteProgram(id); }
 inline void deleteGlBuffer(GLuint id) { glDeleteBuffers(1, &id); }
 inline void deleteGlVertexArray(GLuint id) { glDeleteVertexArrays(1, &id); }
 inline void deleteGlTexture(GLuint id) { glDeleteTextures(1, &id); }
+inline void deleteGlFramebuffer(GLuint id) { glDeleteFramebuffers(1, &id); }
 
 template <void (*Deleter)(GLuint)>
 class GlHandle {
@@ -69,5 +70,6 @@ using GlProgram = GlHandle<deleteGlProgram>;
 using GlBuffer = GlHandle<deleteGlBuffer>;
 using GlVertexArray = GlHandle<deleteGlVertexArray>;
 using GlTexture = GlHandle<deleteGlTexture>;
+using GlFramebuffer = GlHandle<deleteGlFramebuffer>;
 
 }  // namespace makeup

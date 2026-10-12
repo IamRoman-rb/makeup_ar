@@ -34,26 +34,31 @@ final class TestFilterOption {
 /// Filtro de prueba del motor nativo para el Espejo: cámara frontal → GLES →
 /// `Texture`, con el tinte OKLab del motor usando el color de cada preset.
 ///
-/// Todavía no hay seguimiento facial, así que el color se aplica a toda la
-/// imagen (solo cambia la croma y conserva la luz y la textura de la piel).
-/// Sirve para validar el camino nativo en el dispositivo, no como maquillaje.
+/// "Solo labios" (por defecto) usa el tracker facial para teñir solo los
+/// labios (provisional: el labial fotorrealista con máscara UV es P4); apagado,
+/// tiñe toda la imagen. "Ver puntos" dibuja los landmarks para depurar. En los
+/// dos casos solo cambia la croma y se conserva la luz y la textura de la piel.
 ///
 /// Dueña del motor mientras está montada: lo inicia en initState y lo detiene
 /// en dispose. Bloquea la pantalla en vertical, la única orientación validada
-/// del motor (ver CameraMath.extraRotation). Quien la monte tiene que haber liberado antes cualquier otro uso
-/// de la cámara.
+/// del motor (ver CameraMath.extraRotation). Quien la monte tiene que haber
+/// liberado antes cualquier otro uso de la cámara.
 class TestFilterView extends StatefulWidget {
   const TestFilterView({
     super.key,
     required this.noFilterLabel,
     required this.intensityLabel,
     required this.note,
+    required this.lipsOnlyLabel,
+    required this.showPointsLabel,
     this.engine,
   });
 
   final String noFilterLabel;
   final String intensityLabel;
   final String note;
+  final String lipsOnlyLabel;
+  final String showPointsLabel;
 
   /// Inyectable para tests.
   final MakeupEngine? engine;
@@ -78,6 +83,8 @@ class _TestFilterViewState extends State<TestFilterView> {
   bool _tintDirty = false;
   late TestFilterOption _selected = _options.length > 1 ? _options[1] : _options.first;
   double _amount = _defaultAmount;
+  bool _lipsOnly = true;
+  bool _showPoints = false;
 
   @override
   void initState() {
@@ -103,6 +110,7 @@ class _TestFilterViewState extends State<TestFilterView> {
         return;
       }
       setState(() => _info = info);
+      await _applyRenderOptions();
       await _applyTint();
       _statsTimer = Timer.periodic(_statsPeriod, (_) => _pollStats());
     } on MakeupEngineException catch (e) {
@@ -152,6 +160,21 @@ class _TestFilterViewState extends State<TestFilterView> {
     unawaited(_applyTint());
   }
 
+  Future<void> _applyRenderOptions() => _engine.setRenderOptions(
+        showLandmarks: _showPoints,
+        region: _lipsOnly ? TintRegion.lips : TintRegion.full,
+      );
+
+  void _setLipsOnly(bool value) {
+    setState(() => _lipsOnly = value);
+    unawaited(_applyRenderOptions());
+  }
+
+  void _setShowPoints(bool value) {
+    setState(() => _showPoints = value);
+    unawaited(_applyRenderOptions());
+  }
+
   @override
   Widget build(BuildContext context) {
     final info = _info;
@@ -179,7 +202,11 @@ class _TestFilterViewState extends State<TestFilterView> {
               ),
             ),
           ),
-        Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
+        Positioned(
+          top: 8,
+          left: 8,
+          child: _FpsBadge(stats: _stats, trackingRequested: _lipsOnly || _showPoints),
+        ),
         Positioned(left: 0, right: 0, bottom: 0, child: _buildControls()),
       ],
     );
@@ -195,7 +222,23 @@ class _TestFilterViewState extends State<TestFilterView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(widget.note, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 8,
+            children: [
+              FilterChip(
+                label: Text(widget.lipsOnlyLabel),
+                selected: _lipsOnly,
+                onSelected: _setLipsOnly,
+              ),
+              FilterChip(
+                label: Text(widget.showPointsLabel),
+                selected: _showPoints,
+                onSelected: _setShowPoints,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           SizedBox(
             height: 40,
             child: ListView.separated(
@@ -271,11 +314,13 @@ class _OptionChip extends StatelessWidget {
   }
 }
 
-/// FPS reales del motor (calculados en nativo) y error asíncrono si lo hay.
+/// FPS reales del motor y estado del tracker (calculados en nativo), y error
+/// asíncrono si lo hay. Texto de depuración: no se traduce.
 class _FpsBadge extends StatelessWidget {
-  const _FpsBadge({required this.stats});
+  const _FpsBadge({required this.stats, required this.trackingRequested});
 
   final ValueListenable<EngineStats> stats;
+  final bool trackingRequested;
 
   @override
   Widget build(BuildContext context) {
@@ -283,8 +328,10 @@ class _FpsBadge extends StatelessWidget {
       valueListenable: stats,
       builder: (context, s, _) {
         final fps = s.renderFps;
-        final error = s.error;
-        final text = error != null ? 'Motor: $error' : 'Motor nativo · ${fps == null ? '—' : fps.toStringAsFixed(0)} fps';
+        final error = s.error ?? s.tracker.error;
+        final text = error != null
+            ? 'Motor: $error'
+            : 'Motor nativo · ${fps == null ? '—' : fps.toStringAsFixed(0)} fps\n${trackerLabel(s.tracker, requested: trackingRequested)}';
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
@@ -292,5 +339,23 @@ class _FpsBadge extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// Una línea con el estado del tracker para el badge. [requested]: alguna
+/// opción de la vista lo necesita.
+@visibleForTesting
+String trackerLabel(TrackerStats tracker, {required bool requested}) {
+  switch (tracker.state) {
+    case TrackerState.off:
+      if (!requested) return 'Tracker: apagado';
+      return tracker.backend == null ? 'Tracker: cargando modelos…' : 'Tracker: iniciando…';
+    case TrackerState.searching:
+      return 'Tracker: buscando cara…';
+    case TrackerState.tracking:
+      final hz = tracker.hz;
+      final ms = tracker.landmarkP50Ms;
+      return 'Tracker: ${hz == null ? '—' : hz.toStringAsFixed(0)} Hz · '
+          '${ms == null ? '—' : ms.toStringAsFixed(0)} ms';
   }
 }

@@ -232,7 +232,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get testFilterNote =>
-      'Motor novo (beta): por enquanto tinge a imagem inteira. A maquiagem por região chega com o rastreamento facial.';
+      'Motor novo (beta). \"Só lábios\" usa o rastreamento facial: na primeira vez leva alguns segundos para carregar.';
+
+  @override
+  String get testFilterLipsOnly => 'Só lábios';
+
+  @override
+  String get testFilterShowPoints => 'Ver pontos';
 
   @override
   String get fillRequiredFields =>

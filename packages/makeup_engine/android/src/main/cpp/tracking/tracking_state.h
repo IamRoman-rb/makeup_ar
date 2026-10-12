@@ -1,0 +1,173 @@
+// Estado del tracker facial compartido entre el hilo de render y el del
+// tracker (Kotlin, LiteRT). No depende de GL ni del modelo concreto: recibe las
+// salidas crudas y las pasa a puntos en espacio imagen (ver tracking/roi.h).
+//
+// Ciclo de un recorte ("cola de un elemento"; stage_ atómico, transiciones con CAS):
+//   kIdle --start()--> kWaitRender --takeCropRequest()--> kGpu --cropReady()--> kReady
+//   kReady --submit*()--> kWaitRender ...        stop(): cualquiera -> kIdle
+// En kGpu el recorte es del render; en kReady, del tracker. Así ningún buffer
+// se comparte a la vez y no hace falta mutex en el camino caliente.
+//
+// Hilos:
+//   tracker: start, stop, readyCropKind, fillInput, submitDetections, submitLandmarks
+//   render:  setImageSize, takeCropRequest, cropPixels, cropReady, cropFailed, landmarksForRender
+//   cualquiera: snapshotStats
+// Sin allocations después del constructor.
+#pragma once
+
+#include <array>
+#include <atomic>
+#include <cstdint>
+#include <mutex>
+
+#include "engine_config.h"
+#include "stat_window.h"
+#include "tracking/blazeface_decoder.h"
+#include "tracking/one_euro.h"
+#include "tracking/roi.h"
+#include "tracking/triple_buffer.h"
+
+namespace makeup {
+
+enum class CropKind : int32_t { kNone = 0, kDetector = 1, kLandmarks = 2 };
+
+struct CropRequest {
+  CropKind kind = CropKind::kNone;
+  Roi roi;
+  int size = 0;  // lado del tensor, px
+  int taps = 1;  // supersampling por eje
+};
+
+// Mismo orden que TrackerStats en Dart (vía EngineSession.stats()).
+enum TrackerStatIndex : int {
+  kTrackStatState = 0,       // 0 apagado/cargando, 1 buscando cara, 2 siguiendo
+  kTrackStatLandmarkRuns,    // inferencias de landmarks desde el último reset
+  kTrackStatDetectorRuns,    // inferencias del detector
+  kTrackStatLosses,          // veces que se perdió la cara
+  kTrackStatIntervalP50Ms,   // entre resultados de landmarks (1000 / Hz)
+  kTrackStatIntervalP95Ms,
+  kTrackStatLandmarkP50Ms,   // landmarks: escribir entrada + run + leer salida (Kotlin)
+  kTrackStatLandmarkP95Ms,
+  kTrackStatDetectorP50Ms,
+  kTrackStatJitterP50Px,     // desplazamiento medio de los puntos estables entre resultados
+  kTrackStatPresence,        // último puntaje de presencia [0, 1]
+  kTrackStatPitchDeg,        // pose de la cabeza (Procrustes)
+  kTrackStatYawDeg,
+  kTrackStatRollDeg,
+  kTrackStatReadbackMs,      // último recorte: de pedirlo en GPU a tenerlo en CPU
+  kTrackStatCount,
+};
+
+struct RenderLandmarks {
+  const float* points = nullptr;  // kLandmarkCount × (x, y, z) en px de imagen
+  float alpha = 0.0f;             // fundido [0, 1]
+};
+
+class TrackingState {
+ public:
+  static constexpr int kPoints = EngineConfig::kLandmarkCount;
+  static constexpr int kFloats = kPoints * 3;
+
+  TrackingState();
+
+  void setImageSize(int width, int height);
+
+  // --- Hilo del tracker ---
+  void start();
+  void stop();
+  // Tipo de recorte listo para inferir (kNone si no hay).
+  CropKind readyCropKind() const;
+  // RGBA8 del recorte listo -> RGB float (valor / 255 · scale + offset).
+  // [count] tiene que ser size² · 3. Devuelve false si no hay recorte o no coincide.
+  bool fillInput(float* out, int count, float scale, float offset) const;
+  // Salidas del detector: [regressors] 896×16, [scores] 896 logits.
+  void submitDetections(const float* regressors, const float* scores, float inferenceMs);
+  // Salidas de landmarks: [landmarks] >= kFloats floats (x, y, z en px del
+  // tensor) y el logit de presencia.
+  void submitLandmarks(const float* landmarks, int floatCount, float presenceLogit, float inferenceMs);
+
+  // --- Hilo de render ---
+  // Si el tracker pidió un recorte y el throttle lo permite, lo toma (pasa a
+  // kGpu) y devuelve true.
+  bool takeCropRequest(int64_t cameraTimestampNs, CropRequest* out);
+  // Destino del readback: kLandmarkInputSize² · 4 bytes.
+  uint8_t* cropPixels() { return cropPixels_.data(); }
+  void cropReady(float readbackMs);
+  void cropFailed();
+  // Puntos extrapolados a [targetTimestampNs] con su fundido. false si no hay
+  // nada que dibujar. out->points vale hasta la próxima llamada.
+  bool landmarksForRender(int64_t targetTimestampNs, float frameDtSeconds, RenderLandmarks* out);
+
+  // --- Cualquier hilo ---
+  void snapshotStats(float* out);
+  void resetStats();
+
+ private:
+  enum Stage : int { kIdle = 0, kWaitRender, kGpu, kReady };
+
+  struct LandmarkFrame {
+    int64_t timestampNs = 0;
+    bool present = false;
+    bool continuous = false;  // false: no extrapolar desde el resultado anterior
+    std::array<float, kFloats> points{};
+  };
+
+  void requestDetector();
+  void requestLandmarks(const Roi& roi);
+  void finishSubmit();
+  void publishLost(int64_t timestampNs);
+  void resetFilters();
+  void updatePose(const float* points);
+
+  std::atomic<int> stage_{kIdle};
+  std::atomic<int> imageWidth_{0};
+  std::atomic<int> imageHeight_{0};
+
+  // Pedido del tracker; se lee en takeCropRequest (después de ver kWaitRender).
+  CropRequest request_;
+  // Recorte en curso; lo escribe el render en takeCropRequest y lo lee el
+  // tracker después de ver kReady.
+  CropRequest inFlight_;
+  int64_t inFlightTimestampNs_ = 0;
+  std::array<uint8_t, EngineConfig::kLandmarkInputSize * EngineConfig::kLandmarkInputSize * 4> cropPixels_{};
+
+  // Solo render.
+  int64_t lastCropNs_ = 0;
+  LandmarkFrame current_;
+  LandmarkFrame previous_;
+  std::array<float, kFloats> drawPoints_{};
+  float alpha_ = 0.0f;
+
+  // Solo tracker.
+  BlazeFaceDecoder decoder_;
+  OneEuroParams filterParams_;
+  std::array<OneEuroFilter, kFloats> filters_{};
+  std::array<float, kFloats> raw_{};
+  std::array<float, kFloats> filtered_{};
+  std::array<float, kFloats> poseTarget_{};
+  std::array<float, 80> stableBefore_{};  // x, y de los puntos de Procrustes (33)
+  bool hasFace_ = false;
+  int64_t lastLandmarkNs_ = 0;
+  TripleBuffer<LandmarkFrame> frames_;
+
+  std::atomic<float> readbackMs_{NAN};
+
+  // Stats: tracker escribe, cualquiera lee.
+  std::mutex statsMutex_;
+  StatWindow interval_;
+  StatWindow landmarkMs_;
+  StatWindow detectorMs_;
+  StatWindow jitter_;
+  StatWindow::Samples scratch_{};
+  int64_t lastIntervalNs_ = 0;
+  uint32_t landmarkRuns_ = 0;
+  uint32_t detectorRuns_ = 0;
+  uint32_t losses_ = 0;
+  int state_ = 0;
+  float presence_ = NAN;
+  float pitchDeg_ = NAN;
+  float yawDeg_ = NAN;
+  float rollDeg_ = NAN;
+};
+
+}  // namespace makeup

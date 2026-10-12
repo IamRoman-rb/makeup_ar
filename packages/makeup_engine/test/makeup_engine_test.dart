@@ -87,6 +87,56 @@ void main() {
     expect(calls.single.arguments, {'r': 1.0, 'g': 0.0, 'b': 0.5, 'amount': 1.0});
   });
 
+  test('setRenderOptions manda puntos y región', () async {
+    await MakeupEngine().setRenderOptions(showLandmarks: true, region: TintRegion.lips);
+    expect(calls.single.method, 'setRenderOptions');
+    expect(calls.single.arguments, {'showLandmarks': true, 'region': 1});
+  });
+
+  test('setRenderOptions por defecto: sin puntos y pantalla completa', () async {
+    await MakeupEngine().setRenderOptions();
+    expect(calls.single.arguments, {'showLandmarks': false, 'region': 0});
+  });
+
+  test('getStats parsea las métricas del tracker', () async {
+    handler = (_) => {
+          'frames': 10.0,
+          'tracker': {
+            'state': 2,
+            'landmarkRuns': 40.0,
+            'detectorRuns': 3.0,
+            'losses': 1.0,
+            'intervalP50Ms': 50.0,
+            'intervalP95Ms': double.nan,
+            'landmarkP50Ms': 17.0,
+            'jitterP50Px': 0.4,
+            'presence': 0.99,
+            'yawDeg': -12.5,
+            'initMs': 812.0,
+            'backend': 'detector=gpu landmarks=gpu',
+            'error': null,
+          },
+        };
+    final stats = await MakeupEngine().getStats();
+    final tracker = stats.tracker;
+    expect(tracker.state, TrackerState.tracking);
+    expect(tracker.landmarkRuns, 40);
+    expect(tracker.losses, 1);
+    expect(tracker.hz, closeTo(20, 1e-9));
+    expect(tracker.intervalP95Ms, isNull);
+    expect(tracker.jitterP50Px, 0.4);
+    expect(tracker.yawDeg, -12.5);
+    expect(tracker.backend, contains('gpu'));
+  });
+
+  test('getStats sin tracker devuelve tracker apagado', () async {
+    handler = (_) => {'frames': 1.0, 'tracker': {'state': 99}};
+    final stats = await MakeupEngine().getStats();
+    expect(stats.tracker.state, TrackerState.tracking); // fuera de rango: se acota
+    handler = (_) => {'frames': 1.0};
+    expect((await MakeupEngine().getStats()).tracker.state, TrackerState.off);
+  });
+
   test('runBenchmark parsea resultados y errores por backend', () async {
     handler = (_) => [
           {

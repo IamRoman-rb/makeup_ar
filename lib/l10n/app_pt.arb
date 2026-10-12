@@ -81,7 +81,9 @@
     "testFilter": "Filtro de teste",
     "testFilterNone": "Sem filtro",
     "testFilterIntensity": "Intensidade",
-    "testFilterNote": "Motor novo (beta): por enquanto tinge a imagem inteira. A maquiagem por região chega com o rastreamento facial.",
+    "testFilterNote": "Motor novo (beta). \"Só lábios\" usa o rastreamento facial: na primeira vez leva alguns segundos para carregar.",
+    "testFilterLipsOnly": "Só lábios",
+    "testFilterShowPoints": "Ver pontos",
 
     "fillRequiredFields": "Por favor, preencha todos os campos obrigatórios",
     "registrationError": "Erro de registro",

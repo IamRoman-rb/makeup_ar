@@ -7,7 +7,6 @@ import android.util.Log
 import com.google.ai.edge.litert.Accelerator
 import com.google.ai.edge.litert.CompiledModel
 import com.google.ai.edge.litert.Environment
-import java.io.File
 
 /** Resultado de un modelo con un backend. Tiempos en ms. */
 internal data class BenchmarkResult(
@@ -45,7 +44,6 @@ internal data class BenchmarkResult(
  */
 internal object ModelBenchmark {
     private const val TAG = "makeup_bench"
-    private const val ASSET_DIR = "makeup_engine/models"
     private const val WARMUP = 20
     private const val ITERATIONS = 300
     private const val COOLDOWN_MS = 2000L
@@ -53,8 +51,8 @@ internal object ModelBenchmark {
     private data class ModelSpec(val file: String, val inputSize: Int)
 
     private val models = listOf(
-        ModelSpec("face_detector.tflite", 128),
-        ModelSpec("face_landmarks_detector.tflite", 256),
+        ModelSpec(ModelAssets.DETECTOR, 128),
+        ModelSpec(ModelAssets.LANDMARKS, 256),
     )
 
     private data class Backend(val name: String, val options: () -> CompiledModel.Options)
@@ -83,7 +81,7 @@ internal object ModelBenchmark {
         val results = mutableListOf<BenchmarkResult>()
         try {
             for (model in models) {
-                val path = copyAssetToFile(context, model.file)
+                val path = ModelAssets.file(context, model.file)
                 val input = syntheticInput(model.inputSize)
                 for (backend in backends) {
                     val result = runOne(environment, path, model, backend, input)
@@ -164,15 +162,5 @@ internal object ModelBenchmark {
             }
         }
         return data
-    }
-
-    /** CompiledModel lee de un archivo: los assets del APK pueden estar comprimidos. */
-    private fun copyAssetToFile(context: Context, name: String): String {
-        val target = File(context.filesDir, "$ASSET_DIR/$name")
-        target.parentFile?.mkdirs()
-        context.assets.open("$ASSET_DIR/$name").use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
-        }
-        return target.absolutePath
     }
 }

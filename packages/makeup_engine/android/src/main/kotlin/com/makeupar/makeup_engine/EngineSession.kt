@@ -36,9 +36,11 @@ internal data class StartInfo(
  *
  * Hilos:
  *  - plataforma (main): start/release/stats, callbacks de SurfaceProducer.
- *  - "makeup-render": dueño del contexto EGL/GL; dibuja cada frame de cámara.
+ *  - "makeup-render": dueño del contexto EGL/GL; dibuja cada frame de cámara
+ *    y recorta la cara para el tracker.
  *  - "makeup-camera": callbacks de Camera2.
- * Dart no cruza por frame: solo inicia, detiene, cambia el tinte y lee stats.
+ *  - "makeup-tracker": inferencia (ver LiteRtFaceTracker).
+ * Dart no cruza por frame: solo inicia, detiene, cambia opciones y lee stats.
  */
 internal class EngineSession(
     private val context: Context,
@@ -54,6 +56,7 @@ internal class EngineSession(
     private val config = NativeBridge.nativeGetConfig()
     private val nativeHandle = NativeBridge.nativeCreate()
     private val egl = EglCore()
+    private val tracker: FaceTracker = LiteRtFaceTracker(context, nativeHandle)
 
     // Solo hilo de render; se reutiliza en cada frame (cero allocations).
     private val texMatrix = FloatArray(16)
@@ -64,8 +67,13 @@ internal class EngineSession(
 
     // Solo hilo de plataforma.
     private val statsBuffer = FloatArray(NativeBridge.STAT_COUNT)
+    private val trackerStatsBuffer = FloatArray(NativeBridge.TRACK_STAT_COUNT)
     private var producer: TextureRegistry.SurfaceProducer? = null
     private var startInfo: StartInfo? = null
+    private var trackerLoading = false
+    // nativeDestroy recién cuando el render y el tracker soltaron el núcleo.
+    private var renderReleased = false
+    private var trackerReleased = false
 
     // Solo hilo de cámara.
     private var camera: CameraDevice? = null
@@ -119,6 +127,8 @@ internal class EngineSession(
         val rotation = rotationOverride ?: CameraMath.extraRotation(displayRotationDegrees())
         val outputSize = CameraMath.outputSize(preview, sensorOrientation, rotation)
         val displayMatrix = CameraMath.displayMatrix(rotation, mirror = true)
+        // El tracker trabaja sobre la imagen sin espejar (izquierda/derecha anatómicas).
+        val trackerMatrix = CameraMath.displayMatrix(rotation, mirror = false)
 
         val newProducer = textures.createSurfaceProducer()
         producer = newProducer
@@ -140,7 +150,7 @@ internal class EngineSession(
         val initialSurface = newProducer.surface
 
         renderHandler.post {
-            val error = initGl(preview, outputSize, displayMatrix, initialSurface)
+            val error = initGl(preview, outputSize, displayMatrix, trackerMatrix, initialSurface)
             if (error != null) {
                 mainHandler.post { onResult(Result.failure(EngineException("gl_init_failed", error))) }
                 return@post
@@ -164,11 +174,17 @@ internal class EngineSession(
     }
 
     /** Hilo de render. Devuelve null si salió bien. */
-    private fun initGl(preview: PixelSize, outputSize: PixelSize, displayMatrix: FloatArray, window: Surface): String? {
+    private fun initGl(
+        preview: PixelSize,
+        outputSize: PixelSize,
+        displayMatrix: FloatArray,
+        trackerMatrix: FloatArray,
+        window: Surface,
+    ): String? {
         egl.init()?.let { return it }
         val textureId = NativeBridge.nativeInitGl(nativeHandle)
         if (textureId == 0) return NativeBridge.nativeGetLastError(nativeHandle)
-        NativeBridge.nativeSetDisplayMatrix(nativeHandle, displayMatrix)
+        NativeBridge.nativeSetGeometry(nativeHandle, displayMatrix, trackerMatrix, outputSize.width, outputSize.height, true)
         output = outputSize
         val texture = SurfaceTexture(textureId).apply {
             setDefaultBufferSize(preview.width, preview.height)
@@ -206,7 +222,8 @@ internal class EngineSession(
         lastFrameTimestamp = timestamp
         if (!egl.hasWindow) return
         texture.getTransformMatrix(texMatrix)
-        NativeBridge.nativeDrawFrame(nativeHandle, texMatrix, output.width, output.height, frameStart, timestamp)
+        val flags = NativeBridge.nativeDrawFrame(nativeHandle, texMatrix, output.width, output.height, frameStart, timestamp)
+        if (flags and NativeBridge.FRAME_FLAG_CROP_READY != 0 && !released) tracker.onCropReady()
     }
 
     @SuppressLint("MissingPermission") // Dart pide el permiso antes de start().
@@ -323,11 +340,55 @@ internal class EngineSession(
         if (!released) NativeBridge.nativeResetStats(nativeHandle)
     }
 
+    /**
+     * Hilo de plataforma. [region]: NativeBridge.REGION_*. El tracker se prende
+     * si alguna opción lo necesita.
+     */
+    fun setRenderOptions(showLandmarks: Boolean, region: Int) {
+        if (released) return
+        NativeBridge.nativeSetRenderOptions(nativeHandle, showLandmarks, region)
+        setTrackingEnabled(showLandmarks || region == NativeBridge.REGION_LIPS)
+    }
+
+    /**
+     * Hilo de plataforma. Prende o apaga el tracker. Los modelos se cargan la
+     * primera vez que se prende (no se paga la carga si nadie lo usa).
+     */
+    private fun setTrackingEnabled(enabled: Boolean) {
+        if (enabled && !trackerLoading) {
+            trackerLoading = true
+            tracker.start()
+        }
+        tracker.setEnabled(enabled)
+    }
+
     /** Hilo de plataforma. Las claves coinciden con EngineStats.fromMap en Dart. */
     fun stats(): Map<String, Any?> {
         if (released) return mapOf("error" to "sesión cerrada")
         NativeBridge.nativeGetStats(nativeHandle, statsBuffer)
+        NativeBridge.nativeGetTrackerStats(nativeHandle, trackerStatsBuffer)
         val info = startInfo
+        val t = trackerStatsBuffer
+        val trackerMap = mapOf(
+            "state" to t[NativeBridge.TRACK_STAT_STATE].toInt(),
+            "landmarkRuns" to t[NativeBridge.TRACK_STAT_LANDMARK_RUNS].toDouble(),
+            "detectorRuns" to t[NativeBridge.TRACK_STAT_DETECTOR_RUNS].toDouble(),
+            "losses" to t[NativeBridge.TRACK_STAT_LOSSES].toDouble(),
+            "intervalP50Ms" to t[NativeBridge.TRACK_STAT_INTERVAL_P50_MS].toDouble(),
+            "intervalP95Ms" to t[NativeBridge.TRACK_STAT_INTERVAL_P95_MS].toDouble(),
+            "landmarkP50Ms" to t[NativeBridge.TRACK_STAT_LANDMARK_P50_MS].toDouble(),
+            "landmarkP95Ms" to t[NativeBridge.TRACK_STAT_LANDMARK_P95_MS].toDouble(),
+            "detectorP50Ms" to t[NativeBridge.TRACK_STAT_DETECTOR_P50_MS].toDouble(),
+            "jitterP50Px" to t[NativeBridge.TRACK_STAT_JITTER_P50_PX].toDouble(),
+            "presence" to t[NativeBridge.TRACK_STAT_PRESENCE].toDouble(),
+            "pitchDeg" to t[NativeBridge.TRACK_STAT_PITCH_DEG].toDouble(),
+            "yawDeg" to t[NativeBridge.TRACK_STAT_YAW_DEG].toDouble(),
+            "rollDeg" to t[NativeBridge.TRACK_STAT_ROLL_DEG].toDouble(),
+            "readbackMs" to t[NativeBridge.TRACK_STAT_READBACK_MS].toDouble(),
+            "initMs" to tracker.initMs,
+            "backend" to tracker.backend,
+            "error" to tracker.error,
+        )
         return mapOf(
             "frames" to statsBuffer[NativeBridge.STAT_FRAMES].toDouble(),
             "intervalP50Ms" to statsBuffer[NativeBridge.STAT_INTERVAL_P50_MS].toDouble(),
@@ -339,6 +400,7 @@ internal class EngineSession(
             "previewWidth" to info?.preview?.width,
             "previewHeight" to info?.preview?.height,
             "error" to lastError,
+            "tracker" to trackerMap,
         )
     }
 
@@ -351,7 +413,8 @@ internal class EngineSession(
      * Flutter con el FlutterEngine desacoplado y la app crashea
      * ("FlutterJNI is not attached to native").
      *
-     * Parte asíncrona: cámara -> GL -> Renderer nativo, sin bloquear la UI.
+     * Parte asíncrona: cámara -> GL -> Renderer nativo y, en paralelo, el
+     * tracker; el núcleo nativo se destruye cuando terminaron los dos.
      * setTint/stats/resetStats chequean [released] en este mismo hilo, así que
      * no pueden usar el Renderer destruido.
      */
@@ -363,6 +426,11 @@ internal class EngineSession(
         }
         producer?.release()
         producer = null
+        // Si está cargando modelos, termina la carga y recién después libera.
+        tracker.release {
+            trackerReleased = true
+            destroyNativeIfIdle()
+        }
         cameraHandler.post {
             closeCaptureSession()
             val openDevice = camera
@@ -377,7 +445,10 @@ internal class EngineSession(
                 NativeBridge.nativeReleaseGl(nativeHandle)
                 egl.release()
                 renderThread.quitSafely()
-                mainHandler.post { NativeBridge.nativeDestroy(nativeHandle) }
+                mainHandler.post {
+                    renderReleased = true
+                    destroyNativeIfIdle()
+                }
             }
             // Si hay dispositivo o sesión abiertos, el último onClosed termina el hilo.
             if (!quitCameraThreadIfIdle()) {
@@ -387,6 +458,11 @@ internal class EngineSession(
                 cameraHandler.postDelayed({ cameraThread.quitSafely() }, CAMERA_QUIT_FALLBACK_MS)
             }
         }
+    }
+
+    /** Hilo de plataforma. */
+    private fun destroyNativeIfIdle() {
+        if (renderReleased && trackerReleased) NativeBridge.nativeDestroy(nativeHandle)
     }
 
     private fun runOnRenderAndWait(timeoutMs: Long, block: () -> Unit): Boolean {

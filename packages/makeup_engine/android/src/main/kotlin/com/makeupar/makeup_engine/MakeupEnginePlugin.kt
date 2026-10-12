@@ -9,7 +9,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.TextureRegistry
 
 /**
- * Canal `makeup_engine`. Métodos: start, stop, setTint, getStats, resetStats,
+ * Canal `makeup_engine`. Métodos: start, stop, setTint, setRenderOptions, getStats, resetStats,
  * runBenchmark.
  * Una sola sesión a la vez. Ver lib/makeup_engine.dart para el contrato.
  */
@@ -48,6 +48,12 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 val b = call.argument<Double>("b") ?: 0.0
                 val amount = call.argument<Double>("amount") ?: 0.0
                 session?.setTint(r.toFloat(), g.toFloat(), b.toFloat(), amount.toFloat())
+                result.success(null)
+            }
+            "setRenderOptions" -> {
+                val showLandmarks = call.argument<Boolean>("showLandmarks") ?: false
+                val region = call.argument<Int>("region") ?: NativeBridge.REGION_FULL
+                session?.setRenderOptions(showLandmarks, region)
                 result.success(null)
             }
             "getStats" -> result.success(session?.stats())

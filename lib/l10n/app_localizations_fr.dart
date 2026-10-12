@@ -235,7 +235,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get testFilterNote =>
-      'Nouveau moteur (bêta) : pour l\'instant il teinte toute l\'image. Le maquillage par zone arrivera avec le suivi du visage.';
+      'Nouveau moteur (bêta). « Lèvres seulement » utilise le suivi du visage : la première fois, le chargement prend quelques secondes.';
+
+  @override
+  String get testFilterLipsOnly => 'Lèvres seulement';
+
+  @override
+  String get testFilterShowPoints => 'Voir les points';
 
   @override
   String get fillRequiredFields =>

@@ -122,6 +122,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         noFilterLabel: l10n.testFilterNone,
         intensityLabel: l10n.testFilterIntensity,
         note: l10n.testFilterNote,
+        lipsOnlyLabel: l10n.testFilterLipsOnly,
+        showPointsLabel: l10n.testFilterShowPoints,
       );
     } else if (_isCameraInitialized && controller != null) {
       body = Stack(

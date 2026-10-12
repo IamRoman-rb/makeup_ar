@@ -231,7 +231,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get testFilterNote =>
-      'New engine (beta): for now it tints the whole image. Per-area makeup comes with face tracking.';
+      'New engine (beta). \"Lips only\" uses face tracking: the first time it takes a few seconds to load.';
+
+  @override
+  String get testFilterLipsOnly => 'Lips only';
+
+  @override
+  String get testFilterShowPoints => 'Show points';
 
   @override
   String get fillRequiredFields => 'Please fill all required fields';

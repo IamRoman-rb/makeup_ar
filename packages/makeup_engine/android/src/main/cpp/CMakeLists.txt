@@ -11,7 +11,11 @@ set(SHADER_FILES
     ${SHADER_DIR}/color.glsl
     ${SHADER_DIR}/camera_quad.vert
     ${SHADER_DIR}/passthrough.frag
-    ${SHADER_DIR}/tint_oklab.frag)
+    ${SHADER_DIR}/tint_oklab.frag
+    ${SHADER_DIR}/crop_roi.vert
+    ${SHADER_DIR}/crop_roi.frag
+    ${SHADER_DIR}/face_mesh.vert
+    ${SHADER_DIR}/solid_color.frag)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${SHADER_FILES})
 
 set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
@@ -31,11 +35,14 @@ string(APPEND SHADER_HEADER_CONTENT "}  // namespace makeup::shaders\n")
 file(CONFIGURE OUTPUT ${GENERATED_DIR}/shader_sources.h CONTENT "${SHADER_HEADER_CONTENT}" @ONLY)
 
 add_library(makeup_engine SHARED
+    crop_pass.cpp
     frame_stats.cpp
+    gl_program.cpp
     jni_bridge.cpp
     renderer.cpp
     tracking/blazeface_decoder.cpp
     tracking/roi.cpp
+    tracking/tracking_state.cpp
     tracking/umeyama.cpp)
 
 target_include_directories(makeup_engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${GENERATED_DIR})

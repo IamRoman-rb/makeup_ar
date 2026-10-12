@@ -81,7 +81,9 @@
     "testFilter": "Test filter",
     "testFilterNone": "No filter",
     "testFilterIntensity": "Intensity",
-    "testFilterNote": "New engine (beta): for now it tints the whole image. Per-area makeup comes with face tracking.",
+    "testFilterNote": "New engine (beta). \"Lips only\" uses face tracking: the first time it takes a few seconds to load.",
+    "testFilterLipsOnly": "Lips only",
+    "testFilterShowPoints": "Show points",
 
     "fillRequiredFields": "Please fill all required fields",
     "registrationError": "Registration error",

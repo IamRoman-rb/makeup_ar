@@ -1,8 +1,9 @@
 /// Motor AR nativo (Android): cámara -> OpenGL ES 3.0 -> `Texture` de Flutter.
 ///
-/// Fase P1 (spike): paso directo y tinte OKLab de pantalla completa, con
-/// métricas de frame calculadas en nativo. Dart nunca ve píxeles ni cruza por
-/// frame: inicia/detiene, cambia parámetros y lee métricas.
+/// Tinte OKLab (pantalla completa o solo labios) sobre la cámara y tracker
+/// facial (FaceMesh-V2) en nativo, con métricas calculadas en nativo. Dart
+/// nunca ve píxeles ni cruza por frame: inicia/detiene, cambia parámetros y lee
+/// métricas.
 library;
 
 import 'package:flutter/services.dart';
@@ -70,18 +71,23 @@ final class EngineStats {
     this.cameraIntervalP50Ms,
     this.cameraIntervalP95Ms,
     this.error,
+    this.tracker = TrackerStats.empty,
   });
 
-  factory EngineStats.fromMap(Map<Object?, Object?> map) => EngineStats(
-        frames: _double(map['frames'])?.round() ?? 0,
-        intervalP50Ms: _double(map['intervalP50Ms']),
-        intervalP95Ms: _double(map['intervalP95Ms']),
-        cpuP50Ms: _double(map['cpuP50Ms']),
-        cpuP95Ms: _double(map['cpuP95Ms']),
-        cameraIntervalP50Ms: _double(map['cameraIntervalP50Ms']),
-        cameraIntervalP95Ms: _double(map['cameraIntervalP95Ms']),
-        error: map['error'] as String?,
-      );
+  factory EngineStats.fromMap(Map<Object?, Object?> map) {
+    final tracker = map['tracker'];
+    return EngineStats(
+      frames: _double(map['frames'])?.round() ?? 0,
+      intervalP50Ms: _double(map['intervalP50Ms']),
+      intervalP95Ms: _double(map['intervalP95Ms']),
+      cpuP50Ms: _double(map['cpuP50Ms']),
+      cpuP95Ms: _double(map['cpuP95Ms']),
+      cameraIntervalP50Ms: _double(map['cameraIntervalP50Ms']),
+      cameraIntervalP95Ms: _double(map['cameraIntervalP95Ms']),
+      error: map['error'] as String?,
+      tracker: tracker is Map<Object?, Object?> ? TrackerStats.fromMap(tracker) : TrackerStats.empty,
+    );
+  }
 
   static const empty = EngineStats(frames: 0);
 
@@ -103,11 +109,124 @@ final class EngineStats {
   /// Último error asíncrono (cámara desconectada, permiso, etc.).
   final String? error;
 
+  /// Métricas del tracker facial.
+  final TrackerStats tracker;
+
   double? get renderFps => _fps(intervalP50Ms);
   double? get cameraFps => _fps(cameraIntervalP50Ms);
+}
 
-  static double? _fps(double? intervalMs) =>
-      intervalMs == null || intervalMs <= 0 ? null : 1000 / intervalMs;
+/// Estado del tracker facial.
+enum TrackerState {
+  /// Apagado o cargando los modelos.
+  off,
+
+  /// Corriendo el detector: todavía no hay cara.
+  searching,
+
+  /// Siguiendo una cara con el modelo de landmarks.
+  tracking,
+}
+
+/// Métricas del tracker (nativo, ventana de las últimas ~256 muestras).
+final class TrackerStats {
+  const TrackerStats({
+    this.state = TrackerState.off,
+    this.landmarkRuns = 0,
+    this.detectorRuns = 0,
+    this.losses = 0,
+    this.intervalP50Ms,
+    this.intervalP95Ms,
+    this.landmarkP50Ms,
+    this.landmarkP95Ms,
+    this.detectorP50Ms,
+    this.jitterP50Px,
+    this.presence,
+    this.pitchDeg,
+    this.yawDeg,
+    this.rollDeg,
+    this.readbackMs,
+    this.initMs,
+    this.backend,
+    this.error,
+  });
+
+  factory TrackerStats.fromMap(Map<Object?, Object?> map) {
+    final state = _int(map['state']) ?? 0;
+    return TrackerStats(
+      state: TrackerState.values[state.clamp(0, TrackerState.values.length - 1)],
+      landmarkRuns: _double(map['landmarkRuns'])?.round() ?? 0,
+      detectorRuns: _double(map['detectorRuns'])?.round() ?? 0,
+      losses: _double(map['losses'])?.round() ?? 0,
+      intervalP50Ms: _double(map['intervalP50Ms']),
+      intervalP95Ms: _double(map['intervalP95Ms']),
+      landmarkP50Ms: _double(map['landmarkP50Ms']),
+      landmarkP95Ms: _double(map['landmarkP95Ms']),
+      detectorP50Ms: _double(map['detectorP50Ms']),
+      jitterP50Px: _double(map['jitterP50Px']),
+      presence: _double(map['presence']),
+      pitchDeg: _double(map['pitchDeg']),
+      yawDeg: _double(map['yawDeg']),
+      rollDeg: _double(map['rollDeg']),
+      readbackMs: _double(map['readbackMs']),
+      initMs: _double(map['initMs']),
+      backend: map['backend'] as String?,
+      error: map['error'] as String?,
+    );
+  }
+
+  static const empty = TrackerStats();
+
+  final TrackerState state;
+
+  /// Inferencias desde el inicio o el último [MakeupEngine.resetStats].
+  final int landmarkRuns;
+  final int detectorRuns;
+
+  /// Veces que se perdió la cara.
+  final int losses;
+
+  /// Intervalo entre resultados de landmarks (1000 / Hz del tracker).
+  final double? intervalP50Ms;
+  final double? intervalP95Ms;
+
+  /// Landmarks: preparar entrada + inferencia + leer salidas.
+  final double? landmarkP50Ms;
+  final double? landmarkP95Ms;
+  final double? detectorP50Ms;
+
+  /// Movimiento medio de los puntos estables entre resultados (px de la
+  /// imagen). Con la cara quieta es el temblor; objetivo < 0,5 px.
+  final double? jitterP50Px;
+
+  /// Puntaje de presencia del último resultado, [0, 1].
+  final double? presence;
+
+  /// Pose de la cabeza en grados.
+  final double? pitchDeg;
+  final double? yawDeg;
+  final double? rollDeg;
+
+  /// Último recorte: de pedirlo a la GPU a tenerlo en CPU.
+  final double? readbackMs;
+
+  /// Carga de los modelos (la primera vez incluye compilar para la GPU).
+  final double? initMs;
+
+  /// Backends en uso, p. ej. `detector=gpu landmarks=gpu`.
+  final String? backend;
+  final String? error;
+
+  double? get hz => _fps(intervalP50Ms);
+}
+
+/// Dónde se aplica el tinte.
+enum TintRegion {
+  /// Toda la imagen (no necesita tracker).
+  full,
+
+  /// Solo los labios (prende el tracker).
+  lips,
 }
 
 /// Latencia de un modelo del tracker con un backend de LiteRT (ver
@@ -200,6 +319,15 @@ final class MakeupEngine {
         'amount': amount.clamp(0.0, 1.0),
       });
 
+  /// [showLandmarks] dibuja los puntos del tracker (depuración); [region]
+  /// limita el tinte. El tracker se prende si alguno lo necesita: la primera
+  /// vez carga los modelos (segundos) y mientras tanto no hay cara.
+  Future<void> setRenderOptions({bool showLandmarks = false, TintRegion region = TintRegion.full}) =>
+      _channel.invokeMethod<void>('setRenderOptions', {
+        'showLandmarks': showLandmarks,
+        'region': region.index,
+      });
+
   /// Leer a ~2 Hz como máximo: es para el overlay y el arnés, no por frame.
   Future<EngineStats> getStats() async {
     final result = await _channel.invokeMapMethod<Object?, Object?>('getStats');
@@ -219,7 +347,9 @@ final class MakeupEngine {
   }
 }
 
-int? _int(Object? value) => value is num ? value.toInt() : null;
+int? _int(Object? value) => value is num && value.isFinite ? value.toInt() : null;
+
+double? _fps(double? intervalMs) => intervalMs == null || intervalMs <= 0 ? null : 1000 / intervalMs;
 
 /// NaN (ventana vacía en nativo) se convierte en null.
 double? _double(Object? value) {

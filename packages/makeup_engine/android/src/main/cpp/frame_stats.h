@@ -7,6 +7,7 @@
 #include <mutex>
 
 #include "engine_config.h"
+#include "stat_window.h"
 
 namespace makeup {
 
@@ -34,18 +35,7 @@ class FrameStats {
   void reset();
 
  private:
-  using Samples = std::array<float, EngineConfig::kStatsWindow>;
-
-  struct Window {
-    Samples samples{};
-    int head = 0;
-    int count = 0;
-
-    void push(float value);
-    void clear();
-  };
-
-  static float percentile(const Window& window, Samples& scratch, float p);
+  using Window = StatWindow;
 
   std::mutex mutex_;  // record() vs copia en snapshot(); se retiene ~1 µs
   Window interval_;
@@ -58,7 +48,7 @@ class FrameStats {
   Window intervalCopy_;
   Window cpuCopy_;
   Window cameraIntervalCopy_;
-  Samples scratch_{};
+  StatWindow::Samples scratch_{};
   int64_t lastFrameEndNs_ = 0;
   int64_t lastCameraNs_ = 0;
   uint64_t frames_ = 0;

@@ -231,7 +231,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get testFilterNote =>
-      'Motor nuevo (beta): por ahora tiñe toda la imagen. El maquillaje por zona llega con el seguimiento facial.';
+      'Motor nuevo (beta). \"Solo labios\" usa el seguimiento facial: la primera vez tarda unos segundos en cargar.';
+
+  @override
+  String get testFilterLipsOnly => 'Solo labios';
+
+  @override
+  String get testFilterShowPoints => 'Ver puntos';
 
   @override
   String get fillRequiredFields =>
