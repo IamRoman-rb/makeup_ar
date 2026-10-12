@@ -14,6 +14,8 @@
 //   uTexMatrix     mat4   SurfaceTexture.getTransformMatrix() del frame.
 //   uMapTransform  vec4   UV canónico -> UV del mapa de labios:
 //                         mapUv = aUv · .xy + .zw (mesh::kLipsMapUvRect).
+//   uGlossShift    vec2   desplazamiento del brillo en UV del mapa, |.| <= ~0,1
+//                         (sigue la pose: el reflejo se mueve al girar).
 //   uView          vec3   dirección hacia la cámara en la malla canónica
 //                         (unitaria; de frente (0, 0, 1)), de la pose.
 //   uFacingFade    vec2   coseno normal·vista en que el labial empieza (.x) y
@@ -22,6 +24,9 @@
 //   vTexCoord      vec2   coordenada en la textura de cámara del píxel.
 //   vMapUv         vec2   coordenada en el mapa de labios [0,1] (fuera = 0 por
 //                         CLAMP_TO_EDGE con borde vacío).
+//   vGlossUv       vec2   vMapUv - uGlossShift: dónde se lee el brillo. Se resta
+//                         acá (es afín) para que la lectura del fragment no sea
+//                         dependiente.
 //   vFacing        float  [0,1]: 0 donde la superficie queda de espaldas. De
 //                         perfil, la mitad lejana del labio quedaría pintada
 //                         encima del borde de la cara (no hay prueba de
@@ -42,11 +47,13 @@ uniform vec4 uImageToClip;
 uniform mat4 uDisplayMatrix;
 uniform mat4 uTexMatrix;
 uniform vec4 uMapTransform;
+uniform vec2 uGlossShift;
 uniform vec3 uView;
 uniform vec2 uFacingFade;
 
 out vec2 vTexCoord;
 out vec2 vMapUv;
+out vec2 vGlossUv;
 out mediump float vFacing;
 
 void main() {
@@ -58,5 +65,6 @@ void main() {
   vec4 cameraUv = uDisplayMatrix * vec4(outputUv, 0.0, 1.0);
   vTexCoord = (uTexMatrix * vec4(cameraUv.xy, 0.0, 1.0)).xy;
   vMapUv = aUv * uMapTransform.xy + uMapTransform.zw;
+  vGlossUv = vMapUv - uGlossShift;
   vFacing = smoothstep(uFacingFade.x, uFacingFade.y, dot(aNormal, uView));
 }

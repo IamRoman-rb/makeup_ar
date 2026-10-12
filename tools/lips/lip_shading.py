@@ -20,6 +20,7 @@ from sample_region_reference import from_ok, lin_to_srgb, srgb_to_lin, to_ok  # 
 
 
 GAMUT_STEPS = 6  # color.glsl: GAMUT_STEPS
+GAMUT_EPSILON = 1e-5  # color.glsl: GAMUT_EPSILON
 # lips.frag: SHADING_MAX, LIP_LIGHTNESS_MIN, GLOSS_SHADING_LOW/HIGH.
 SHADING_MAX = 1.6
 LIP_LIGHTNESS_MIN = 0.1
@@ -28,7 +29,7 @@ GLOSS_SHADING_HIGH = 1.05
 
 
 def _in_gamut(rgb_lin: np.ndarray) -> np.ndarray:
-    return np.all((rgb_lin >= 0.0) & (rgb_lin <= 1.0), axis=-1)
+    return np.all((rgb_lin >= -GAMUT_EPSILON) & (rgb_lin <= 1.0 + GAMUT_EPSILON), axis=-1)
 
 
 def oklab_to_linear_in_gamut(lab: np.ndarray) -> np.ndarray:
@@ -46,7 +47,7 @@ def oklab_to_linear_in_gamut(lab: np.ndarray) -> np.ndarray:
         hi = np.where(inside, hi, mid)
     reduced = np.concatenate([lab[..., :1], lab[..., 1:] * lo[..., None]], axis=-1)
     clipped = np.clip(from_ok(reduced), 0.0, 1.0)
-    return np.where(_in_gamut(direct)[..., None], direct, clipped)
+    return np.where(_in_gamut(direct)[..., None], np.clip(direct, 0.0, 1.0), clipped)
 
 
 @dataclass(frozen=True)
@@ -67,7 +68,10 @@ def shade(camera_srgb: np.ndarray, mask: np.ndarray, gloss_map: np.ndarray, p: L
     """Color sRGB de salida por píxel (lips.frag).
 
     camera_srgb (..., 3) en [0,1]; mask y gloss_map (...) en [0,1] (canales R
-    y G del mapa de labios); sparkle (...) en [0,1] solo con shimmer.
+    y G del mapa de labios; gloss_map ya leído en la posición desplazada por
+    la pose). sparkle (...) son los destellos ya multiplicados por uSparkle
+    (el hash de celdas del shader no se reproduce). La orientación (vFacing
+    de lips.vert) no está: equivale a 1, el labio de frente.
     """
     w = np.clip(mask * p.opacity, 0.0, 1.0)
     lab = to_ok(srgb_to_lin(camera_srgb))

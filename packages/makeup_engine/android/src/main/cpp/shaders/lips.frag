@@ -36,8 +36,6 @@
 //   uSharpness     float  exponente sobre el mapa de brillo, [1,8]: más alto,
 //                         brillo más chico y concentrado.
 //   uLight         float  atenuación del brillo por luz de la escena, [0,1].
-//   uGlossShift    vec2   desplazamiento del brillo en UV del mapa, |.| <= ~0,1
-//                         (sigue la pose: el reflejo se mueve al girar).
 //   uTime          float  (SHIMMER) segundos, módulo 1000.
 //   uSparkle       float  (SHIMMER) intensidad de los destellos, [0,1].
 
@@ -55,16 +53,18 @@ uniform highp float uLipLightness;
 uniform float uGloss;
 uniform float uSharpness;
 uniform float uLight;
-uniform highp vec2 uGlossShift;
 #ifdef SHIMMER
 uniform highp float uTime;
 uniform float uSparkle;
 
 // Celdas por ancho del mapa, probabilidad de que una celda brille y
-// cambios por segundo (ver engine_config.h: kLipsSparkle*).
+// cambios por segundo (la intensidad es uSparkle, engine_config.h:
+// kLipsSparkle). TICK_PERIOD: el patrón se repite cada 256 cambios (~43 s),
+// así el hash recibe números chicos y no pierde resolución en fp32.
 #define SPARKLE_CELLS vec2(96.0, 48.0)
 #define SPARKLE_DENSITY 0.06
 #define SPARKLE_RATE 6.0
+#define TICK_PERIOD 256.0
 
 // Hash 2D -> [0,1) sin texturas (Dave Hoskins, "hash without sine").
 // highp: con fp16 el patrón se repite en bloques visibles.
@@ -84,6 +84,9 @@ highp float hash12(highp vec2 p) {
 // highp: coordenadas de textura (ver camera_quad.vert).
 in highp vec2 vTexCoord;
 in highp vec2 vMapUv;
+// vMapUv menos el desplazamiento del brillo por la pose (lips.vert): sin
+// aritmética en el fragment, la lectura no es dependiente y Mali la adelanta.
+in highp vec2 vGlossUv;
 // Orientación hacia la cámara [0,1] (lips.vert): 0 en la mitad del labio que
 // queda de espaldas al girar la cabeza.
 in float vFacing;
@@ -93,7 +96,7 @@ void main() {
   // Las lecturas van antes de cualquier rama (flujo uniforme).
   vec3 camera = texture(uCamera, vTexCoord).rgb;
   float mask = texture(uLipsMap, vMapUv).r;
-  float glossMap = texture(uLipsMap, vMapUv - uGlossShift).g;
+  float glossMap = texture(uLipsMap, vGlossUv).g;
   float w = clamp(mask * uOpacity * vFacing, 0.0, 1.0);
   // Fuera del labio (el borde de la zona dibujada): el mismo píxel que dibujó
   // el quad. La rama es coherente por zonas grandes.
@@ -102,9 +105,11 @@ void main() {
     return;
   }
 
-  // highp: entrada de oklabToLinearInGamut (ver color.glsl).
+  // highp: entrada de oklabToLinearInGamut (ver color.glsl). La cámara llega
+  // en mediump (srgbToLinear/linearToOklab): ~1e-3 de ruido, invisible.
   highp vec3 lab = linearToOklab(srgbToLinear(camera));
-  highp float shading = clamp(lab.x / uLipLightness, 0.0, SHADING_MAX);
+  // max: la CPU ya la limita a >= 0,1; esto cubre un uniform sin cargar (0).
+  highp float shading = clamp(lab.x / max(uLipLightness, 0.1), 0.0, SHADING_MAX);
   highp vec3 lit = uTargetLab * shading;
   highp float lightness = clamp(mix(lab.x, lit.x, w * uLumaFollow), 0.0, 1.0);
   highp vec2 ab = mix(lab.yz, lit.yz, w);
@@ -114,8 +119,10 @@ void main() {
   float spec = pow(glossMap, uSharpness);
 #ifdef SHIMMER
   highp vec2 cell = floor(vMapUv * SPARKLE_CELLS);
-  highp float tick = floor(uTime * SPARKLE_RATE);
-  float sparkle = step(1.0 - SPARKLE_DENSITY, hash12(cell + tick * 17.0));
+  highp float tick = mod(floor(uTime * SPARKLE_RATE), TICK_PERIOD);
+  // Desplazamientos distintos en x e y: cada cambio es otro patrón, no el
+  // mismo corrido en diagonal.
+  float sparkle = step(1.0 - SPARKLE_DENSITY, hash12(cell + vec2(tick * 17.0, tick * 31.0)));
   spec += sparkle * uSparkle;
 #endif
   spec *= uGloss * uLight * w * smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading);

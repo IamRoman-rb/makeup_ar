@@ -42,24 +42,34 @@ highp vec3 oklabToLinear(highp vec3 c) {
       -0.0041960863 * lms.x - 0.7034186147 * lms.y + 1.7076147010 * lms.z);
 }
 
-// Pasos de la búsqueda binaria de oklabToLinearInGamut: la croma queda a
-// menos de 1/2^6 ≈ 1,6 % del máximo que entra en gamut.
+// Pasos de la búsqueda binaria de oklabToLinearInGamut: la croma queda por
+// debajo de la máxima que entra, a menos de 1/2^6 de la croma pedida (hasta
+// ~5 % de la máxima si se pidió el triple; invisible en un labio). Es la
+// perilla de costo: 4 pasos bajan el peor caso de 7 a 5 conversiones.
 #define GAMUT_STEPS 6
+// Tolerancia de inGamut: el redondeo de las matrices deja blancos, negros y
+// canales en 0 apenas fuera del cubo (p. ej. 1,0000001) y sin tolerancia
+// disparan la búsqueda completa sin necesidad. Chica a propósito: en colores
+// muy oscuros el clamp por canal de 1e-4 ya desvía el tono (lip_shading.py).
+#define GAMUT_EPSILON 1e-5
 
 bool inGamut(highp vec3 c) {
-  return all(greaterThanEqual(c, vec3(0.0))) && all(lessThanEqual(c, vec3(1.0)));
+  return all(greaterThanEqual(c, vec3(-GAMUT_EPSILON))) &&
+         all(lessThanEqual(c, vec3(1.0 + GAMUT_EPSILON)));
 }
 
 // OKLab -> RGB lineal dentro del cubo [0,1]. Si el color pedido sale de gamut,
 // baja la croma (a, b) conservando exactamente L y el tono, en vez de recortar
 // cada canal (que en rojos intensos sobre sombras los vuelve marrones).
 // [lab.x] tiene que estar en [0,1]: con croma 0 (gris) siempre entra.
-// Costo: 1 conversión si ya está en gamut (casi todos los píxeles); si no,
-// GAMUT_STEPS + 1 más. El bucle es de longitud fija (se desenrolla).
+// Costo: 1 conversión si ya está en gamut; si no, GAMUT_STEPS + 1 más. Cuántos
+// píxeles salen depende del color: con labiales saturados, los reflejos del
+// labio (sombreado > ~1,1 en lips.frag) salen; medir con el preset más
+// saturado. El bucle es de longitud fija (se desenrolla).
 // Referencia: tools/lips/lip_shading.py (oklab_to_linear_in_gamut).
 highp vec3 oklabToLinearInGamut(highp vec3 lab) {
   highp vec3 c = oklabToLinear(lab);
-  if (inGamut(c)) return c;
+  if (inGamut(c)) return clamp(c, 0.0, 1.0);
   highp float lo = 0.0;
   highp float hi = 1.0;
   for (int i = 0; i < GAMUT_STEPS; ++i) {

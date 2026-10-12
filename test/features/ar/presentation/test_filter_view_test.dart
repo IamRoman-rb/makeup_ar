@@ -173,4 +173,28 @@ void main() {
     expect(find.textContaining('gl_init_failed'), findsOneWidget);
     expect(find.byType(Texture), findsNothing);
   });
+
+  testWidgets('un pedido rechazado por el motor se descarta sin romper la vista', (tester) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+      calls.add(call);
+      switch (call.method) {
+        case 'start':
+          return {'textureId': 3, 'width': 720, 'height': 1280, 'glInfo': 'test'};
+        case 'setRecipe':
+        case 'setRenderOptions':
+          throw PlatformException(code: 'not_running', message: 'motor detenido');
+        default:
+          return null;
+      }
+    });
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rojo clásico'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ver puntos'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(Texture), findsOneWidget);
+    expect(calls.where((c) => c.method == 'setRecipe').length, greaterThanOrEqualTo(2));
+  });
 }

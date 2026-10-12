@@ -164,6 +164,8 @@ class _TestFilterViewState extends State<TestFilterView> {
     try {
       final stats = await _engine.getStats();
       if (mounted) _stats.value = stats;
+    } on PlatformException catch (e) {
+      _ignoreEngineError('getStats', e);
     } finally {
       _statsInFlight = false;
     }
@@ -179,15 +181,19 @@ class _TestFilterViewState extends State<TestFilterView> {
     try {
       while (_lookDirty && mounted) {
         _lookDirty = false;
-        if (_lipsOnly) {
-          await _engine.setRecipe(lipsRecipe(_selected, opacity: _comparing ? 0.0 : _lipsOpacity, finish: _finish));
-        } else {
-          final color = _selected.color;
-          if (color == null || _comparing) {
-            await _engine.setTint(r: 0, g: 0, b: 0, amount: 0);
+        try {
+          if (_lipsOnly) {
+            await _engine.setRecipe(lipsRecipe(_selected, opacity: _comparing ? 0.0 : _lipsOpacity, finish: _finish));
           } else {
-            await _engine.setTint(r: color.red / 255, g: color.green / 255, b: color.blue / 255, amount: _tintAmount);
+            final color = _selected.color;
+            if (color == null || _comparing) {
+              await _engine.setTint(r: 0, g: 0, b: 0, amount: 0);
+            } else {
+              await _engine.setTint(r: color.red / 255, g: color.green / 255, b: color.blue / 255, amount: _tintAmount);
+            }
           }
+        } on PlatformException catch (e) {
+          _ignoreEngineError('look', e);
         }
       }
     } finally {
@@ -204,10 +210,23 @@ class _TestFilterViewState extends State<TestFilterView> {
     unawaited(_applyLook());
   }
 
-  Future<void> _applyRenderOptions() => _engine.setRenderOptions(
+  Future<void> _applyRenderOptions() async {
+    try {
+      await _engine.setRenderOptions(
         showLandmarks: _showPoints,
         region: _lipsOnly ? TintRegion.lips : TintRegion.full,
       );
+    } on PlatformException catch (e) {
+      _ignoreEngineError('renderOptions', e);
+    }
+  }
+
+  /// Los pedidos al motor se lanzan sin esperar (unawaited): si el motor ya
+  /// se detuvo (la vista se desmontó con un pedido en vuelo) o lo rechaza, el
+  /// pedido se descarta; el próximo cambio manda el estado completo.
+  void _ignoreEngineError(String what, PlatformException e) {
+    debugPrint('TestFilterView: $what descartado (${e.code}: ${e.message})');
+  }
 
   void _setLipsOnly(bool value) {
     setState(() => _lipsOnly = value);

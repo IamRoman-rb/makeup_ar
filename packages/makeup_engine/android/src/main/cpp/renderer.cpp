@@ -178,7 +178,7 @@ bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
   out.gloss = glGetUniformLocation(id, "uGloss");
   out.sharpness = glGetUniformLocation(id, "uSharpness");
   out.light = glGetUniformLocation(id, "uLight");
-  out.glossShift = glGetUniformLocation(id, "uGlossShift");
+  out.glossShift = glGetUniformLocation(id, "uGlossShift");  // en lips.vert
   out.view = glGetUniformLocation(id, "uView");
   out.time = glGetUniformLocation(id, "uTime");
   out.sparkle = glGetUniformLocation(id, "uSparkle");
