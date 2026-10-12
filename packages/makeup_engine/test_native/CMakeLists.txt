@@ -15,6 +15,7 @@ add_executable(makeup_engine_host_tests
     umeyama_test.cpp
     blazeface_decoder_test.cpp
     extrapolator_test.cpp
+    canonical_mesh_test.cpp
     ${ENGINE_CPP}/tracking/roi.cpp
     ${ENGINE_CPP}/tracking/umeyama.cpp
     ${ENGINE_CPP}/tracking/blazeface_decoder.cpp)

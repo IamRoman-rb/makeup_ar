@@ -49,7 +49,7 @@ TEST(umeyama_recuperaSimilaridadConocida) {
     }
   }
   SimilarityTransform out{};
-  CHECK(makeup::solveSimilarity(src, dst, indices, kPoints, &out));
+  CHECK(makeup::solveSimilarity(src, dst, indices, nullptr, kPoints, &out));
   for (int k = 0; k < 9; ++k) CHECK_NEAR(out.rotation[k], r[k], 2e-3);
   for (int k = 0; k < 3; ++k) CHECK_NEAR(out.translation[k], t[k], 2e-2);
   CHECK_NEAR(out.scale, kScale, 2e-3);
@@ -79,7 +79,7 @@ TEST(umeyama_rotacionGrandeYSubconjunto) {
   dst[0] += 1000.0f;
   const int subset[] = {3, 5, 8, 13, 17, 21};
   SimilarityTransform out{};
-  CHECK(makeup::solveSimilarity(src, dst, subset, 6, &out));
+  CHECK(makeup::solveSimilarity(src, dst, subset, nullptr, 6, &out));
   for (int k = 0; k < 9; ++k) CHECK_NEAR(out.rotation[k], r[k], 1e-4);
   CHECK_NEAR(out.scale, 1.0, 1e-4);
   const float det = out.rotation[0] * (out.rotation[4] * out.rotation[8] - out.rotation[5] * out.rotation[7]) -
@@ -92,6 +92,34 @@ TEST(umeyama_degenerado) {
   const float same[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
   const int indices[] = {0, 1, 2};
   SimilarityTransform out{};
-  CHECK(!makeup::solveSimilarity(same, same, indices, 3, &out));
-  CHECK(!makeup::solveSimilarity(same, same, indices, 2, &out));
+  CHECK(!makeup::solveSimilarity(same, same, indices, nullptr, 3, &out));
+  CHECK(!makeup::solveSimilarity(same, same, indices, nullptr, 2, &out));
+}
+
+// Un punto con peso 0 no influye aunque esté muy corrido.
+TEST(umeyama_pesoCeroIgnoraPunto) {
+  float r[9];
+  rotationFromEuler(0.1f, 0.2f, -0.3f, r);
+  float src[kPoints * 3];
+  float dst[kPoints * 3];
+  int indices[kPoints];
+  float weights[kPoints];
+  for (int i = 0; i < kPoints; ++i) {
+    indices[i] = i;
+    weights[i] = i == 7 ? 0.0f : 0.5f + 0.1f * static_cast<float>(i % 3);
+    src[i * 3] = static_cast<float>(i % 4) - 1.5f;
+    src[i * 3 + 1] = static_cast<float>((i * 5) % 7) - 3.0f;
+    src[i * 3 + 2] = static_cast<float>((i * 2) % 3);
+    for (int a = 0; a < 3; ++a) {
+      dst[i * 3 + a] = 3.0f * (r[a * 3] * src[i * 3] + r[a * 3 + 1] * src[i * 3 + 1] + r[a * 3 + 2] * src[i * 3 + 2]) + 1.0f;
+    }
+  }
+  dst[7 * 3 + 1] += 500.0f;
+  SimilarityTransform out{};
+  CHECK(makeup::solveSimilarity(src, dst, indices, weights, kPoints, &out));
+  for (int k = 0; k < 9; ++k) CHECK_NEAR(out.rotation[k], r[k], 1e-4);
+  CHECK_NEAR(out.scale, 3.0, 1e-4);
+  for (int k = 0; k < 3; ++k) CHECK_NEAR(out.translation[k], 1.0, 1e-3);
+  const float zeros[3] = {0.0f, 0.0f, 0.0f};
+  CHECK(!makeup::solveSimilarity(src, dst, indices, zeros, 3, &out));
 }

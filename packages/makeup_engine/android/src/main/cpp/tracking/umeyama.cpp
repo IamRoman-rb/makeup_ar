@@ -55,39 +55,44 @@ void jacobiEigen4(double a[4][4], double v[4][4], double eigenvalues[4]) {
 
 }  // namespace
 
-bool solveSimilarity(const float* src, const float* dst, const int* indices, int count,
-                     SimilarityTransform* out) {
+bool solveSimilarity(const float* src, const float* dst, const int* indices, const float* weights,
+                     int count, SimilarityTransform* out) {
   if (count < 3) return false;
+  double totalWeight = 0.0;
   double ms[3] = {0, 0, 0};
   double md[3] = {0, 0, 0};
   for (int n = 0; n < count; ++n) {
     const int i = indices[n] * 3;
+    const double w = weights != nullptr ? weights[n] : 1.0;
+    totalWeight += w;
     for (int k = 0; k < 3; ++k) {
-      ms[k] += src[i + k];
-      md[k] += dst[i + k];
+      ms[k] += w * src[i + k];
+      md[k] += w * dst[i + k];
     }
   }
+  if (totalWeight <= 0.0) return false;
   for (int k = 0; k < 3; ++k) {
-    ms[k] /= count;
-    md[k] /= count;
+    ms[k] /= totalWeight;
+    md[k] /= totalWeight;
   }
 
-  // Covarianza cruzada S[a][b] = Σ src'_a · dst'_b y varianza de src.
+  // Covarianza cruzada ponderada S[a][b] = Σ w · src'_a · dst'_b y varianzas.
   double s[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
   double srcVariance = 0.0;
   double dstVariance = 0.0;
   for (int n = 0; n < count; ++n) {
     const int i = indices[n] * 3;
+    const double w = weights != nullptr ? weights[n] : 1.0;
     double ps[3];
     double pd[3];
     for (int k = 0; k < 3; ++k) {
       ps[k] = src[i + k] - ms[k];
       pd[k] = dst[i + k] - md[k];
-      srcVariance += ps[k] * ps[k];
-      dstVariance += pd[k] * pd[k];
+      srcVariance += w * ps[k] * ps[k];
+      dstVariance += w * pd[k] * pd[k];
     }
     for (int a = 0; a < 3; ++a) {
-      for (int b = 0; b < 3; ++b) s[a][b] += ps[a] * pd[b];
+      for (int b = 0; b < 3; ++b) s[a][b] += w * ps[a] * pd[b];
     }
   }
   if (srcVariance < kDegenerateVariance || dstVariance < kDegenerateVariance) return false;
@@ -123,7 +128,7 @@ bool solveSimilarity(const float* src, const float* dst, const int* indices, int
       2 * (qx * qy + qw * qz),     1 - 2 * (qx * qx + qz * qz), 2 * (qy * qz - qw * qx),
       2 * (qx * qz - qw * qy),     2 * (qy * qz + qw * qx),     1 - 2 * (qx * qx + qy * qy),
   };
-  // Escala de Umeyama: tr(R^T S^T) / var(src) = Σ dst' · R src' / Σ |src'|².
+  // Escala de Umeyama: tr(R^T S^T) / var(src) = Σ w · dst' · R src' / Σ w · |src'|².
   double dot = 0.0;
   for (int a = 0; a < 3; ++a) {
     for (int b = 0; b < 3; ++b) dot += r[a * 3 + b] * s[b][a];

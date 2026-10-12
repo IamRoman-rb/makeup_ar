@@ -1,5 +1,5 @@
 // Pose rígida con escala (similaridad) entre dos nubes de puntos 3D: encuentra
-// s, R, t que minimizan Σ |dst_i - (s·R·src_i + t)|² (Umeyama 1991).
+// s, R, t que minimizan Σ w_i · |dst_i - (s·R·src_i + t)|² (Umeyama 1991).
 //
 // La rotación se resuelve con el método de cuaterniones de Horn (1987): el
 // autovector de mayor autovalor de una matriz simétrica 4×4 (Jacobi). Da el
@@ -23,10 +23,11 @@ struct EulerAngles {
 };
 
 // [src] y [dst]: puntos xyz contiguos (stride 3). Usa solo los [count] índices
-// de [indices] (deben ser >= 3 y no colineales). Devuelve false si el problema
-// es degenerado (nubes de varianza ~0).
-bool solveSimilarity(const float* src, const float* dst, const int* indices, int count,
-                     SimilarityTransform* out);
+// de [indices] (deben ser >= 3 y no colineales), con [weights] (uno por índice,
+// >= 0) o pesos 1 si es nullptr. Devuelve false si el problema es degenerado
+// (nubes de varianza ~0 o pesos nulos).
+bool solveSimilarity(const float* src, const float* dst, const int* indices, const float* weights,
+                     int count, SimilarityTransform* out);
 
 EulerAngles eulerFromRotation(const float rotation[9]);
 
