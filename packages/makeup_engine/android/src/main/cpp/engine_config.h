@@ -93,6 +93,13 @@ struct EngineConfig {
 
   // --- Cara y ojos (P5; docs/ar_engine/FACE.md, face_style.cpp) ---
 
+  // Desvanecido por orientación de las pasadas de cara y ojos (como el de los
+  // labios). Más permisivo: de frente la mandíbula y las sienes ya están en
+  // coseno 0,18-0,45 y con el rango de los labios perdían hasta un 30 %; a 30°
+  // de giro el pómulo lejano (coseno ~0-0,2) desaparecía aunque se ve.
+  static constexpr float kFaceFacingFadeStart = -0.15f;
+  static constexpr float kFaceFacingFadeEnd = 0.1f;
+
   // Escala de los sigmas del rubor según spread (0 -> mínima, 1 -> máxima).
   static constexpr float kCheekSpreadScaleMin = 0.7f;
   static constexpr float kCheekSpreadScaleMax = 1.4f;

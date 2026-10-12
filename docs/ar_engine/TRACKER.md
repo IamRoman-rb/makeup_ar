@@ -6,7 +6,7 @@ Diseño del tracker (informe §5.2–5.3) tal como quedó implementado, la desvi
 
 En el Espejo → **Filtro de prueba**:
 
-- **Solo labios** (por defecto): el labial de la receta sobre la malla tracked. Desde P4 es el labial fotorrealista (máscara UV, brillo, acabados): ver `LIPS.md`. La máscara de pantalla provisional de P3 ya no existe.
+- **Solo labios** (por defecto): el labial de la receta sobre la malla tracked. Desde P4 es el labial fotorrealista (máscara UV, brillo, acabados): ver `LIPS.md`; desde P5, el look completo (cara y ojos): ver `FACE.md`. La máscara de pantalla provisional de P3 ya no existe.
 - **Ver puntos**: dibuja los 478 landmarks (depuración).
 - El badge muestra fps del render y el estado del tracker: `cargando modelos…`, `buscando cara…`, `NN Hz · NN ms`.
 

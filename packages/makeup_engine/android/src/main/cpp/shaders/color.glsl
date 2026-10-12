@@ -82,16 +82,27 @@ highp vec3 oklabToLinearInGamut(highp vec3 lab) {
   return clamp(oklabToLinear(vec3(lab.x, lab.yz * lo)), 0.0, 1.0);
 }
 
+// Sombreado relativo de las capas (s = L_píxel / L_referencia): tope para los
+// reflejos fuertes y rango en que aparece el brillo (cara, ojos y labios;
+// tools/lips/lip_shading.py y tools/makeup/face_shading.py).
+#define SHADING_MAX 1.6
+#define SHINE_SHADING_LOW 0.85
+#define SHINE_SHADING_HIGH 1.1
+
 // Salida de una capa de maquillaje (cara, ojos, labios) con blending
 // premultiplicado: glBlendFuncSeparate(ONE, ONE_MINUS_SRC_ALPHA, ZERO, ONE).
 //   result    color final de la capa calculado sobre la cámara (sRGB [0,1]).
 //   camera    píxel de cámara de este fragmento (sRGB [0,1]).
 //   coverage  cobertura total de la capa [0,1] (1 - Π(1 - a_i) si mezcla varias).
-// Queda dst' = result - (1 - A)·camera + (1 - A)·dst: sobre la cámara sola da
-// exactamente [result]; sobre una capa anterior (p. ej. la base) compone
-// encima; con A = 0 no cambia nada. El max absorbe que la mezcla en OKLab no
-// es lineal en sRGB (diferencia de 1-2 LSB en los bordes).
+// Queda dst' = result - k·camera + k·dst con k = 1 - alpha: sobre la cámara
+// sola da exactamente [result]; sobre una capa anterior (p. ej. la base)
+// compone encima; con A = 0 no cambia nada. La mezcla en OKLab no es lineal en
+// sRGB: un oscurecimiento fuerte (delineado negro) puede dar result <
+// (1 - A)·camera, y entonces k baja lo justo para que el rgb no sea negativo
+// (en vez de recortarlo, que aclaraba el borde). highp: cocientes chicos.
 // Referencia: tools/makeup/face_shading.py (layer_over, blend).
 vec4 layerOver(vec3 result, vec3 camera, float coverage) {
-  return vec4(max(result - (1.0 - coverage) * camera, vec3(0.0)), coverage);
+  highp vec3 ratio = result / max(camera, vec3(1.0e-3));
+  highp float keep = min(1.0 - coverage, min(ratio.r, min(ratio.g, ratio.b)));
+  return vec4(result - keep * camera, 1.0 - keep);
 }

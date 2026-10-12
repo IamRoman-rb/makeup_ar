@@ -83,10 +83,13 @@ def compose(camera_srgb: np.ndarray, layers: list[Layer], reference_lightness: f
 
 
 def layer_over(result_srgb: np.ndarray, camera_srgb: np.ndarray, coverage: np.ndarray):
-    """color.glsl: layerOver. Salida premultiplicada (rgb, a)."""
+    """color.glsl: layerOver. Salida premultiplicada (rgb, a): sobre la cámara
+    da exactamente [result]; si oscurece más de lo que la cobertura permite,
+    la cobertura efectiva sube para que el rgb no sea negativo."""
     coverage = np.asarray(coverage, dtype=float)
-    rgb = np.maximum(result_srgb - (1.0 - coverage)[..., None] * camera_srgb, 0.0)
-    return rgb, coverage
+    ratio = result_srgb / np.maximum(camera_srgb, 1e-3)
+    keep = np.minimum(1.0 - coverage, ratio.min(axis=-1))
+    return result_srgb - keep[..., None] * camera_srgb, 1.0 - keep
 
 
 def blend(dst_srgb: np.ndarray, src_rgb: np.ndarray, src_alpha: np.ndarray) -> np.ndarray:

@@ -15,10 +15,11 @@ Sin "Solo labios", el filtro sigue siendo el tinte de pantalla completa de P2.
 ## 2. Flujo por frame
 
 1. **Quad de cámara:** paso directo o tinte completo.
-2. **Capa de labios:**
+2. **Capas de cara y ojos** (P5, `FACE.md`).
+3. **Capa de labios:**
    - Se dibujan los 176 triángulos de la malla tracked alrededor de la boca (`kLipsRegionTriangles`) con `lips.vert` / `lips.frag`.
-   - Va sin blending y sin máscara de pantalla. Donde el mapa vale 0, el shader devuelve el mismo píxel de cámara que dibujó el quad.
-3. **Puntos de depuración:** si están encendidos.
+   - Sin máscara de pantalla. Desde P5 la salida va premultiplicada (`layerOver` en `color.glsl`): sobre la cámara sola da el mismo resultado de P4, y sobre la base el labial va encima sin pisarla alrededor de la boca. Donde el mapa vale 0, el píxel no cambia.
+4. **Puntos de depuración:** si están encendidos.
 
 El camino provisional de P3 se borró: FBO R8 de máscara a ¼, `drawLipsMask` y la variante `MASKED` del tinte. Con eso se ahorra una pasada de pantalla completa y un cambio de framebuffer.
 

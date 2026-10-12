@@ -19,8 +19,8 @@
 //   sin SHIMMER  sombras mate / satinadas.
 //   SHIMMER      además destellos por celdas del mapa (hash, sin texturas).
 //
-// Lecturas de textura por fragmento: 3 (cámara, mapa de ojos A y B, RGBA8 de
-// 120 KB cada uno).
+// Lecturas de textura por fragmento: 3 (mapas de ojos A y B, RGBA8 de 120 KB
+// cada uno, y, solo donde hay alguna capa, la cámara).
 // Uniforms:
 //   uCamera         samplerExternalOES  frame de cámara (sRGB), unidad 0.
 //   uEyeMapA        sampler2D  RGBA8 (mesh/eye_maps.h), unidad 3: párpado,
@@ -40,6 +40,7 @@
 //   uLinerEdge      vec2   distancia normalizada en que el delineado deja de
 //                          ser opaco (.x) y desaparece (.y), [0,1], .x < .y.
 //   uWing           float  largo del wing, [0,1] del largo máximo (0 = sin wing).
+//                          Con uWing = 0 la máscara del wing es 0 (smoothstep(0, 0, x) = 1).
 //   uTime           float  (SHIMMER) segundos, módulo 1000.
 //   uShadowSparkle  vec4   (SHIMMER) intensidad de los destellos por slot, [0,1].
 
@@ -80,10 +81,6 @@ highp float hash12(highp vec2 p) {
 }
 #endif
 
-// Ver face.frag.
-#define SHADING_MAX 1.6
-#define SHINE_SHADING_LOW 0.85
-#define SHINE_SHADING_HIGH 1.1
 // Ancho del final suave del wing (en fracción de su largo máximo).
 #define WING_END_FEATHER 0.05
 
@@ -91,9 +88,11 @@ highp float hash12(highp vec2 p) {
 in highp vec2 vTexCoord;
 in highp vec2 vMapUv;
 in float vFacing;
+// 0/1 según el lado de la cara (face.vert): los destellos no se espejan.
+in float vSide;
 out vec4 fragColor;
 
-void mixLayer(inout highp vec3 lab, inout float keep, inout float shine, highp vec3 lit, float a,
+void mixLayer(inout highp vec3 lab, inout highp float keep, inout float shine, highp vec3 lit, float a,
               float layerShine) {
   lab = vec3(clamp(mix(lab.x, lit.x, a), 0.0, 1.0), mix(lab.yz, lit.yz, a));
   shine = mix(shine, layerShine, a);  // una capa encima tapa el brillo de abajo
@@ -101,8 +100,6 @@ void mixLayer(inout highp vec3 lab, inout float keep, inout float shine, highp v
 }
 
 void main() {
-  // Las lecturas van antes de cualquier rama (flujo uniforme).
-  vec3 camera = texture(uCamera, vTexCoord).rgb;
   vec4 mapA = texture(uEyeMapA, vMapUv);
   vec4 mapB = texture(uEyeMapB, vMapUv);
 
@@ -110,26 +107,41 @@ void main() {
                       dot(mapA, uShadowSelect[2]), dot(mapA, uShadowSelect[3])) +
                  mapB.r * uShadowBrowBone;
   vec4 a = clamp(regions * uShadowAmount * vFacing, 0.0, 1.0);
-  float line = 1.0 - smoothstep(uLinerEdge.x, uLinerEdge.y, mapB.g);
-  float wing = (1.0 - smoothstep(uLinerEdge.x, uLinerEdge.y, mapB.b)) *
-               (1.0 - smoothstep(uWing - WING_END_FEATHER, uWing, mapB.a));
+  // Borde del delineado de al menos ~1,5 px de pantalla: con thickness bajo el
+  // borde de la receta mide menos de un píxel y titilaba con el tracker.
+  // fwidth antes de cualquier rama (necesita derivadas).
+  float lineEdge = uLinerEdge.x + max(uLinerEdge.y - uLinerEdge.x, 1.5 * fwidth(mapB.g));
+  float wingEdge = uLinerEdge.x + max(uLinerEdge.y - uLinerEdge.x, 1.5 * fwidth(mapB.b));
+  float line = 1.0 - smoothstep(uLinerEdge.x, lineEdge, mapB.g);
+  // El final del wing se difumina en WING_END_FEATHER, o en la mitad de su
+  // largo si es más corto (así un wing corto arranca opaco).
+  float wingEnd = max(uWing - WING_END_FEATHER, 0.5 * uWing);
+  float wing = (1.0 - smoothstep(uLinerEdge.x, wingEdge, mapB.b)) *
+               (1.0 - smoothstep(wingEnd, uWing, mapB.a));
   float liner = clamp(max(line, wing) * uLinerAmount * vFacing, 0.0, 1.0);
   if (a.x + a.y + a.z + a.w + liner <= 0.0) {
     fragColor = vec4(0.0);
     return;
   }
+  // La cámara se lee después de la salida temprana: la textura externa es la
+  // lectura cara (el driver convierte YUV) y la pasada cubre toda la cara
+  // aunque la receta tenga solo algunas regiones. Sin mipmaps (OES), leerla
+  // dentro de la rama no depende de derivadas: el resultado es el mismo.
+  vec3 camera = texture(uCamera, vTexCoord).rgb;
 
   // highp: entrada de oklabToLinearInGamut (ver color.glsl).
   highp vec3 lab = linearToOklab(srgbToLinear(camera));
   highp float shading = clamp(lab.x / max(uSkinLightness, 0.1), 0.0, SHADING_MAX);
   vec4 layerShine = uShadowShine;
 #ifdef SHIMMER
-  highp vec2 cell = floor(vMapUv * SPARKLE_CELLS);
+  highp vec2 cell = floor(vMapUv * SPARKLE_CELLS) + vec2(vSide * 997.0, 0.0);
   highp float tick = mod(floor(uTime * SPARKLE_RATE), TICK_PERIOD);
   float sparkle = step(1.0 - SPARKLE_DENSITY, hash12(cell + vec2(tick * 17.0, tick * 31.0)));
   layerShine += sparkle * uShadowSparkle;
 #endif
-  float keep = 1.0;
+  // highp: con fp16, 1 - a para a < ~2e-4 da 1 y el borde de las máscaras
+  // quedaba sin cobertura.
+  highp float keep = 1.0;
   float shine = 0.0;
   mixLayer(lab, keep, shine, uShadowLab[0] * shading, a.x, layerShine.x);
   mixLayer(lab, keep, shine, uShadowLab[1] * shading, a.y, layerShine.y);

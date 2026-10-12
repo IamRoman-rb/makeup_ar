@@ -78,9 +78,8 @@ highp float hash12(highp vec2 p) {
 }
 #endif
 
-// Tope del sombreado relativo (reflejos fuertes del labio sin labial) y
-// rango de sombreado en el que aparece el brillo (lip_shading.py).
-#define SHADING_MAX 1.6
+// Rango de sombreado en el que aparece el brillo del labial (lip_shading.py;
+// SHADING_MAX está en color.glsl).
 #define GLOSS_SHADING_LOW 0.75
 #define GLOSS_SHADING_HIGH 1.05
 

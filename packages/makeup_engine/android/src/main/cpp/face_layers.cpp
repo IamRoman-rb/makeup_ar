@@ -85,8 +85,8 @@ bool FaceLayers::buildCommon(Common& out, const char* fragmentSource, const char
   glUniform1i(glGetUniformLocation(id, "uCamera"), 0);
   glUniform4f(glGetUniformLocation(id, "uMapTransform"), 1.0f / mapRect[2], 1.0f / mapRect[3],
               -mapRect[0] / mapRect[2], -mapRect[1] / mapRect[3]);
-  glUniform2f(glGetUniformLocation(id, "uFacingFade"), EngineConfig::kLipsFacingFadeStart,
-              EngineConfig::kLipsFacingFadeEnd);
+  glUniform2f(glGetUniformLocation(id, "uFacingFade"), EngineConfig::kFaceFacingFadeStart,
+              EngineConfig::kFaceFacingFadeEnd);
   glUseProgram(0);
   out.uploadedDisplayVersion = 0;
   out.program = std::move(program);

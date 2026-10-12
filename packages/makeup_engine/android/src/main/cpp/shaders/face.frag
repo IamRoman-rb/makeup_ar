@@ -15,7 +15,8 @@
 //   + brillo · iluminado(s), aditivo en lineal
 //   salida: layerOver(color, cámara, 1 - Π(1 - a_i)) (blending premultiplicado)
 //
-// Lecturas de textura por fragmento: 2 (cámara, mapa de cara RGB8 de ~86 KB).
+// Lecturas de textura por fragmento: 2 (mapa de cara RGB8 de ~86 KB y, solo
+// donde hay alguna capa, la cámara).
 // Uniforms:
 //   uCamera        samplerExternalOES  frame de cámara (sRGB), unidad 0.
 //   uFaceMap       sampler2D  mapa de cara RGB8 (mesh/face_maps.h), unidad 2:
@@ -44,11 +45,6 @@ uniform vec4 uLayerAmount;
 uniform vec4 uLayerLumaFollow;
 uniform float uHighlightShine;
 
-// Tope del sombreado relativo y rango en que aparece el brillo
-// (face_shading.py: SHADING_MAX, SHINE_SHADING_LOW/HIGH).
-#define SHADING_MAX 1.6
-#define SHINE_SHADING_LOW 0.85
-#define SHINE_SHADING_HIGH 1.1
 
 // highp: coordenadas de textura (ver camera_quad.vert).
 in highp vec2 vTexCoord;
@@ -58,7 +54,7 @@ in float vFacing;
 out vec4 fragColor;
 
 // Mezcla una capa en OKLab, su brillo y acumula lo que queda sin cubrir.
-void mixLayer(inout highp vec3 lab, inout float keep, inout float shine, highp vec3 lit, float a,
+void mixLayer(inout highp vec3 lab, inout highp float keep, inout float shine, highp vec3 lit, float a,
               float lumaFollow, float layerShine) {
   lab = vec3(clamp(mix(lab.x, lit.x, a * lumaFollow), 0.0, 1.0), mix(lab.yz, lit.yz, a));
   shine = mix(shine, layerShine, a);  // una capa encima tapa el brillo de abajo
@@ -66,8 +62,6 @@ void mixLayer(inout highp vec3 lab, inout float keep, inout float shine, highp v
 }
 
 void main() {
-  // Las lecturas van antes de cualquier rama (flujo uniforme).
-  vec3 camera = texture(uCamera, vTexCoord).rgb;
   vec3 map = texture(uFaceMap, vMapUv).rgb;
   // Rubor analítico: la coordenada ya viene escalada por los sigmas.
   float cheek = exp(-0.5 * dot(vCheek, vCheek));
@@ -78,12 +72,19 @@ void main() {
     fragColor = vec4(0.0);
     return;
   }
+  // La cámara se lee después de la salida temprana: la textura externa es la
+  // lectura cara (el driver convierte YUV) y la pasada cubre toda la cara
+  // aunque la receta tenga solo algunas regiones. Sin mipmaps (OES), leerla
+  // dentro de la rama no depende de derivadas: el resultado es el mismo.
+  vec3 camera = texture(uCamera, vTexCoord).rgb;
 
   // highp: entrada de oklabToLinearInGamut (ver color.glsl).
   highp vec3 lab = linearToOklab(srgbToLinear(camera));
   // max: la CPU ya la limita a >= 0,1; esto cubre un uniform sin cargar (0).
   highp float shading = clamp(lab.x / max(uSkinLightness, 0.1), 0.0, SHADING_MAX);
-  float keep = 1.0;
+  // highp: con fp16, 1 - a para a < ~2e-4 da 1 y el borde de las máscaras
+  // quedaba sin cobertura.
+  highp float keep = 1.0;
   float shine = 0.0;
   mixLayer(lab, keep, shine, uLayerLab[0] * shading, a.x, uLayerLumaFollow.x, 0.0);
   mixLayer(lab, keep, shine, uLayerLab[1] * shading, a.y, uLayerLumaFollow.y, 0.0);

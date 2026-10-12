@@ -31,6 +31,16 @@ class LayerOverTest(unittest.TestCase):
         out = blend(camera, *layer_over(result, camera, coverage))
         np.testing.assert_allclose(out, result, atol=1e-12)
 
+    def test_oscurecer_mucho_es_exacto_y_no_negativo(self):
+        # Delineado negro con cobertura 0,3: la mezcla en OKLab oscurece más que
+        # la mezcla lineal en sRGB; antes el recorte aclaraba el borde.
+        camera = np.array([[0.70, 0.55, 0.50]])
+        black = np.array([[0.02, 0.02, 0.02]])
+        result = camera + (black - camera) * 0.6  # más oscuro que (1 - 0,3)·cámara
+        rgb, alpha = layer_over(result, camera, np.array([0.3]))
+        self.assertTrue(np.all(rgb >= 0.0))
+        np.testing.assert_allclose(blend(camera, rgb, alpha), result, atol=1e-12)
+
     def test_sin_cobertura_no_cambia_nada(self):
         dst = np.array([[0.3, 0.6, 0.2]])
         camera = np.array([[0.5, 0.4, 0.4]])
