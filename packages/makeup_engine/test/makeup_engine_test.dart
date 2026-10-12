@@ -86,4 +86,33 @@ void main() {
     expect(calls.single.method, 'setTint');
     expect(calls.single.arguments, {'r': 1.0, 'g': 0.0, 'b': 0.5, 'amount': 1.0});
   });
+
+  test('runBenchmark parsea resultados y errores por backend', () async {
+    handler = (_) => [
+          {
+            'model': 'face_landmarks_detector.tflite',
+            'backend': 'gpu',
+            'iterations': 300,
+            'initMs': 812.5,
+            'runP50Ms': 21.0,
+            'runP95Ms': 25.5,
+            'totalP50Ms': 23.0,
+            'totalP95Ms': 28.0,
+            'error': null,
+          },
+          {
+            'model': 'face_landmarks_detector.tflite',
+            'backend': 'gpu_opengl',
+            'iterations': 0,
+            'runP50Ms': double.nan,
+            'error': 'LiteRtException: sin OpenGL ES 3.1',
+          },
+        ];
+    final results = await MakeupEngine().runBenchmark();
+    expect(results, hasLength(2));
+    expect(results.first.runP50Ms, 21.0);
+    expect(results.first.error, isNull);
+    expect(results.last.runP50Ms, isNull);
+    expect(results.last.error, contains('OpenGL'));
+  });
 }

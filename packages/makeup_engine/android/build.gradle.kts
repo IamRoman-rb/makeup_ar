@@ -86,5 +86,9 @@ kotlin {
 }
 
 dependencies {
+    // LiteRT (ex TFLite) de Google, Apache 2.0: runtime de inferencia del tracker
+    // (FaceMesh-V2). litert-gpu agrega el acelerador GPU (OpenCL/OpenGL).
+    implementation("com.google.ai.edge.litert:litert:2.3.0")
+    implementation("com.google.ai.edge.litert:litert-gpu:2.3.0")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }

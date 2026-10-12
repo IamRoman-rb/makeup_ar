@@ -1,6 +1,12 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
     <!-- OpenGL ES 3.0 se verifica en runtime (EglCore/Renderer) en lugar de con
          uses-feature glEsVersion, para no filtrar la app entera en Google Play. -->
+
+    <!-- litert-api los declara para descargar modelos (AI Pack) y para NPU, que no
+         usamos. Servicios en primer plano exigen justificación en Google Play. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" tools:node="remove" />
 </manifest>

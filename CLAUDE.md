@@ -25,6 +25,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - `flutter pub get` · `flutter analyze` · `flutter test`
 - Medir rendimiento siempre en profile: `flutter run --profile -d <id>`. Nunca en debug.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
+- Benchmark del tracker (LiteRT, GPU vs CPU; imagen sintética): `flutter run --profile -t lib/main_benchmark.dart -d <id>`. Resultados en pantalla y en logcat (`makeup_bench`).
 - Spike del motor nativo: `flutter run --profile -t lib/main_spike.dart -d <id>` (no carga Firebase ni RevenueCat).
 - Tests del plugin: `flutter test` dentro de `packages/makeup_engine` (Dart) y `android/gradlew.bat :makeup_engine:testDebugUnitTest` (JVM; necesita `JAVA_HOME` apuntando al JBR de Android Studio).
 - Reglas de Firestore (emulador, sin dependencias npm; necesita `JAVA_HOME` al JBR de Android Studio): `firebase emulators:exec --only firestore --project demo-armakeup "node --test --test-reporter=tap firestore-tests/rules.test.mjs"`.

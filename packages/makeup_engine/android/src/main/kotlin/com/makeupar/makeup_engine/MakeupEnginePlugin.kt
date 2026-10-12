@@ -1,13 +1,16 @@
 package com.makeupar.makeup_engine
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.TextureRegistry
 
 /**
- * Canal `makeup_engine`. Métodos: start, stop, setTint, getStats, resetStats.
+ * Canal `makeup_engine`. Métodos: start, stop, setTint, getStats, resetStats,
+ * runBenchmark.
  * Una sola sesión a la vez. Ver lib/makeup_engine.dart para el contrato.
  */
 class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
@@ -52,6 +55,7 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 session?.resetStats()
                 result.success(null)
             }
+            "runBenchmark" -> runBenchmark(result)
             else -> result.notImplemented()
         }
     }
@@ -107,6 +111,25 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 },
             )
         }
+    }
+
+    /** Minutos de trabajo: en un hilo propio, nunca en el de UI. */
+    private fun runBenchmark(result: MethodChannel.Result) {
+        val currentContext = context
+        if (currentContext == null) {
+            result.error("not_attached", "El plugin no está adjunto a un FlutterEngine", null)
+            return
+        }
+        val mainHandler = Handler(Looper.getMainLooper())
+        Thread({
+            val outcome = runCatching { ModelBenchmark.run(currentContext).map { it.toMap() } }
+            mainHandler.post {
+                outcome.fold(
+                    onSuccess = { result.success(it) },
+                    onFailure = { result.error("benchmark_failed", it.message, null) },
+                )
+            }
+        }, "makeup-benchmark").start()
     }
 
     private companion object {

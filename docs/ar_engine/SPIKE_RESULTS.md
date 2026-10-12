@@ -11,7 +11,7 @@
 | Overlay con métricas calculadas en nativo (p50/p95) | ✅ Hecho |
 | Tests: 10 JVM (`CameraMath`) + 6 Dart (API del plugin) | ✅ En verde |
 | **Mediciones en el E20** | ⏳ **Te toca a vos** (sección 3) |
-| Arnés de benchmark LiteRT (landmarks) | ⏸️ **Bloqueado**: necesita que elijas el modelo y apruebes la dependencia (sección 4) |
+| Benchmark LiteRT (FaceMesh-V2 + BlazeFace) | ✅ **Medido en el Moto E20** (sección 4): **GO** |
 
 ---
 
@@ -99,12 +99,36 @@ adb shell dumpsys gfxinfo com.example.ar_makeup_app framestats
 - Con tinte 0% y 100% iguales y ambos a ~30 fps, el compositor tiene margen para las capas de P4/P5.
 - Si el tinte al 100% cae por debajo de 24 fps pero el paso directo no: el costo está en el shader de pantalla completa. En el motor real el maquillaje solo se pinta dentro de las máscaras UV (informe §5.4), así que no es bloqueante, pero hay que medirlo de nuevo en P4.
 
-## 4. Benchmark de landmarks: candidatos (necesito tu decisión)
+## 4. Benchmark de landmarks en el Moto E20 (medido 2026-10-12)
 
-`CLAUDE.md` exige que vos elijas el modelo y apruebes la dependencia. Verifiqué la licencia en el model card oficial de cada uno.
+**Modelo elegido:** MediaPipe **FaceMesh-V2** (landmarks, 256×256 → 478 puntos) + **BlazeFace short-range** (detector, 128×128), Apache 2.0. Detalle y procedencia en `packages/makeup_engine/third_party/mediapipe_face_landmarker/`. **Runtime:** LiteRT 2.3.0 (`CompiledModel`), con `litert-gpu`.
 
-| # | Modelo | Entrada | Salida | Licencia | Notas |
-|---|---|---|---|---|---|
+**Condiciones:** Moto E20 (`armeabi-v7a`, Android 11, SDK 30), build **profile** (`lib/main_benchmark.dart`), imagen sintética fija (sin cámara), 20 iteraciones de calentamiento + 300 medidas por configuración, 2 s de pausa entre configuraciones. Temperatura de batería: 23,5 °C → 23,7 °C. "Inferencia" = solo `run()`; "con E/S" = escribir la entrada + `run()` + leer las salidas, que es lo que paga el tracker.
+
+| Modelo | Backend | Inferencia p50 / p95 (ms) | Con E/S p50 / p95 (ms) | Init (ms) |
+|---|---|---|---|---|
+| FaceMesh-V2 (landmarks) | **GPU (automático = OpenCL)** | **6,8 / 9,1** | **16,9 / 20,6** | 5404 |
+| FaceMesh-V2 (landmarks) | GPU OpenGL | 17,4 / 23,0 | 18,4 / 24,6 | 4005 |
+| FaceMesh-V2 (landmarks) | CPU 1 hilo | 81,6 / 91,2 | 82,0 / 91,6 | 114 |
+| FaceMesh-V2 (landmarks) | CPU 2 hilos | 78,0 / 94,9 | 78,3 / 95,3 | 108 |
+| FaceMesh-V2 (landmarks) | CPU 4 hilos | 78,8 / 122,4 | 79,4 / 122,8 | 106 |
+| BlazeFace (detector) | **GPU (automático = OpenCL)** | **1,7 / 3,3** | **5,7 / 7,0** | 1878 |
+| BlazeFace (detector) | GPU OpenGL | 5,1 / 6,2 | 5,8 / 7,5 | 1249 |
+| BlazeFace (detector) | CPU 1 hilo | 9,3 / 9,4 | 9,6 / 9,7 | 19 |
+| BlazeFace (detector) | CPU 2 hilos | 24,6 / 34,2 | 25,1 / 35,2 | 12 |
+| BlazeFace (detector) | CPU 4 hilos | 31,4 / 40,6 | 32,2 / 41,1 | 14 |
+
+**Conclusiones:**
+- **GO.** Con GPU, un ciclo del tracker (landmarks con E/S, ~17 ms; el detector corre solo cuando se pierde la cara) entra holgado en el objetivo de 15–20 Hz (50–66 ms) e incluso permitiría ~30 Hz. El presupuesto del informe (§5.9: ≤ 25 ms fuera del camino crítico) se cumple.
+- **La GPU de verdad trabaja:** 6,8 ms contra ~80 ms en CPU, y OpenCL le gana a OpenGL (2,5× en landmarks).
+- **CPU como respaldo:** ~80 ms → ~10 Hz. Usable pero justo. Más hilos no ayudan y empeoran la cola (los núcleos A55 lentos); si hay respaldo CPU, usar 1 hilo.
+- **Cuello de botella nuevo, la E/S:** en GPU, escribir y leer los tensores cuesta ~10 ms, más que la inferencia (6,8 ms). Mitigación para P3: preprocesar en GPU y usar buffers de GPU / `AHardwareBuffer` en lugar de `writeFloat`/`readFloat`, que además asignan memoria en cada llamada.
+- **Init de 5,4 s en GPU** (compilación de kernels OpenCL): inaceptable en cada apertura del Espejo. Mitigación para P3: cache de programas (`GpuOptions.serializationDir` + `serializeProgramCache`) e inicializar en segundo plano mientras se muestra la cámara sin maquillaje.
+- **Falta medir el caso combinado:** la Mali-G57 MP1 tiene un solo núcleo y la inferencia compite con el compositor. Primera medición de P3: render + inferencia juntos, 10 minutos.
+
+**Costo en tamaño (APK para v7a):** +6,3 MB de librerías nativas de LiteRT + 2,8 MB de modelos. `litert-api` además trae Guava y Play AI Delivery (alpha), que R8 recorta en release, y declaraba permisos de servicio en primer plano, que se quitan en el manifest del plugin (verificado en el APK final).
+
+---|---|---|---|---|---|
 | **A (recomendado)** | **MediaPipe FaceMesh-V2** (dentro de `face_landmarker.task`) + detector **BlazeFace short-range** | 256×256 (landmarks), 192×192 (detector, según la doc del bundle) | 478 puntos 3D (468 + iris) y 52 blendshapes (modelo aparte, opcional) | **Apache 2.0** (model card de FaceMesh-V2: "Licensed under Apache License, Version 2.0") | Trae evaluación de equidad por tono de piel (Fitzpatrick 1–6) y región geográfica. Incluye iris (informe §5.7). Es float16 |
 | B | MediaPipe Face Mesh **V1** (`face_landmark.tflite`) + `face_detection_short_range.tflite` | 192×192 | 468 puntos 3D | Apache 2.0 (repo `google-ai-edge/mediapipe`) | Más liviano que V2 (el informe publica 7,4 / 3,4 / 2,6 ms en un Pixel 3 para full / light / lightest). Sin iris. Es el que asume el prompt P1 (entrada 192×192) |
 | C | Variante *attention mesh* (`face_landmark_with_attention`) | 192×192 | 478 puntos con refinamiento de labios, ojos e iris | Apache 2.0 | Mejor contorno de labios (clave para el maquillaje), pero más caro: medir solo si A y B entran con margen |

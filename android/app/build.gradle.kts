@@ -42,7 +42,11 @@ flutter {
 configurations.all {
     resolutionStrategy {
         eachDependency {
-            if (requested.group == "androidx.core" && !requested.name.contains("core-backported-fixes")) {
+            // core-viewtree no existe en 1.13.1: lo pide androidx.lifecycle 2.10
+            // (vía LiteRT, el runtime del tracker del motor AR).
+            if (requested.group == "androidx.core" && !requested.name.contains("core-backported-fixes") &&
+                requested.name != "core-viewtree"
+            ) {
                 useVersion("1.13.1")
             }
             if (requested.group == "androidx.activity") {

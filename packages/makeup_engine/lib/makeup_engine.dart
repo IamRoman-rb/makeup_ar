@@ -110,6 +110,52 @@ final class EngineStats {
       intervalMs == null || intervalMs <= 0 ? null : 1000 / intervalMs;
 }
 
+/// Latencia de un modelo del tracker con un backend de LiteRT (ver
+/// ModelBenchmark.kt). Tiempos en ms; null si el backend falló.
+final class ModelBenchmarkResult {
+  const ModelBenchmarkResult({
+    required this.model,
+    required this.backend,
+    required this.iterations,
+    this.initMs,
+    this.runP50Ms,
+    this.runP95Ms,
+    this.totalP50Ms,
+    this.totalP95Ms,
+    this.error,
+  });
+
+  factory ModelBenchmarkResult.fromMap(Map<Object?, Object?> map) => ModelBenchmarkResult(
+        model: map['model'] as String? ?? '?',
+        backend: map['backend'] as String? ?? '?',
+        iterations: _int(map['iterations']) ?? 0,
+        initMs: _double(map['initMs']),
+        runP50Ms: _double(map['runP50Ms']),
+        runP95Ms: _double(map['runP95Ms']),
+        totalP50Ms: _double(map['totalP50Ms']),
+        totalP95Ms: _double(map['totalP95Ms']),
+        error: map['error'] as String?,
+      );
+
+  final String model;
+
+  /// `gpu`, `gpu_opengl`, `cpu_1t`, `cpu_2t`, `cpu_4t`.
+  final String backend;
+  final int iterations;
+
+  /// Compilar el modelo y crear buffers (una vez).
+  final double? initMs;
+
+  /// Solo la inferencia.
+  final double? runP50Ms;
+  final double? runP95Ms;
+
+  /// Escribir entrada + inferencia + leer salidas.
+  final double? totalP50Ms;
+  final double? totalP95Ms;
+  final String? error;
+}
+
 /// Error de [MakeupEngine.start]. [code]: `no_front_camera`,
 /// `camera_unavailable`, `gl_init_failed`, `already_started`, `not_attached`.
 final class MakeupEngineException implements Exception {
@@ -161,6 +207,16 @@ final class MakeupEngine {
   }
 
   Future<void> resetStats() => _channel.invokeMethod<void>('resetStats');
+
+  /// Benchmark de los modelos del tracker (unos minutos; imagen sintética, sin
+  /// cámara). No llamar con una sesión de cámara activa: compiten por la GPU.
+  Future<List<ModelBenchmarkResult>> runBenchmark() async {
+    final result = await _channel.invokeListMethod<Object?>('runBenchmark');
+    return [
+      for (final item in result ?? const <Object?>[])
+        if (item is Map<Object?, Object?>) ModelBenchmarkResult.fromMap(item),
+    ];
+  }
 }
 
 int? _int(Object? value) => value is num ? value.toInt() : null;
