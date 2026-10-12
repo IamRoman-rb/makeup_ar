@@ -17,6 +17,7 @@ add_executable(makeup_engine_host_tests
     extrapolator_test.cpp
     canonical_mesh_test.cpp
     lips_maps_test.cpp
+    face_maps_test.cpp
     appearance_test.cpp
     tracking_state_test.cpp
     ${ENGINE_CPP}/tracking/roi.cpp

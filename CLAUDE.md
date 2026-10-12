@@ -28,6 +28,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Benchmark del tracker (LiteRT, GPU vs CPU; imagen sintética): `flutter run --profile -t lib/main_benchmark.dart -d <id>`. Resultados en pantalla y en logcat (`makeup_bench`).
 - Arnés del tracker (P3; filtro de prueba sin Firebase, línea `TRACK` cada 5 s en logcat): `flutter run --profile -t lib/main_tracker.dart -d <id>`. Protocolo en `docs/ar_engine/TRACKER.md`.
 - Regenerar el mapa UV de labios (si cambia `tools/uv_masks/lips.json` o la malla): `python tools/uv_masks/gen_lips_maps.py`; `--check` verifica que lo versionado esté al día. Vista previa en `docs/ar_engine/img/lips_maps.png`.
+- Regenerar los mapas UV de cara y ojos (base, contorno, iluminador, rubor, sombras, delineado; si cambia `tools/uv_masks/face.json` o la malla): `python tools/uv_masks/gen_face_maps.py`; `--check` igual que el de labios. Vistas previas en `docs/ar_engine/img/{face,eye}_maps.png`.
 - Validar shaders (glslc del NDK; sintaxis y tipos, no reemplaza probar en el teléfono): `python tools/shaders/check_shaders.py`.
 - Referencia Python del sombreado de labios (misma matemática que `lips.frag`): `python -m unittest discover -s tools/lips`.
 - Grilla de calibración del labial (5 tonos de piel × presets; ajustar `lumaFollow`/opacidad de los presets): `python tools/lips/calibration_grid.py` → `docs/ar_engine/img/lips_calibration.png`. Diseño en `docs/ar_engine/LIPS.md`.
