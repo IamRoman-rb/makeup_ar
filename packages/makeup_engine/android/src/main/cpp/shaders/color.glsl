@@ -41,3 +41,33 @@ highp vec3 oklabToLinear(highp vec3 c) {
       -1.2684380046 * lms.x + 2.6097574011 * lms.y - 0.3413193965 * lms.z,
       -0.0041960863 * lms.x - 0.7034186147 * lms.y + 1.7076147010 * lms.z);
 }
+
+// Pasos de la búsqueda binaria de oklabToLinearInGamut: la croma queda a
+// menos de 1/2^6 ≈ 1,6 % del máximo que entra en gamut.
+#define GAMUT_STEPS 6
+
+bool inGamut(highp vec3 c) {
+  return all(greaterThanEqual(c, vec3(0.0))) && all(lessThanEqual(c, vec3(1.0)));
+}
+
+// OKLab -> RGB lineal dentro del cubo [0,1]. Si el color pedido sale de gamut,
+// baja la croma (a, b) conservando exactamente L y el tono, en vez de recortar
+// cada canal (que en rojos intensos sobre sombras los vuelve marrones).
+// [lab.x] tiene que estar en [0,1]: con croma 0 (gris) siempre entra.
+// Costo: 1 conversión si ya está en gamut (casi todos los píxeles); si no,
+// GAMUT_STEPS + 1 más. El bucle es de longitud fija (se desenrolla).
+// Referencia: tools/lips/lip_shading.py (oklab_to_linear_in_gamut).
+highp vec3 oklabToLinearInGamut(highp vec3 lab) {
+  highp vec3 c = oklabToLinear(lab);
+  if (inGamut(c)) return c;
+  highp float lo = 0.0;
+  highp float hi = 1.0;
+  for (int i = 0; i < GAMUT_STEPS; ++i) {
+    highp float mid = 0.5 * (lo + hi);
+    bool inside = inGamut(oklabToLinear(vec3(lab.x, lab.yz * mid)));
+    lo = inside ? mid : lo;
+    hi = inside ? hi : mid;
+  }
+  // El clamp solo absorbe el error de redondeo del gris en los extremos.
+  return clamp(oklabToLinear(vec3(lab.x, lab.yz * lo)), 0.0, 1.0);
+}

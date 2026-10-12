@@ -53,11 +53,12 @@ void main() {
     return;
   }
 #endif
-  // Nota (P4): el clamp por canal de abajo no conserva el gamut. En luces y
-  // sombras extremas la croma pedida sale del cubo RGB y el tono se desvía;
-  // P4 debe reducir la croma hasta entrar en gamut.
-  vec3 lab = linearToOklab(srgbToLinear(camera));
+  // highp: entrada de oklabToLinearInGamut (ver color.glsl).
+  highp vec3 lab = linearToOklab(srgbToLinear(camera));
+  lab.x = clamp(lab.x, 0.0, 1.0);
   lab.yz = mix(lab.yz, uTintAb, amount);
-  vec3 outLinear = clamp(oklabToLinear(lab), 0.0, 1.0);
+  // En luces y sombras extremas la croma pedida sale del cubo RGB: se baja la
+  // croma (no se recorta por canal) para no desviar el tono.
+  vec3 outLinear = oklabToLinearInGamut(lab);
   fragColor = vec4(linearToSrgb(outLinear), 1.0);
 }

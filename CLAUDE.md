@@ -27,6 +27,8 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
 - Benchmark del tracker (LiteRT, GPU vs CPU; imagen sintética): `flutter run --profile -t lib/main_benchmark.dart -d <id>`. Resultados en pantalla y en logcat (`makeup_bench`).
 - Arnés del tracker (P3; filtro de prueba sin Firebase, línea `TRACK` cada 5 s en logcat): `flutter run --profile -t lib/main_tracker.dart -d <id>`. Protocolo en `docs/ar_engine/TRACKER.md`.
+- Validar shaders (glslc del NDK; sintaxis y tipos, no reemplaza probar en el teléfono): `python tools/shaders/check_shaders.py`.
+- Referencia Python del sombreado de labios (misma matemática que `lips.frag`): `python -m unittest discover -s tools/lips`.
 - Regenerar la malla canónica (si cambia `packages/makeup_engine/third_party/mediapipe_face_geometry`): `python tools/mesh/gen_canonical_mesh.py`.
 - Spike del motor nativo: `flutter run --profile -t lib/main_spike.dart -d <id>` (no carga Firebase ni RevenueCat).
 - Tests del plugin: `flutter test` dentro de `packages/makeup_engine` (Dart) y `android/gradlew.bat :makeup_engine:testDebugUnitTest` (JVM; necesita `JAVA_HOME` apuntando al JBR de Android Studio).
