@@ -81,11 +81,18 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
       backgroundColor: Colors.black,
       body: granted == true
           ? const TestFilterView(
-              noFilterLabel: 'Sin filtro',
-              intensityLabel: 'Intensidad',
-              note: 'Arnés P3: tracker + compositor. Métricas en logcat (TRACK).',
-              lipsOnlyLabel: 'Solo labios',
-              showPointsLabel: 'Ver puntos',
+              labels: TestFilterLabels(
+                noFilter: 'Sin filtro',
+                intensity: 'Intensidad',
+                note: 'Arnés P3/P4: tracker + labios. Métricas en logcat (TRACK).',
+                lipsOnly: 'Solo labios',
+                showPoints: 'Ver puntos',
+                compare: 'Mantené para comparar',
+                matte: 'Mate',
+                satin: 'Satinado',
+                gloss: 'Brillo',
+                shimmer: 'Shimmer',
+              ),
             )
           : Center(
               child: Text(

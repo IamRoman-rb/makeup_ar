@@ -119,11 +119,18 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     final Widget body;
     if (_useNativeEngine && _inForeground) {
       body = TestFilterView(
-        noFilterLabel: l10n.testFilterNone,
-        intensityLabel: l10n.testFilterIntensity,
-        note: l10n.testFilterNote,
-        lipsOnlyLabel: l10n.testFilterLipsOnly,
-        showPointsLabel: l10n.testFilterShowPoints,
+        labels: TestFilterLabels(
+          noFilter: l10n.testFilterNone,
+          intensity: l10n.testFilterIntensity,
+          note: l10n.testFilterNote,
+          lipsOnly: l10n.testFilterLipsOnly,
+          showPoints: l10n.testFilterShowPoints,
+          compare: l10n.testFilterCompare,
+          matte: l10n.testFilterFinishMatte,
+          satin: l10n.testFilterFinishSatin,
+          gloss: l10n.testFilterFinishGloss,
+          shimmer: l10n.testFilterFinishShimmer,
+        ),
       );
     } else if (_isCameraInitialized && controller != null) {
       body = Stack(

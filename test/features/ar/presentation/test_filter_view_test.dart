@@ -1,3 +1,4 @@
+import 'package:ar_makeup_app/features/ar/domain/makeup_recipe.dart';
 import 'package:ar_makeup_app/features/ar/domain/recipe_presets.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:flutter/material.dart';
@@ -32,14 +33,26 @@ void main() {
   Widget app() => const MaterialApp(
         home: Scaffold(
           body: TestFilterView(
-            noFilterLabel: 'Sin filtro',
-            intensityLabel: 'Intensidad',
-            note: 'nota',
-            lipsOnlyLabel: 'Solo labios',
-            showPointsLabel: 'Ver puntos',
+            labels: TestFilterLabels(
+              noFilter: 'Sin filtro',
+              intensity: 'Intensidad',
+              note: 'nota',
+              lipsOnly: 'Solo labios',
+              showPoints: 'Ver puntos',
+              compare: 'Comparar',
+              matte: 'Mate',
+              satin: 'Satinado',
+              gloss: 'Brillo',
+              shimmer: 'Shimmer',
+            ),
           ),
         ),
       );
+
+  List<Map<Object?, Object?>> recipeCalls() => calls
+      .where((c) => c.method == 'setRecipe')
+      .map((c) => (c.arguments as Map<Object?, Object?>)['recipe'] as Map<Object?, Object?>)
+      .toList();
 
   List<Map<Object?, Object?>> tintCalls() =>
       calls.where((c) => c.method == 'setTint').map((c) => c.arguments as Map<Object?, Object?>).toList();
@@ -53,34 +66,65 @@ void main() {
     expect(red.color?.toHex(), '#B3122D');
   });
 
-  testWidgets('inicia el motor, muestra la textura y aplica el primer preset', (tester) async {
+  testWidgets('inicia el motor y manda el labial del primer preset', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
     expect(calls.first.method, 'start');
     expect(find.byType(Texture), findsOneWidget);
-    final first = tintCalls().last;
-    final natural = RecipePresets.all.first.recipe.lips?.color;
-    expect(natural, isNotNull);
-    expect(first['r'], closeTo((natural?.red ?? 0) / 255, 1e-9));
-    expect(first['amount'], closeTo(0.45, 1e-9));
+    final lips = recipeCalls().last['lips'] as Map<Object?, Object?>;
+    final natural = RecipePresets.all.first.recipe.lips;
+    expect(lips['color'], natural?.color.toHex());
+    expect(lips['opacity'], natural?.opacity);
+    expect(lips['finish'], natural?.finish?.wireName);
   });
 
-  testWidgets('elegir un preset manda su color y "sin filtro" apaga el tinte', (tester) async {
+  testWidgets('acabado, comparar y "sin filtro" en modo labios', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Rojo clásico'));
     await tester.pumpAndSettle();
-    final red = tintCalls().last;
-    expect(red['r'], closeTo(0xB3 / 255, 1e-9));
-    expect(red['g'], closeTo(0x12 / 255, 1e-9));
-    expect(red['b'], closeTo(0x2D / 255, 1e-9));
+    expect((recipeCalls().last['lips'] as Map)['color'], '#B3122D');
+
+    await tester.tap(find.text('Brillo'));
+    await tester.pumpAndSettle();
+    expect((recipeCalls().last['lips'] as Map)['finish'], 'gloss');
+
+    final gesture = await tester.startGesture(tester.getCenter(find.text('Comparar')));
+    await tester.pumpAndSettle();
+    expect((recipeCalls().last['lips'] as Map)['opacity'], 0.0);
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect((recipeCalls().last['lips'] as Map)['opacity'], 0.85);
 
     await tester.tap(find.text('Sin filtro'));
     await tester.pumpAndSettle();
-    expect(tintCalls().last['amount'], 0.0);
+    expect(recipeCalls().last.containsKey('lips'), isFalse);
     expect(find.byType(Slider), findsNothing);
+  });
+
+  testWidgets('sin "solo labios" usa el tinte de pantalla completa', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Solo labios'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rojo clásico'));
+    await tester.pumpAndSettle();
+    final red = tintCalls().last;
+    expect(red['r'], closeTo(0xB3 / 255, 1e-9));
+    expect(red['amount'], closeTo(0.45, 1e-9));
+  });
+
+  test('lipsRecipe cambia opacidad y acabado y conserva el resto', () {
+    final red = TestFilterOption.fromPresets('x').firstWhere((o) => o.id == 'classic_red');
+    final json = lipsRecipe(red, opacity: 0.5, finish: LipFinish.matte);
+    final lips = json['lips'] as Map<String, Object?>;
+    expect(lips['opacity'], 0.5);
+    expect(lips['finish'], 'matte');
+    expect(lips['lumaFollow'], 0.35);
+    expect(json['name'], 'Rojo clásico');
+    expect(lipsRecipe(TestFilterOption.fromPresets('x').first, opacity: 1).containsKey('lips'), isFalse);
   });
 
   List<Map<Object?, Object?>> optionCalls() =>

@@ -1,6 +1,5 @@
 {
     "appTitle": "App Maquillaje AR",
-
     "discoverLooks": "Descubrir Looks",
     "searchHint": "Busca filtros o marcas...",
     "categoryAll": "Todo",
@@ -9,7 +8,6 @@
     "categoryComplexion": "Rostro",
     "noLooksFound": "No se encontraron looks en la categoría {category}.",
     "noResultsFor": "No hay resultados para \"{query}\" en {category}.",
-
     "welcomeBack": "Bienvenido de nuevo",
     "loginSubtitle": "Ingresa tus datos para iniciar sesión.",
     "emailOrUser": "Correo electrónico",
@@ -18,7 +16,6 @@
     "logIn": "INICIAR SESIÓN",
     "noAccount": "¿No tienes una cuenta? ",
     "signUp": "Regístrate",
-
     "createProfile": "Crea tu Perfil",
     "joinSubtitle": "Únete a Lumière Beauty para una experiencia cosmética única.",
     "fullName": "Nombre y Apellido",
@@ -29,10 +26,8 @@
     "skinTone": "Tono de Piel",
     "personalTastes": "Gustos Personales",
     "createAccount": "Crear Cuenta",
-
     "editProfile": "Editar Perfil",
     "updateProfile": "Actualizar Perfil",
-
     "skinTypeLabel": "TIPO PIEL",
     "toneLabel": "TONO",
     "savedLooks": "Looks\nGuardados",
@@ -44,7 +39,6 @@
     "accountSettings": "Ajustes de la cuenta",
     "appLanguage": "Idioma de la app",
     "logOut": "Cerrar Sesión",
-
     "security": "Seguridad",
     "changePassword": "Cambiar Contraseña",
     "changePasswordDesc": "Enviaremos un enlace a tu correo.",
@@ -58,36 +52,49 @@
     "deleteAccount": "Eliminar Cuenta",
     "deleteAccountDesc": "Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, asegúrate.",
     "deleteMyAccountBtn": "Eliminar Mi Cuenta",
-
     "selectLanguageTitle": "Idioma / Language",
     "selectLanguageDesc": "Selecciona tu idioma preferido para la aplicación.",
-
     "saved": "Guardado",
     "save": "Guardar",
     "tutorial": "Tutorial",
     "effectOn": "Efecto Act.",
     "effectOff": "Efecto Inact.",
-
     "profileUpdated": "¡Perfil actualizado con éxito!",
     "errorSaving": "Error al guardar:",
     "loginFirst": "Por favor, inicia sesión primero.",
-
     "noSavedLooks": "Aún no has guardado ningún look.\n¡Explora el catálogo para encontrar tus favoritos!",
     "unknownLook": "Look desconocido",
-
     "explore": "Explorar",
     "profile": "Perfil",
     "mirror": "Espejo",
     "testFilter": "Filtro de prueba",
     "testFilterNone": "Sin filtro",
     "testFilterIntensity": "Intensidad",
-    "testFilterNote": "Motor nuevo (beta). \"Solo labios\" usa el seguimiento facial: la primera vez tarda unos segundos en cargar.",
+    "testFilterNote": "Motor nuevo (beta). \"Solo labios\" pinta el labial del look con seguimiento facial: la primera vez tarda unos segundos en cargar.",
     "testFilterLipsOnly": "Solo labios",
     "testFilterShowPoints": "Ver puntos",
-
+    "testFilterCompare": "Mantené para comparar",
+    "@testFilterCompare": {
+        "description": "Botón del filtro de prueba: mientras se mantiene apretado muestra la cámara sin maquillaje."
+    },
+    "testFilterFinishMatte": "Mate",
+    "@testFilterFinishMatte": {
+        "description": "Acabado de labial sin brillo."
+    },
+    "testFilterFinishSatin": "Satinado",
+    "@testFilterFinishSatin": {
+        "description": "Acabado de labial con brillo suave."
+    },
+    "testFilterFinishGloss": "Brillo",
+    "@testFilterFinishGloss": {
+        "description": "Acabado de labial brillante."
+    },
+    "testFilterFinishShimmer": "Shimmer",
+    "@testFilterFinishShimmer": {
+        "description": "Acabado de labial con destellos."
+    },
     "fillRequiredFields": "Por favor completa todos los campos requeridos",
     "registrationError": "Error de registro",
-
     "stepByStepTitle": "Guía Paso a Paso",
     "stepLabel": "PASO",
     "backBtn": "Atrás",

@@ -531,7 +531,7 @@ abstract class AppLocalizations {
   /// No description provided for @testFilterNote.
   ///
   /// In en, this message translates to:
-  /// **'New engine (beta). \"Lips only\" uses face tracking: the first time it takes a few seconds to load.'**
+  /// **'New engine (beta). \"Lips only\" applies the look\'s lipstick with face tracking: the first time it takes a few seconds to load.'**
   String get testFilterNote;
 
   /// No description provided for @testFilterLipsOnly.
@@ -545,6 +545,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show points'**
   String get testFilterShowPoints;
+
+  /// No description provided for @testFilterCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to compare'**
+  String get testFilterCompare;
+
+  /// No description provided for @testFilterFinishMatte.
+  ///
+  /// In en, this message translates to:
+  /// **'Matte'**
+  String get testFilterFinishMatte;
+
+  /// No description provided for @testFilterFinishSatin.
+  ///
+  /// In en, this message translates to:
+  /// **'Satin'**
+  String get testFilterFinishSatin;
+
+  /// No description provided for @testFilterFinishGloss.
+  ///
+  /// In en, this message translates to:
+  /// **'Gloss'**
+  String get testFilterFinishGloss;
+
+  /// No description provided for @testFilterFinishShimmer.
+  ///
+  /// In en, this message translates to:
+  /// **'Shimmer'**
+  String get testFilterFinishShimmer;
 
   /// No description provided for @fillRequiredFields.
   ///

@@ -235,13 +235,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get testFilterNote =>
-      'Nouveau moteur (bêta). « Lèvres seulement » utilise le suivi du visage : la première fois, le chargement prend quelques secondes.';
+      'Nouveau moteur (bêta). « Lèvres seulement » applique le rouge à lèvres du look avec le suivi du visage : la première fois, le chargement prend quelques secondes.';
 
   @override
   String get testFilterLipsOnly => 'Lèvres seulement';
 
   @override
   String get testFilterShowPoints => 'Voir les points';
+
+  @override
+  String get testFilterCompare => 'Maintenir pour comparer';
+
+  @override
+  String get testFilterFinishMatte => 'Mat';
+
+  @override
+  String get testFilterFinishSatin => 'Satiné';
+
+  @override
+  String get testFilterFinishGloss => 'Brillant';
+
+  @override
+  String get testFilterFinishShimmer => 'Scintillant';
 
   @override
   String get fillRequiredFields =>

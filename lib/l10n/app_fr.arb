@@ -1,6 +1,5 @@
 {
     "appTitle": "App Maquillage AR",
-
     "discoverLooks": "Découvrir des Looks",
     "searchHint": "Rechercher des filtres ou marques...",
     "categoryAll": "Tout",
@@ -9,7 +8,6 @@
     "categoryComplexion": "Teint",
     "noLooksFound": "Aucun look trouvé dans la catégorie {category}.",
     "noResultsFor": "Aucun résultat pour \"{query}\" dans {category}.",
-
     "welcomeBack": "Bon retour",
     "loginSubtitle": "Veuillez entrer vos identifiants pour vous connecter.",
     "emailOrUser": "E-mail ou Utilisateur",
@@ -18,7 +16,6 @@
     "logIn": "CONNEXION",
     "noAccount": "Vous n'avez pas de compte ? ",
     "signUp": "S'inscrire",
-
     "createProfile": "Créez votre Profil",
     "joinSubtitle": "Rejoignez Lumière Beauty pour une expérience cosmétique unique.",
     "fullName": "Nom Complet",
@@ -29,10 +26,8 @@
     "skinTone": "Teint de Peau",
     "personalTastes": "Goûts Personnels",
     "createAccount": "Créer un Compte",
-
     "editProfile": "Modifier le Profil",
     "updateProfile": "Mettre à jour le Profil",
-
     "skinTypeLabel": "TYPE DE PEAU",
     "toneLabel": "TEINT",
     "savedLooks": "Looks\nSauvegardés",
@@ -44,7 +39,6 @@
     "accountSettings": "Paramètres du Compte",
     "appLanguage": "Langue de l'app",
     "logOut": "Se Déconnecter",
-
     "security": "Sécurité",
     "changePassword": "Changer le Mot de Passe",
     "changePasswordDesc": "Nous enverrons un lien de réinitialisation sur votre e-mail.",
@@ -58,36 +52,34 @@
     "deleteAccount": "Supprimer le Compte",
     "deleteAccountDesc": "Une fois votre compte supprimé, il n'y a pas de retour en arrière. Soyez certain.",
     "deleteMyAccountBtn": "Supprimer Mon Compte",
-
     "selectLanguageTitle": "Langue / Language",
     "selectLanguageDesc": "Sélectionnez votre langue préférée pour l'application.",
-
     "saved": "Sauvegardé",
     "save": "Sauvegarder",
     "tutorial": "Tutoriel",
     "effectOn": "Effet Act.",
     "effectOff": "Effet Désact.",
-
     "profileUpdated": "Profil mis à jour avec succès !",
     "errorSaving": "Erreur lors de la sauvegarde :",
     "loginFirst": "Veuillez d'abord vous connecter.",
-
     "noSavedLooks": "Vous n'avez pas encore sauvegardé de looks.\nExplorez le catalogue pour trouver vos favoris !",
     "unknownLook": "Look Inconnu",
-
     "explore": "Explorer",
     "profile": "Profil",
     "mirror": "Miroir",
     "testFilter": "Filtre de test",
     "testFilterNone": "Sans filtre",
     "testFilterIntensity": "Intensité",
-    "testFilterNote": "Nouveau moteur (bêta). « Lèvres seulement » utilise le suivi du visage : la première fois, le chargement prend quelques secondes.",
+    "testFilterNote": "Nouveau moteur (bêta). « Lèvres seulement » applique le rouge à lèvres du look avec le suivi du visage : la première fois, le chargement prend quelques secondes.",
     "testFilterLipsOnly": "Lèvres seulement",
     "testFilterShowPoints": "Voir les points",
-
+    "testFilterCompare": "Maintenir pour comparer",
+    "testFilterFinishMatte": "Mat",
+    "testFilterFinishSatin": "Satiné",
+    "testFilterFinishGloss": "Brillant",
+    "testFilterFinishShimmer": "Scintillant",
     "fillRequiredFields": "Veuillez remplir tous les champs obligatoires",
     "registrationError": "Erreur d'inscription",
-
     "stepByStepTitle": "Guide Étape par Étape",
     "stepLabel": "ÉTAPE",
     "backBtn": "Retour",

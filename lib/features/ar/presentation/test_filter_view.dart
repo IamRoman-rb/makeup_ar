@@ -8,57 +8,89 @@ import 'package:makeup_engine/makeup_engine.dart';
 import '../domain/makeup_recipe.dart';
 import '../domain/recipe_presets.dart';
 
-/// Opción del selector: un preset local (su color de labios como tinte) o
-/// "sin filtro" (paso directo).
+/// Opción del selector: un preset local o "sin filtro" (paso directo).
 final class TestFilterOption {
-  const TestFilterOption({required this.id, required this.label, required this.color});
+  const TestFilterOption({required this.id, required this.label, required this.recipe});
 
   /// Opciones a partir de los presets locales (`RecipePresets`), con "sin filtro"
   /// primero.
   static List<TestFilterOption> fromPresets(String noFilterLabel) => [
-        TestFilterOption(id: 'none', label: noFilterLabel, color: null),
+        TestFilterOption(id: 'none', label: noFilterLabel, recipe: null),
         for (final preset in RecipePresets.all)
-          TestFilterOption(id: preset.id, label: preset.recipe.name, color: _presetColor(preset.recipe)),
+          TestFilterOption(id: preset.id, label: preset.recipe.name, recipe: preset.recipe),
       ];
-
-  static RecipeColor? _presetColor(MakeupRecipe recipe) =>
-      recipe.lips?.color ?? recipe.cheeks?.color ?? recipe.eyes?.shadow?.firstOrNull?.color;
 
   final String id;
   final String label;
 
   /// null = sin filtro.
-  final RecipeColor? color;
+  final MakeupRecipe? recipe;
+
+  /// Color del tinte de pantalla completa: el de los labios o, si no hay, el
+  /// de otra región.
+  RecipeColor? get color {
+    final current = recipe;
+    if (current == null) return null;
+    return current.lips?.color ?? current.cheeks?.color ?? current.eyes?.shadow?.firstOrNull?.color;
+  }
+
+  LipsSpec? get lips => recipe?.lips;
+}
+
+/// Textos de la vista (traducidos por quien la monta).
+final class TestFilterLabels {
+  const TestFilterLabels({
+    required this.noFilter,
+    required this.intensity,
+    required this.note,
+    required this.lipsOnly,
+    required this.showPoints,
+    required this.compare,
+    required this.matte,
+    required this.satin,
+    required this.gloss,
+    required this.shimmer,
+  });
+
+  final String noFilter;
+  final String intensity;
+  final String note;
+  final String lipsOnly;
+  final String showPoints;
+
+  /// Botón que, mientras se mantiene apretado, muestra la cámara sin maquillaje.
+  final String compare;
+  final String matte;
+  final String satin;
+  final String gloss;
+  final String shimmer;
+
+  String finish(LipFinish finish) => switch (finish) {
+        LipFinish.matte => matte,
+        LipFinish.satin => satin,
+        LipFinish.gloss => gloss,
+        LipFinish.shimmer => shimmer,
+      };
 }
 
 /// Filtro de prueba del motor nativo para el Espejo: cámara frontal → GLES →
-/// `Texture`, con el tinte OKLab del motor usando el color de cada preset.
+/// `Texture`.
 ///
-/// "Solo labios" (por defecto) usa el tracker facial para teñir solo los
-/// labios (provisional: el labial fotorrealista con máscara UV es P4); apagado,
-/// tiñe toda la imagen. "Ver puntos" dibuja los landmarks para depurar. En los
-/// dos casos solo cambia la croma y se conserva la luz y la textura de la piel.
+/// "Solo labios" (por defecto) pinta el labial de la receta del preset sobre
+/// la cara (máscara UV, brillo y acabado; ver docs/ar_engine/LIPS.md): el
+/// slider es la opacidad del labial y los chips de acabado lo cambian para
+/// comparar. Apagado, tiñe toda la imagen con el color del preset (OKLab, solo
+/// croma). "Ver puntos" dibuja los landmarks para depurar. El botón de
+/// comparar muestra la cámara sin maquillaje mientras se mantiene apretado.
 ///
 /// Dueña del motor mientras está montada: lo inicia en initState y lo detiene
 /// en dispose. Bloquea la pantalla en vertical, la única orientación validada
 /// del motor (ver CameraMath.extraRotation). Quien la monte tiene que haber
 /// liberado antes cualquier otro uso de la cámara.
 class TestFilterView extends StatefulWidget {
-  const TestFilterView({
-    super.key,
-    required this.noFilterLabel,
-    required this.intensityLabel,
-    required this.note,
-    required this.lipsOnlyLabel,
-    required this.showPointsLabel,
-    this.engine,
-  });
+  const TestFilterView({super.key, required this.labels, this.engine});
 
-  final String noFilterLabel;
-  final String intensityLabel;
-  final String note;
-  final String lipsOnlyLabel;
-  final String showPointsLabel;
+  final TestFilterLabels labels;
 
   /// Inyectable para tests.
   final MakeupEngine? engine;
@@ -69,22 +101,27 @@ class TestFilterView extends StatefulWidget {
 
 class _TestFilterViewState extends State<TestFilterView> {
   static const Duration _statsPeriod = Duration(seconds: 1);
-  static const double _defaultAmount = 0.45;
+  static const double _defaultTintAmount = 0.45;
 
   late final MakeupEngine _engine = widget.engine ?? MakeupEngine();
-  late final List<TestFilterOption> _options = TestFilterOption.fromPresets(widget.noFilterLabel);
+  late final List<TestFilterOption> _options = TestFilterOption.fromPresets(widget.labels.noFilter);
   final ValueNotifier<EngineStats> _stats = ValueNotifier(EngineStats.empty);
 
   EngineStartInfo? _info;
   String? _error;
   Timer? _statsTimer;
   bool _statsInFlight = false;
-  bool _tintInFlight = false;
-  bool _tintDirty = false;
+  bool _lookInFlight = false;
+  bool _lookDirty = false;
   late TestFilterOption _selected = _options.length > 1 ? _options[1] : _options.first;
-  double _amount = _defaultAmount;
+  double _tintAmount = _defaultTintAmount;
+  late double _lipsOpacity = _selected.lips?.opacity ?? 0.0;
+
+  /// Acabado elegido en los chips; null = el del preset.
+  LipFinish? _finish;
   bool _lipsOnly = true;
   bool _showPoints = false;
+  bool _comparing = false;
 
   @override
   void initState() {
@@ -111,7 +148,7 @@ class _TestFilterViewState extends State<TestFilterView> {
       }
       setState(() => _info = info);
       await _applyRenderOptions();
-      await _applyTint();
+      await _applyLook();
       // Si se desmontó durante los awaits, dispose() ya pasó: no crear el timer.
       if (!mounted) return;
       _statsTimer = Timer.periodic(_statsPeriod, (_) => _pollStats());
@@ -132,34 +169,39 @@ class _TestFilterViewState extends State<TestFilterView> {
     }
   }
 
-  /// El slider genera muchos eventos por segundo: solo se envía el último valor.
-  Future<void> _applyTint() async {
-    _tintDirty = true;
-    if (_tintInFlight) return;
-    _tintInFlight = true;
+  /// Manda el look actual: la receta (solo labios) o el tinte (pantalla
+  /// completa). El slider genera muchos eventos por segundo: solo se envía el
+  /// último estado.
+  Future<void> _applyLook() async {
+    _lookDirty = true;
+    if (_lookInFlight) return;
+    _lookInFlight = true;
     try {
-      while (_tintDirty && mounted) {
-        _tintDirty = false;
-        final color = _selected.color;
-        if (color == null) {
-          await _engine.setTint(r: 0, g: 0, b: 0, amount: 0);
+      while (_lookDirty && mounted) {
+        _lookDirty = false;
+        if (_lipsOnly) {
+          await _engine.setRecipe(lipsRecipe(_selected, opacity: _comparing ? 0.0 : _lipsOpacity, finish: _finish));
         } else {
-          await _engine.setTint(
-            r: color.red / 255,
-            g: color.green / 255,
-            b: color.blue / 255,
-            amount: _amount,
-          );
+          final color = _selected.color;
+          if (color == null || _comparing) {
+            await _engine.setTint(r: 0, g: 0, b: 0, amount: 0);
+          } else {
+            await _engine.setTint(r: color.red / 255, g: color.green / 255, b: color.blue / 255, amount: _tintAmount);
+          }
         }
       }
     } finally {
-      _tintInFlight = false;
+      _lookInFlight = false;
     }
   }
 
   void _select(TestFilterOption option) {
-    setState(() => _selected = option);
-    unawaited(_applyTint());
+    setState(() {
+      _selected = option;
+      _lipsOpacity = option.lips?.opacity ?? 0.0;
+      _finish = null;
+    });
+    unawaited(_applyLook());
   }
 
   Future<void> _applyRenderOptions() => _engine.setRenderOptions(
@@ -170,11 +212,23 @@ class _TestFilterViewState extends State<TestFilterView> {
   void _setLipsOnly(bool value) {
     setState(() => _lipsOnly = value);
     unawaited(_applyRenderOptions());
+    unawaited(_applyLook());
   }
 
   void _setShowPoints(bool value) {
     setState(() => _showPoints = value);
     unawaited(_applyRenderOptions());
+  }
+
+  void _setFinish(LipFinish finish) {
+    setState(() => _finish = finish);
+    unawaited(_applyLook());
+  }
+
+  void _setComparing(bool value) {
+    if (_comparing == value) return;
+    setState(() => _comparing = value);
+    unawaited(_applyLook());
   }
 
   @override
@@ -209,13 +263,43 @@ class _TestFilterViewState extends State<TestFilterView> {
           left: 8,
           child: _FpsBadge(stats: _stats, trackingRequested: _lipsOnly || _showPoints),
         ),
+        Positioned(top: 8, right: 8, child: _buildCompareButton()),
         Positioned(left: 0, right: 0, bottom: 0, child: _buildControls()),
       ],
     );
   }
 
+  /// Mientras se mantiene apretado: cámara sin maquillaje (antes/después).
+  Widget _buildCompareButton() {
+    return Listener(
+      onPointerDown: (_) => _setComparing(true),
+      onPointerUp: (_) => _setComparing(false),
+      onPointerCancel: (_) => _setComparing(false),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: _comparing ? Colors.white24 : Colors.black54,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white54),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.compare, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(widget.labels.compare, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildControls() {
-    final hasColor = _selected.color != null;
+    final labels = widget.labels;
+    final lips = _selected.lips;
+    final showLipControls = _lipsOnly && lips != null;
+    final showTintSlider = !_lipsOnly && _selected.color != null;
+    final effectiveFinish = _finish ?? lips?.finish ?? LipFinish.satin;
     return Container(
       color: Colors.black54,
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
@@ -223,21 +307,13 @@ class _TestFilterViewState extends State<TestFilterView> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(widget.note, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          Text(labels.note, style: const TextStyle(color: Colors.white70, fontSize: 11)),
           const SizedBox(height: 4),
           Wrap(
             spacing: 8,
             children: [
-              FilterChip(
-                label: Text(widget.lipsOnlyLabel),
-                selected: _lipsOnly,
-                onSelected: _setLipsOnly,
-              ),
-              FilterChip(
-                label: Text(widget.showPointsLabel),
-                selected: _showPoints,
-                onSelected: _setShowPoints,
-              ),
+              FilterChip(label: Text(labels.lipsOnly), selected: _lipsOnly, onSelected: _setLipsOnly),
+              FilterChip(label: Text(labels.showPoints), selected: _showPoints, onSelected: _setShowPoints),
             ],
           ),
           const SizedBox(height: 4),
@@ -254,17 +330,37 @@ class _TestFilterViewState extends State<TestFilterView> {
               ),
             ),
           ),
-          if (hasColor)
+          if (showLipControls) ...[
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              children: [
+                for (final finish in LipFinish.values)
+                  ChoiceChip(
+                    label: Text(labels.finish(finish)),
+                    selected: finish == effectiveFinish,
+                    onSelected: (_) => _setFinish(finish),
+                  ),
+              ],
+            ),
+          ],
+          if (showLipControls || showTintSlider)
             Row(
               children: [
-                Text(widget.intensityLabel, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                Text(labels.intensity, style: const TextStyle(color: Colors.white, fontSize: 12)),
                 Expanded(
                   child: Slider(
-                    value: _amount,
+                    value: showLipControls ? _lipsOpacity : _tintAmount,
                     activeColor: Colors.pink,
                     onChanged: (value) {
-                      setState(() => _amount = value);
-                      unawaited(_applyTint());
+                      setState(() {
+                        if (showLipControls) {
+                          _lipsOpacity = value;
+                        } else {
+                          _tintAmount = value;
+                        }
+                      });
+                      unawaited(_applyLook());
                     },
                   ),
                 ),
@@ -274,6 +370,26 @@ class _TestFilterViewState extends State<TestFilterView> {
       ),
     );
   }
+}
+
+/// Receta que se manda al motor en modo "solo labios": la del preset con la
+/// opacidad del slider y, si se eligió, otro acabado. Sin labios (o "sin
+/// filtro") devuelve una receta sin `lips`, que apaga el labial.
+@visibleForTesting
+Map<String, Object?> lipsRecipe(TestFilterOption option, {required double opacity, LipFinish? finish}) {
+  final recipe = option.recipe;
+  final lips = recipe?.lips;
+  if (recipe == null || lips == null) return const {'schema': 'makeup-recipe/2', 'name': 'none'};
+  final json = recipe.toJson();
+  json['lips'] = LipsSpec(
+    color: lips.color,
+    opacity: opacity.clamp(0.0, 1.0),
+    finish: finish ?? lips.finish,
+    gloss: lips.gloss,
+    lumaFollow: lips.lumaFollow,
+    liner: lips.liner,
+  ).toJson();
+  return json;
 }
 
 class _OptionChip extends StatelessWidget {

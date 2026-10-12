@@ -231,13 +231,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get testFilterNote =>
-      'New engine (beta). \"Lips only\" uses face tracking: the first time it takes a few seconds to load.';
+      'New engine (beta). \"Lips only\" applies the look\'s lipstick with face tracking: the first time it takes a few seconds to load.';
 
   @override
   String get testFilterLipsOnly => 'Lips only';
 
   @override
   String get testFilterShowPoints => 'Show points';
+
+  @override
+  String get testFilterCompare => 'Hold to compare';
+
+  @override
+  String get testFilterFinishMatte => 'Matte';
+
+  @override
+  String get testFilterFinishSatin => 'Satin';
+
+  @override
+  String get testFilterFinishGloss => 'Gloss';
+
+  @override
+  String get testFilterFinishShimmer => 'Shimmer';
 
   @override
   String get fillRequiredFields => 'Please fill all required fields';
