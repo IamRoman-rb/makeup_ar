@@ -100,6 +100,7 @@ bool FaceLayers::buildFaceProgram(std::string* error) {
   face_.cheekOffset = glGetUniformLocation(id, "uCheekOffset");
   face_.layerLab = glGetUniformLocation(id, "uLayerLab[0]");
   face_.layerAmount = glGetUniformLocation(id, "uLayerAmount");
+  face_.layerLumaFollow = glGetUniformLocation(id, "uLayerLumaFollow");
   face_.highlightShine = glGetUniformLocation(id, "uHighlightShine");
   glUseProgram(id);
   glUniform1i(glGetUniformLocation(id, "uFaceMap"), kFaceMapUnit);
@@ -216,6 +217,7 @@ void FaceLayers::drawFace(const FaceUniforms& face, const LayerFrame& frame) {
   glUniform3fv(face_.layerLab, kFaceLayerCount, &face.lab[0][0]);
   glUniform4f(face_.layerAmount, face.amount[0] * frame.alpha, face.amount[1] * frame.alpha,
               face.amount[2] * frame.alpha, face.amount[3] * frame.alpha);
+  glUniform4fv(face_.layerLumaFollow, 1, face.lumaFollow);
   glUniform1f(face_.highlightShine, face.highlightShine);
 
   glEnable(GL_BLEND);

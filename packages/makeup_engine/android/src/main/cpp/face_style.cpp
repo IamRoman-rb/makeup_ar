@@ -45,6 +45,7 @@ FaceUniforms resolveFace(const ColorLayer skin[kSkinLayerCount], const CheekStyl
     out.amount[i] = amountOf(*layers[i]);
     toLab(*layers[i], out.lab[i]);
   }
+  out.lumaFollow[kFaceHighlight] = EngineConfig::kHighlightLumaFollow;
   out.highlightShine = EngineConfig::kHighlightShine;
 
   // Gaussiana elíptica del rubor (mesh/face_maps.h): g = S⁻¹·Rᵀ·(uv - centro),

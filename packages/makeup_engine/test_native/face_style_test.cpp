@@ -56,6 +56,8 @@ TEST(estiloCara_capasYOrden) {
   // OKLab: la base clara tiene más L que el contorno.
   CHECK(face.lab[makeup::kFaceFoundation][0] > face.lab[makeup::kFaceContour][0]);
   CHECK_NEAR(face.highlightShine, makeup::EngineConfig::kHighlightShine, 1e-6);
+  CHECK_NEAR(face.lumaFollow[makeup::kFaceFoundation], 1.0, 0.0);
+  CHECK_NEAR(face.lumaFollow[makeup::kFaceHighlight], makeup::EngineConfig::kHighlightLumaFollow, 1e-6);
 
   ColorLayer none[makeup::kSkinLayerCount];
   CHECK(!makeup::resolveFace(none, CheekStyle{}).any());

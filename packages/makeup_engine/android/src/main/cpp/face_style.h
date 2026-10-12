@@ -52,6 +52,7 @@ inline constexpr int kFaceLayerCount = 4;
 struct FaceUniforms {
   float lab[kFaceLayerCount][3] = {};  // OKLab del color de cada capa
   float amount[kFaceLayerCount] = {};  // 0 = capa apagada
+  float lumaFollow[kFaceLayerCount] = {1.0f, 1.0f, 1.0f, 1.0f};  // peso de la L del color
   // UV espejada (u <= 0,5) -> coordenadas de la gaussiana del rubor:
   // g = matrix · uv + offset (column-major, como glUniformMatrix2fv).
   float cheekMatrix[4] = {0.0f, 0.0f, 0.0f, 0.0f};

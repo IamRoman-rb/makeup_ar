@@ -51,6 +51,7 @@ class FaceLayers {
     GLint cheekOffset = -1;
     GLint layerLab = -1;
     GLint layerAmount = -1;
+    GLint layerLumaFollow = -1;
     GLint highlightShine = -1;
   };
   struct EyesProgram : Common {

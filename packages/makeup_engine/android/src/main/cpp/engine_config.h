@@ -96,8 +96,12 @@ struct EngineConfig {
   // Escala de los sigmas del rubor según spread (0 -> mínima, 1 -> máxima).
   static constexpr float kCheekSpreadScaleMin = 0.7f;
   static constexpr float kCheekSpreadScaleMax = 1.4f;
-  // Brillo aditivo (lineal) del iluminador con opacidad 1, solo donde hay luz.
-  static constexpr float kHighlightShine = 0.12f;
+  // Iluminador: cuánto sigue la L de su color (el resto es brillo aditivo,
+  // lineal, con opacidad 1 y solo donde hay luz). Con lumaFollow 1 un
+  // iluminador crema sobre piel oscura queda como una franja de tiza
+  // (grilla de calibración, tools/makeup/calibration_grid.py).
+  static constexpr float kHighlightLumaFollow = 0.4f;
+  static constexpr float kHighlightShine = 0.16f;
   // Brillo de las sombras satinadas y destellos de las shimmer (con opacidad 1).
   static constexpr float kShadowSatinShine = 0.08f;
   static constexpr float kShadowShimmerSparkle = 0.5f;
