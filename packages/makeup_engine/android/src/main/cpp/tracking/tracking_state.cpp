@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "mesh/canonical_mesh.h"
+#include "tracking/appearance.h"
 #include "tracking/extrapolator.h"
 #include "tracking/umeyama.h"
 
@@ -42,6 +43,7 @@ void TrackingState::setImageSize(int width, int height) {
 void TrackingState::start() {
   if (stage_.load(std::memory_order_acquire) != kIdle) return;
   hasFace_ = false;
+  appearance_ = FaceAppearance{};
   resetFilters();
   {
     std::lock_guard<std::mutex> lock(statsMutex_);
@@ -159,7 +161,12 @@ void TrackingState::submitLandmarks(const float* landmarks, int floatCount, floa
 
   const float dt = static_cast<float>(timestampNs - lastLandmarkNs_) / kNsPerSecond;
   const bool continuous = hasFace_ && dt > 0.0f && dt <= EngineConfig::kFilterResetGapSeconds;
-  if (!continuous) resetFilters();
+  if (!continuous) {
+    resetFilters();
+    appearance_ = FaceAppearance{};  // otra cara u otra luz: medir desde cero
+  }
+  // El recorte sigue siendo del tracker (kReady) hasta finishSubmit().
+  updateAppearance(landmarks, inFlight_.size);
   // Jitter: desplazamiento medio (2D) de los puntos estables de Procrustes
   // entre dos resultados filtrados. Con la cara quieta, es el temblor.
   float jitterSum = 0.0f;
@@ -182,13 +189,19 @@ void TrackingState::submitLandmarks(const float* landmarks, int floatCount, floa
     std::lock_guard<std::mutex> lock(statsMutex_);
     jitter_.push(jitterSum / static_cast<float>(mesh::kProcrustesCount));
   }
-  updatePose(filtered_.data());
+  float viewX = 0.0f;
+  float viewY = 0.0f;
+  if (updatePose(filtered_.data(), &viewX, &viewY)) {
+    appearance_.viewX = viewX;
+    appearance_.viewY = viewY;
+  }
 
   LandmarkFrame& frame = frames_.writeBuffer();
   frame.timestampNs = timestampNs;
   frame.present = true;
   frame.continuous = continuous;
   std::copy(filtered_.begin(), filtered_.end(), frame.points.begin());
+  frame.appearance = appearance_;
   frames_.publish();
   hasFace_ = true;
   lastLandmarkNs_ = timestampNs;
@@ -242,7 +255,21 @@ void TrackingState::resetFilters() {
   for (auto& filter : filters_) filter.reset();
 }
 
-void TrackingState::updatePose(const float* points) {
+void TrackingState::updateAppearance(const float* tensorLandmarks, int size) {
+  const float lip = measureLipLightness(cropPixels_.data(), size, tensorLandmarks);
+  const float skin = measureSkinLightness(cropPixels_.data(), size, tensorLandmarks);
+  // EMA: una sola inferencia con un reflejo o un parpadeo de la luz no mueve
+  // el color del labial de golpe.
+  const auto smooth = [](float previous, float value) {
+    if (std::isnan(value)) return previous;
+    if (std::isnan(previous)) return value;
+    return previous + (value - previous) * EngineConfig::kAppearanceSmoothing;
+  };
+  appearance_.lipLightness = smooth(appearance_.lipLightness, lip);
+  appearance_.skinLightness = smooth(appearance_.skinLightness, skin);
+}
+
+bool TrackingState::updatePose(const float* points, float* viewX, float* viewY) {
   // La malla canónica tiene y hacia arriba y z hacia la cámara; la imagen, y
   // hacia abajo y z (de FaceMesh) creciendo al alejarse: se invierten ambas.
   for (int n = 0; n < mesh::kProcrustesCount; ++n) {
@@ -254,13 +281,18 @@ void TrackingState::updatePose(const float* points) {
   SimilarityTransform pose{};
   if (!solveSimilarity(mesh::kPositions, poseTarget_.data(), mesh::kProcrustesIndices,
                        mesh::kProcrustesWeights, mesh::kProcrustesCount, &pose)) {
-    return;
+    return false;
   }
+  // destino = s·R·malla + t, con la cámara mirando por +z del destino: la
+  // dirección a la cámara en la malla es Rᵀ·(0, 0, 1), la fila 2 de R.
+  *viewX = pose.rotation[6];
+  *viewY = pose.rotation[7];
   const EulerAngles angles = eulerFromRotation(pose.rotation);
   std::lock_guard<std::mutex> lock(statsMutex_);
   pitchDeg_ = angles.pitch * kRadToDeg;
   yawDeg_ = angles.yaw * kRadToDeg;
   rollDeg_ = angles.roll * kRadToDeg;
+  return true;
 }
 
 // --- Hilo de render ---
@@ -327,6 +359,7 @@ bool TrackingState::landmarksForRender(int64_t targetTimestampNs, float frameDtS
   }
   out->points = drawPoints_.data();
   out->alpha = alpha_;
+  out->appearance = current_.appearance;
   return true;
 }
 

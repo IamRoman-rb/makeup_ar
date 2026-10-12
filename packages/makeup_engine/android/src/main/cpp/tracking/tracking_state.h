@@ -59,9 +59,22 @@ enum TrackerStatIndex : int {
   kTrackStatCount,
 };
 
+// Apariencia de la cara medida en cada resultado de landmarks (ver
+// tracking/appearance.h). La usa el shader de labios.
+struct FaceAppearance {
+  float lipLightness = NAN;   // L OKLab mediana del labio [0, 1]; NaN = sin medir
+  float skinLightness = NAN;  // L OKLab mediana de las mejillas [0, 1]
+  // Dirección hacia la cámara en coordenadas de la malla canónica (x a la
+  // derecha de la imagen, y hacia arriba), [-1, 1]. De frente: (0, 0). Es
+  // donde cae el brillo especular de una luz junto a la cámara.
+  float viewX = 0.0f;
+  float viewY = 0.0f;
+};
+
 struct RenderLandmarks {
   const float* points = nullptr;  // kLandmarkCount × (x, y, z) en px de imagen
   float alpha = 0.0f;             // fundido [0, 1]
+  FaceAppearance appearance;      // del último resultado (no se extrapola)
 };
 
 class TrackingState {
@@ -114,6 +127,7 @@ class TrackingState {
     bool present = false;
     bool continuous = false;  // false: no extrapolar desde el resultado anterior
     std::array<float, kFloats> points{};
+    FaceAppearance appearance;
   };
 
   void requestDetector();
@@ -121,7 +135,10 @@ class TrackingState {
   void finishSubmit();
   void publishLost(int64_t timestampNs);
   void resetFilters();
-  void updatePose(const float* points);
+  // Pose para stats y dirección de vista para el render; false si no se pudo resolver.
+  bool updatePose(const float* points, float* viewX, float* viewY);
+  // Mide labio y piel sobre el recorte y los suaviza entre resultados.
+  void updateAppearance(const float* tensorLandmarks, int size);
 
   std::atomic<int> stage_{kIdle};
   std::atomic<int> imageWidth_{0};
@@ -151,6 +168,7 @@ class TrackingState {
   std::array<float, kFloats> poseTarget_{};
   std::array<float, 80> stableBefore_{};  // x, y de los puntos de Procrustes (33)
   bool hasFace_ = false;
+  FaceAppearance appearance_;
   int64_t lastLandmarkNs_ = 0;
   TripleBuffer<LandmarkFrame> frames_;
 

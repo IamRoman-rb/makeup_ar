@@ -55,6 +55,9 @@ struct EngineConfig {
   static constexpr float kExtrapolationMaxIntervals = 1.5f;
   // Fundido del maquillaje al aparecer o perder la cara (§5.3.4).
   static constexpr float kFadeSeconds = 0.15f;
+  // Suavizado (EMA por resultado, 0..1) de la L medida de labio y piel:
+  // 0,3 ≈ media de los últimos ~3 resultados (~0,2 s a 15 Hz).
+  static constexpr float kAppearanceSmoothing = 0.3f;
 
   // Máscara de región (labios) a 1/N de la resolución de salida: el filtrado
   // lineal al ampliarla da el borde suave.

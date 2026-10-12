@@ -43,6 +43,7 @@ add_library(makeup_engine SHARED
     tracking/blazeface_decoder.cpp
     tracking/roi.cpp
     tracking/tracking_state.cpp
+    tracking/appearance.cpp
     tracking/umeyama.cpp)
 
 target_include_directories(makeup_engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${GENERATED_DIR})
