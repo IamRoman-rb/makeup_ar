@@ -27,6 +27,9 @@
       {"points": [[0.06, 0.66], [0.09, 0.75], [0.14, 0.81]], "sigma": 0.035, "amount": 0.7},
       {"points": [[0.463, 0.6], [0.457, 0.5]], "sigma": 0.011, "amount": 0.6}
     ],
+    "cheeksNose": [
+      {"points": [[0.2, 0.495], [0.3, 0.505], [0.4, 0.525], [0.5, 0.54]], "sigma": 0.032, "amount": 1.0}
+    ],
     "highlight": [
       {"points": [[0.17, 0.525], [0.235, 0.54], [0.285, 0.55]], "sigma": 0.024, "amount": 1.0},
       {"points": [[0.5, 0.64], [0.5, 0.49]], "sigma": 0.011, "amount": 0.9},
@@ -55,6 +58,7 @@
     "innerCorner": {"du": 0.006, "dv": 0.0, "sigma": 0.008},
     "browBone": {"tStart": 0.62, "tEnd": 0.95, "tFeather": 0.1, "sStart": 0.05, "sEnd": 1.1, "sFeather": 0.2},
     "liner": {"maxDistance": 0.012, "innerTaper": 0.35, "taperStart": 0.3, "cornerFeather": 0.0015},
+    "lashes": {"maxLength": 0.03, "lowerMaxLength": 0.012},
     "wing": {"liftDeg": 10.0, "length": 0.035, "tipTaper": 0.85, "lowerEdgeFeather": 0.0012}
   }
 }

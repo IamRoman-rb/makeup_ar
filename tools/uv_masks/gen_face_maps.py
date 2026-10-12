@@ -7,13 +7,14 @@ triángulo cruza la línea media: se guarda solo la mitad derecha de la imagen
 
 Salidas (versionadas: el build de Android no necesita Python):
   packages/makeup_engine/android/src/main/cpp/mesh/face_maps.h
-      kFaceMapRgb: RGB8 sobre kFaceMapUvRect (media cara).
+      kFaceMapRgba: RGBA8 sobre kFaceMapUvRect (media cara).
         R = piel (base): 1 dentro del óvalo, difuminado hacia el borde de la
             cara; 0 en la abertura de los ojos, las cejas y los labios.
         G = contorno (bajo el pómulo, mandíbula, sienes, costados de la nariz).
         B = iluminador (pómulo, puente de la nariz, arco de cupido, mentón,
             frente).
-        G y B ya están multiplicados por R.
+        A = zona de efectos "cheeks_nose" (mejillas altas y puente de la nariz).
+        G, B y A ya están multiplicados por R.
       kCheekPlacements: rubor analítico (gaussiana elíptica en UV) por
         placement: apple, high, low -> (u, v, sigmaU, sigmaV, ángulo rad).
       kFaceRegionTriangles: toda la malla sin los triángulos que cruzan la boca
@@ -25,6 +26,11 @@ Salidas (versionadas: el build de Android no necesita Python):
         Las distancias van normalizadas por kLinerMaxDistanceUv y por el
         afinamiento (más finas hacia el lagrimal y hacia la punta del wing):
         el shader compara contra el grosor de la receta sin regenerar nada.
+      kEyeMapC (RGBA8): pestañas. Superiores: posición a lo largo de la línea
+        de pestañas (0 ángulo externo -> 1 lagrimal) y altura sobre ella
+        normalizada por kLashMaxLengthUv. Inferiores: lo mismo bajo la línea
+        inferior con kLowerLashMaxLengthUv. Altura 1 = sin pestañas (dentro
+        del ojo o lejos); el shader dibuja hebras procedurales con eso.
       kEyeRegionTriangles: triángulos que tocan el rectángulo de cualquiera de
         los dos ojos, sin los que cruzan la abertura.
   docs/ar_engine/img/face_maps.png, docs/ar_engine/img/eye_maps.png: vistas previas.
@@ -99,6 +105,26 @@ def catmull_rom_open(line: np.ndarray, steps: int) -> np.ndarray:
     # uno): se quedan los que van de line[0] a line[-1], tramos 1 .. n-1 del
     # arreglo con relleno.
     return np.vstack([closed[steps: steps * len(line)], line[-1:]])
+
+
+def polyline_closest(points: np.ndarray, line: np.ndarray):
+    """Por punto: distancia a la polilínea abierta, parámetro del punto más
+    cercano por longitud de arco [0, 1] y lado (producto cruz con el tramo:
+    > 0 a la izquierda del sentido de recorrido)."""
+    a, b = line[:-1], line[1:]
+    ab = b - a
+    lengths = np.linalg.norm(ab, axis=1)
+    start = np.concatenate([[0.0], np.cumsum(lengths)[:-1]]) / lengths.sum()
+    ap = points[:, None, :] - a[None, :, :]
+    t = np.clip((ap * ab).sum(-1) / (ab * ab).sum(-1), 0.0, 1.0)
+    closest = a[None, :, :] + t[..., None] * ab[None, :, :]
+    distance = np.linalg.norm(points[:, None, :] - closest, axis=-1)
+    best = distance.argmin(axis=1)
+    rows = np.arange(len(points))
+    param = start[best] + t[rows, best] * lengths[best] / lengths.sum()
+    rel = points - closest[rows, best]
+    side = ab[best, 0] * rel[:, 1] - ab[best, 1] * rel[:, 0]
+    return distance[rows, best], param, side
 
 
 def signed_outside(points: np.ndarray, polygon: np.ndarray) -> np.ndarray:
@@ -183,7 +209,8 @@ def build_face(params: dict, geo: Geometry):
 
     contour = strokes(points, fm["contour"]) * skin
     highlight = strokes(points, fm["highlight"]) * skin
-    rgb = quantize(np.stack([skin, contour, highlight], axis=1)).reshape(height, width, 3)
+    cheeks_nose = np.clip(strokes(points, fm["cheeksNose"]), 0.0, 1.0) * skin
+    rgb = quantize(np.stack([skin, contour, highlight, cheeks_nose], axis=1)).reshape(height, width, 4)
 
     cheeks = []
     for name in PLACEMENTS:
@@ -264,11 +291,26 @@ def build_eyes(params: dict, geo: Geometry):
     below = lower[0] * rel[:, 1] - lower[1] * rel[:, 0]
     wing_distance = np.maximum(wing_distance, smoothstep(0.0, p["lowerEdgeFeather"], below))
 
+    # Pestañas: posición a lo largo de cada línea y altura del lado de afuera
+    # del ojo (arriba de la superior, abajo de la inferior). Altura 1 = sin
+    # pestañas.
+    p = em["lashes"]
+    upper_line = catmull_rom_open(geo.eye_upper, steps)
+    lower_line = catmull_rom_open(geo.eye_lower, steps)
+    up_d, up_s, up_side = polyline_closest(points, upper_line)
+    lo_d, lo_s, lo_side = polyline_closest(points, lower_line)
+    # Ambas líneas van del ángulo externo (u chica) al lagrimal: arriba de la
+    # superior es su izquierda (+v); abajo de la inferior, su derecha.
+    upper_height = np.where(up_side > 0.0, np.clip(up_d / p["maxLength"], 0.0, 1.0), 1.0)
+    lower_height = np.where(lo_side < 0.0, np.clip(lo_d / p["lowerMaxLength"], 0.0, 1.0), 1.0)
+    masks_c = np.stack([up_s, upper_height, lo_s, lower_height], axis=1)
+    c8 = quantize(masks_c).reshape(height, width, 4)
+
     masks_a = np.stack([lid, crease, outer_v, inner_corner], axis=1) * outside[:, None]
     masks_b = np.stack([brow_bone * outside, liner, wing_distance, np.clip(along, 0.0, 1.0)], axis=1)
     a8 = quantize(masks_a).reshape(height, width, 4)
     b8 = quantize(masks_b).reshape(height, width, 4)
-    return a8, b8, rect, max_distance, p["length"], direction
+    return a8, b8, rect, max_distance, em["wing"]["length"], direction, c8
 
 
 def region_triangles(geo: Geometry, crossing: set, eye_rect):
@@ -298,8 +340,8 @@ def face_header(params, rgb, rect, cheeks, face, counts) -> str:
         "//",
         "// Mapa UV de cara (media cara: u <= 0,5; el shader espeja u' = min(u, 1 - u)",
         "// por vértice). RGB8 sobre kFaceMapUvRect (u0, v0, ancho, alto; v hacia",
-        "// arriba; fila 0 = v0). R = piel (base), G = contorno, B = iluminador (G y B",
-        "// ya multiplicados por R).",
+        "// arriba; fila 0 = v0). R = piel (base), G = contorno, B = iluminador, A =",
+        "// zona de efectos mejillas + nariz (G, B y A ya multiplicados por R).",
         "#pragma once",
         "",
         "#include <cstdint>",
@@ -324,13 +366,13 @@ def face_header(params, rgb, rect, cheeks, face, counts) -> str:
         f"inline constexpr int kFaceRegionTriangleCount = {len(face)};",
         "",
         mesh.c_array("kFaceRegionTriangles", "uint16_t", [i for t in face for i in t], 15, str),
-        mesh.c_array("kFaceMapRgb", "uint8_t", rgb.ravel().tolist(), 32, str),
+        mesh.c_array("kFaceMapRgba", "uint8_t", rgb.ravel().tolist(), 32, str),
         "}  // namespace makeup::mesh",
         "",
     ])
 
 
-def eye_header(params, a8, b8, rect, max_distance, wing_length, wing_direction, eyes) -> str:
+def eye_header(params, a8, b8, c8, rect, max_distance, wing_length, wing_direction, eyes) -> str:
     height, width, _ = a8.shape
     return "\n".join([
         "// Generado por tools/uv_masks/gen_face_maps.py desde tools/uv_masks/face.json.",
@@ -342,6 +384,9 @@ def eye_header(params, a8, b8, rect, max_distance, wing_length, wing_direction, 
         "//   kEyeMapB (RGBA8): hueso de la ceja; distancia a la línea de pestañas",
         "//     superior y distancia al wing (normalizadas por kLinerMaxDistanceUv y",
         "//     por el afinamiento); avance a lo largo del wing [0, 1].",
+        "//   kEyeMapC (RGBA8): pestañas superiores (posición a lo largo de la línea",
+        "//     0 ángulo externo -> 1 lagrimal, altura / kLashMaxLengthUv) e",
+        "//     inferiores (ídem con kLowerLashMaxLengthUv). Altura 1 = sin pestañas.",
         "#pragma once",
         "",
         "#include <cstdint>",
@@ -356,6 +401,9 @@ def eye_header(params, a8, b8, rect, max_distance, wing_length, wing_direction, 
         f"inline constexpr float kLinerMaxDistanceUv = {fmt(max_distance)};",
         f"// Largo UV del wing con wing = 1 en la receta.",
         f"inline constexpr float kWingLengthUv = {fmt(wing_length)};",
+        f"// Largo UV máximo de las pestañas superiores e inferiores (altura 1 del mapa C).",
+        f"inline constexpr float kLashMaxLengthUv = {fmt(params['eyeMap']['lashes']['maxLength'])};",
+        f"inline constexpr float kLowerLashMaxLengthUv = {fmt(params['eyeMap']['lashes']['lowerMaxLength'])};",
         f"// Dirección UV del wing del ojo derecho (unitaria; afuera y arriba).",
         f"inline constexpr float kWingDirectionUv[2] = {{{fmt(wing_direction[0])}, {fmt(wing_direction[1])}}};",
         "",
@@ -366,6 +414,7 @@ def eye_header(params, a8, b8, rect, max_distance, wing_length, wing_direction, 
         mesh.c_array("kEyeRegionTriangles", "uint16_t", [i for t in eyes for i in t], 15, str),
         mesh.c_array("kEyeMapA", "uint8_t", a8.ravel().tolist(), 32, str),
         mesh.c_array("kEyeMapB", "uint8_t", b8.ravel().tolist(), 32, str),
+        mesh.c_array("kEyeMapC", "uint8_t", c8.ravel().tolist(), 32, str),
         "}  // namespace makeup::mesh",
         "",
     ])
@@ -376,13 +425,17 @@ def upscale(rgb: np.ndarray) -> np.ndarray:
     return rgb[::-1].repeat(PREVIEW_SCALE, axis=0).repeat(PREVIEW_SCALE, axis=1)
 
 
-def face_preview(rgb: np.ndarray) -> bytes:
-    return png_bytes(np.ascontiguousarray(upscale(rgb)))
+def face_preview(rgba: np.ndarray) -> bytes:
+    """Piel/contorno/iluminador en RGB y, al lado, la zona de efectos en gris."""
+    effects = rgba[..., 3:4].repeat(3, axis=-1)
+    gap = np.full((rgba.shape[0], 2, 3), 255, dtype=np.uint8)
+    return png_bytes(np.ascontiguousarray(upscale(np.concatenate([rgba[..., :3], gap, effects], axis=1))))
 
 
-def eye_preview(a8: np.ndarray, b8: np.ndarray) -> bytes:
-    """Tres paneles: párpado/pliegue/V externa en RGB; lagrimal (rojo) y hueso
-    de la ceja (verde); delineado simulado con grosor 0,5 y wing 0,6."""
+def eye_preview(a8: np.ndarray, b8: np.ndarray, c8: np.ndarray) -> bytes:
+    """Cuatro paneles: párpado/pliegue/V externa en RGB; lagrimal (rojo) y
+    hueso de la ceja (verde); delineado simulado con grosor 0,5 y wing 0,6;
+    altura de las pestañas superiores (rojo) e inferiores (verde)."""
     height, width, _ = a8.shape
     panel1 = a8[..., :3]
     panel2 = np.stack([a8[..., 3], b8[..., 0], np.zeros_like(a8[..., 0])], axis=-1)
@@ -393,8 +446,10 @@ def eye_preview(a8: np.ndarray, b8: np.ndarray) -> bytes:
     ink = np.maximum(liner, wing)
     shade = (a8[..., 0].astype(float) / 255.0) * 60.0
     panel3 = np.clip(255.0 - shade[..., None] - ink[..., None] * 230.0, 0, 255).astype(np.uint8).repeat(3, axis=-1)
+    panel4 = np.stack([255 - c8[..., 1], 255 - c8[..., 3], np.zeros_like(c8[..., 0])], axis=-1)
     gap = np.full((height, 2, 3), 255, dtype=np.uint8)
-    return png_bytes(np.ascontiguousarray(upscale(np.concatenate([panel1, gap, panel2, gap, panel3], axis=1))))
+    panels = [panel1, gap, panel2, gap, panel3, gap, panel4]
+    return png_bytes(np.ascontiguousarray(upscale(np.concatenate(panels, axis=1))))
 
 
 def main() -> int:
@@ -406,14 +461,15 @@ def main() -> int:
     params = json.loads(PARAMS.read_text(encoding="utf-8"))
     geo = Geometry(params)
     rgb, face_rect, cheeks = build_face(params, geo)
-    a8, b8, eye_rect, max_distance, wing_length, wing_direction = build_eyes(params, geo)
+    a8, b8, eye_rect, max_distance, wing_length, wing_direction, c8 = build_eyes(params, geo)
     crossing, counts = geo.opening_crossers()
     face, eyes = region_triangles(geo, crossing, eye_rect)
     outputs = {
         FACE_HEADER: face_header(params, rgb, face_rect, cheeks, face, counts).encode("utf-8"),
-        EYE_HEADER: eye_header(params, a8, b8, eye_rect, max_distance, wing_length, wing_direction, eyes).encode("utf-8"),
+        EYE_HEADER: eye_header(params, a8, b8, c8, eye_rect, max_distance, wing_length, wing_direction,
+                               eyes).encode("utf-8"),
         FACE_PREVIEW: face_preview(rgb),
-        EYE_PREVIEW: eye_preview(a8, b8),
+        EYE_PREVIEW: eye_preview(a8, b8, c8),
     }
     if args.check:
         # Los headers pueden tener CRLF según core.autocrlf del checkout.

@@ -22,8 +22,8 @@ constexpr GLuint kPointAttribute = 0;
 constexpr GLuint kUvAttribute = 1;
 constexpr GLuint kNormalAttribute = 2;
 
-static_assert(sizeof(mesh::kFaceMapRgb) == static_cast<size_t>(mesh::kFaceMapWidth) * mesh::kFaceMapHeight * 3,
-              "mapa de cara RGB8 incompleto");
+static_assert(sizeof(mesh::kFaceMapRgba) == static_cast<size_t>(mesh::kFaceMapWidth) * mesh::kFaceMapHeight * 4,
+              "mapa de cara RGBA8 incompleto");
 static_assert(sizeof(mesh::kEyeMapA) == static_cast<size_t>(mesh::kEyeMapWidth) * mesh::kEyeMapHeight * 4,
               "mapa de ojos A incompleto");
 static_assert(sizeof(mesh::kEyeMapB) == sizeof(mesh::kEyeMapA), "mapa de ojos B incompleto");
@@ -182,7 +182,7 @@ bool FaceLayers::buildTextures(std::string* error) {
   // Descarta errores previos para que el chequeo sea solo de estas texturas.
   while (glGetError() != GL_NO_ERROR) {
   }
-  uploadTexture(faceMap_, GL_RGB8, GL_RGB, mesh::kFaceMapWidth, mesh::kFaceMapHeight, mesh::kFaceMapRgb);
+  uploadTexture(faceMap_, GL_RGBA8, GL_RGBA, mesh::kFaceMapWidth, mesh::kFaceMapHeight, mesh::kFaceMapRgba);
   uploadTexture(eyeMapA_, GL_RGBA8, GL_RGBA, mesh::kEyeMapWidth, mesh::kEyeMapHeight, mesh::kEyeMapA);
   uploadTexture(eyeMapB_, GL_RGBA8, GL_RGBA, mesh::kEyeMapWidth, mesh::kEyeMapHeight, mesh::kEyeMapB);
   if (glGetError() != GL_NO_ERROR) {

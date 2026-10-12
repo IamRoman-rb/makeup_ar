@@ -27,7 +27,7 @@ float sampleMirrored(const uint8_t* map, int width, int height, int channels, co
 }
 
 float face(float u, float v, int channel) {
-  return sampleMirrored(mesh::kFaceMapRgb, mesh::kFaceMapWidth, mesh::kFaceMapHeight, 3, mesh::kFaceMapUvRect, u,
+  return sampleMirrored(mesh::kFaceMapRgba, mesh::kFaceMapWidth, mesh::kFaceMapHeight, 4, mesh::kFaceMapUvRect, u,
                         v, channel);
 }
 
@@ -38,6 +38,11 @@ float eyeA(float u, float v, int channel) {
 
 float eyeB(float u, float v, int channel) {
   return sampleMirrored(mesh::kEyeMapB, mesh::kEyeMapWidth, mesh::kEyeMapHeight, 4, mesh::kEyeMapUvRect, u, v,
+                        channel);
+}
+
+float eyeC(float u, float v, int channel) {
+  return sampleMirrored(mesh::kEyeMapC, mesh::kEyeMapWidth, mesh::kEyeMapHeight, 4, mesh::kEyeMapUvRect, u, v,
                         channel);
 }
 
@@ -57,7 +62,8 @@ Triangle sorted(int a, int b, int c) {
 }  // namespace
 
 TEST(caraMapas_tamanos) {
-  CHECK(sizeof(mesh::kFaceMapRgb) == static_cast<size_t>(mesh::kFaceMapWidth) * mesh::kFaceMapHeight * 3);
+  CHECK(sizeof(mesh::kFaceMapRgba) == static_cast<size_t>(mesh::kFaceMapWidth) * mesh::kFaceMapHeight * 4);
+  CHECK(sizeof(mesh::kEyeMapC) == sizeof(mesh::kEyeMapA));
   CHECK(sizeof(mesh::kEyeMapA) == static_cast<size_t>(mesh::kEyeMapWidth) * mesh::kEyeMapHeight * 4);
   CHECK(sizeof(mesh::kEyeMapB) == sizeof(mesh::kEyeMapA));
   CHECK(sizeof(mesh::kFaceRegionTriangles) / sizeof(uint16_t) ==
@@ -185,4 +191,28 @@ TEST(caraMapas_triangulosDeZona) {
     }
     CHECK(!(up > 0 && down > 0));
   }
+}
+
+TEST(ojosMapas_pestanas) {
+  // Arriba de la línea superior: altura proporcional a la distancia y
+  // posición a lo largo de la línea (0 ángulo externo -> 1 lagrimal).
+  const float u = vertexU(159);
+  const float v = vertexV(159);
+  CHECK_NEAR(eyeC(u, v + 0.006f, 1), 0.006 / mesh::kLashMaxLengthUv, 0.05);
+  CHECK(eyeC(u, v + 0.006f, 0) > 0.3f && eyeC(u, v + 0.006f, 0) < 0.7f);
+  CHECK(eyeC(vertexU(160), vertexV(160) + 0.004f, 0) < eyeC(vertexU(158), vertexV(158) + 0.004f, 0));
+  // Dentro del ojo no hay pestañas superiores; debajo del párpado inferior, sí inferiores.
+  CHECK(eyeC(midU(159, 145), midV(159, 145), 1) > 0.95f);
+  CHECK(eyeC(midU(159, 145), midV(159, 145), 3) > 0.95f);
+  CHECK_NEAR(eyeC(vertexU(145), vertexV(145) - 0.004f, 3), 0.004 / mesh::kLowerLashMaxLengthUv, 0.08);
+  // Por espejo, el ojo izquierdo igual.
+  CHECK(eyeC(vertexU(386), vertexV(386) + 0.006f, 1) < 0.4f);
+}
+
+TEST(caraMapas_zonaDeEfectos) {
+  CHECK(face(0.5f, 0.54f, 3) > 0.6f);   // puente de la nariz
+  CHECK(face(0.3f, 0.505f, 3) > 0.6f);  // mejilla alta
+  CHECK(face(midU(159, 145), midV(159, 145), 3) < 0.05f);
+  CHECK(face(0.4f, 0.8f, 3) < 0.1f);    // frente
+  CHECK(face(0.5f, 0.2f, 3) < 0.1f);    // mentón
 }

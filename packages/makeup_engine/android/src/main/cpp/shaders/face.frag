@@ -15,12 +15,13 @@
 //   + brillo · iluminado(s), aditivo en lineal
 //   salida: layerOver(color, cámara, 1 - Π(1 - a_i)) (blending premultiplicado)
 //
-// Lecturas de textura por fragmento: 2 (mapa de cara RGB8 de ~86 KB y, solo
+// Lecturas de textura por fragmento: 2 (mapa de cara RGBA8 de ~115 KB y, solo
 // donde hay alguna capa, la cámara).
 // Uniforms:
 //   uCamera        samplerExternalOES  frame de cámara (sRGB), unidad 0.
-//   uFaceMap       sampler2D  mapa de cara RGB8 (mesh/face_maps.h), unidad 2:
-//                             .r piel, .g contorno, .b iluminador, [0,1].
+//   uFaceMap       sampler2D  mapa de cara RGBA8 (mesh/face_maps.h), unidad 2:
+//                             .r piel, .g contorno, .b iluminador, .a zona de
+//                             efectos mejillas + nariz, [0,1].
 //   uSkinLightness float  L OKLab medida de la piel, [0,1] (o 0,55 si no hay);
 //                         Renderer la limita a >= 0,1.
 //   uLayerLab[4]   vec3   OKLab de cada capa (L en [0,1], a/b en ±0,4), en el
