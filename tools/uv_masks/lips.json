@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "map": {
+    "width": 256,
+    "height": 128,
+    "margin": 0.012
+  },
+  "mask": {
+    "outerExpand": 0.0012,
+    "outerFeather": 0.005,
+    "innerFeather": 0.0035,
+    "contourSubdivision": 8
+  },
+  "gloss": [
+    {"u": 0.5, "v": 0.2825, "sigmaU": 0.032, "sigmaV": 0.0065, "amount": 1.0},
+    {"u": 0.468, "v": 0.3335, "sigmaU": 0.011, "sigmaV": 0.0038, "amount": 0.55},
+    {"u": 0.532, "v": 0.3335, "sigmaU": 0.011, "sigmaV": 0.0038, "amount": 0.55}
+  ]
+}
