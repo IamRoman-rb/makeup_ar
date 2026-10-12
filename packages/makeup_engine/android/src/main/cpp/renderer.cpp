@@ -391,8 +391,9 @@ void Renderer::uploadMesh(const float* points) {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-// Triángulos de la zona de labios sobre el quad de cámara, sin blending: el
-// shader devuelve el píxel final (cámara tal cual fuera del labio).
+// Triángulos de la zona de labios encima de lo ya dibujado (cámara y capas de
+// cara), con blending premultiplicado (color.glsl: layerOver). El alpha del
+// framebuffer queda en 1.
 void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToClip,
                         const float* texMatrix, int64_t frameStartNs) {
   LipsProgram& program = drawLips_.shimmer ? lipsShimmer_ : lips_;
@@ -441,9 +442,12 @@ void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToCl
     const double seconds = static_cast<double>(frameStartNs) / 1.0e9;
     glUniform1f(program.time, static_cast<float>(std::fmod(seconds, kTimeWrapSeconds)));
   }
+  glEnable(GL_BLEND);
+  glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
   glBindVertexArray(lipsVao_.get());
   glDrawElements(GL_TRIANGLES, mesh::kLipsRegionTriangleCount * 3, GL_UNSIGNED_SHORT, nullptr);
   glBindVertexArray(0);
+  glDisable(GL_BLEND);
   MAKEUP_GL_CHECK("drawLips");
 }
 

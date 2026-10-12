@@ -14,6 +14,9 @@
 //   color = OKLab -> lineal bajando croma si sale de gamut (color.glsl)
 //   + brillo: (mapa^nitidez [+ destellos]) · gloss · luz · w · iluminado(s),
 //           aditivo en lineal; no aparece en las sombras del labio.
+//   salida: layerOver(color, cámara, w) con blending premultiplicado
+//           (color.glsl): el labial va encima de la base sin pisarla
+//           alrededor de la boca.
 //
 // Variantes (Renderer las compila con #define):
 //   sin SHIMMER  mate / satinado / brillo (cambian uGloss y uSharpness).
@@ -98,10 +101,10 @@ void main() {
   float mask = texture(uLipsMap, vMapUv).r;
   float glossMap = texture(uLipsMap, vGlossUv).g;
   float w = clamp(mask * uOpacity * vFacing, 0.0, 1.0);
-  // Fuera del labio (el borde de la zona dibujada): el mismo píxel que dibujó
-  // el quad. La rama es coherente por zonas grandes.
+  // Fuera del labio (el borde de la zona dibujada): no cambia el píxel. La
+  // rama es coherente por zonas grandes.
   if (w <= 0.0) {
-    fragColor = vec4(camera, 1.0);
+    fragColor = vec4(0.0);
     return;
   }
 
@@ -127,5 +130,5 @@ void main() {
 #endif
   spec *= uGloss * uLight * w * smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading);
   outLinear = min(outLinear + vec3(spec), vec3(1.0));
-  fragColor = vec4(linearToSrgb(outLinear), 1.0);
+  fragColor = layerOver(linearToSrgb(outLinear), camera, w);
 }

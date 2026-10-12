@@ -31,6 +31,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Regenerar los mapas UV de cara y ojos (base, contorno, iluminador, rubor, sombras, delineado; si cambia `tools/uv_masks/face.json` o la malla): `python tools/uv_masks/gen_face_maps.py`; `--check` igual que el de labios. Vistas previas en `docs/ar_engine/img/{face,eye}_maps.png`.
 - Validar shaders (glslc del NDK; sintaxis y tipos, no reemplaza probar en el teléfono): `python tools/shaders/check_shaders.py`.
 - Referencia Python del sombreado de labios (misma matemática que `lips.frag`): `python -m unittest discover -s tools/lips`.
+- Referencia Python del compositor de capas (cara y ojos; misma matemática que `face.frag`/`eyes.frag` y `layerOver`): `python -m unittest discover -s tools/makeup`.
 - Grilla de calibración del labial (5 tonos de piel × presets; ajustar `lumaFollow`/opacidad de los presets): `python tools/lips/calibration_grid.py` → `docs/ar_engine/img/lips_calibration.png`. Diseño en `docs/ar_engine/LIPS.md`.
 - Regenerar la malla canónica (si cambia `packages/makeup_engine/third_party/mediapipe_face_geometry`): `python tools/mesh/gen_canonical_mesh.py`.
 - Spike del motor nativo: `flutter run --profile -t lib/main_spike.dart -d <id>` (no carga Firebase ni RevenueCat).

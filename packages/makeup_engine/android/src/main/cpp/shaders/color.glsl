@@ -81,3 +81,17 @@ highp vec3 oklabToLinearInGamut(highp vec3 lab) {
   // El clamp solo absorbe el error de redondeo del gris en los extremos.
   return clamp(oklabToLinear(vec3(lab.x, lab.yz * lo)), 0.0, 1.0);
 }
+
+// Salida de una capa de maquillaje (cara, ojos, labios) con blending
+// premultiplicado: glBlendFuncSeparate(ONE, ONE_MINUS_SRC_ALPHA, ZERO, ONE).
+//   result    color final de la capa calculado sobre la cámara (sRGB [0,1]).
+//   camera    píxel de cámara de este fragmento (sRGB [0,1]).
+//   coverage  cobertura total de la capa [0,1] (1 - Π(1 - a_i) si mezcla varias).
+// Queda dst' = result - (1 - A)·camera + (1 - A)·dst: sobre la cámara sola da
+// exactamente [result]; sobre una capa anterior (p. ej. la base) compone
+// encima; con A = 0 no cambia nada. El max absorbe que la mezcla en OKLab no
+// es lineal en sRGB (diferencia de 1-2 LSB en los bordes).
+// Referencia: tools/makeup/face_shading.py (layer_over, blend).
+vec4 layerOver(vec3 result, vec3 camera, float coverage) {
+  return vec4(max(result - (1.0 - coverage) * camera, vec3(0.0)), coverage);
+}
