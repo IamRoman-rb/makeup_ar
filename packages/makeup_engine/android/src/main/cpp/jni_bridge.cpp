@@ -92,6 +92,24 @@ void nativeSetTint(JNIEnv*, jclass, jlong handle, jfloat r, jfloat g, jfloat b, 
   fromHandle(handle)->renderer.setTint(r, g, b, amount);
 }
 
+// [finish]: LipFinish (NativeBridge.LIP_FINISH_*); fuera de rango, satinado.
+void nativeSetLips(JNIEnv*, jclass, jlong handle, jboolean enabled, jfloat r, jfloat g, jfloat b,
+                   jfloat opacity, jint finish, jfloat gloss, jfloat lumaFollow) {
+  makeup::LipStyle style;
+  style.enabled = enabled == JNI_TRUE;
+  style.r = r;
+  style.g = g;
+  style.b = b;
+  style.opacity = opacity;
+  style.finish = finish >= static_cast<jint>(makeup::LipFinish::kMatte) &&
+                         finish <= static_cast<jint>(makeup::LipFinish::kShimmer)
+                     ? static_cast<makeup::LipFinish>(finish)
+                     : makeup::LipFinish::kSatin;
+  style.gloss = gloss;
+  style.lumaFollow = lumaFollow;
+  fromHandle(handle)->renderer.setLips(style);
+}
+
 jint nativeDrawFrame(JNIEnv* env, jclass, jlong handle, jfloatArray texMatrix, jint width,
                      jint height, jlong frameStartNs, jlong cameraTimestampNs) {
   float matrix[16];
@@ -184,6 +202,7 @@ const JNINativeMethod kMethods[] = {
     {"nativeSetGeometry", "(J[F[FIIZ)V", reinterpret_cast<void*>(nativeSetGeometry)},
     {"nativeSetRenderOptions", "(JZI)V", reinterpret_cast<void*>(nativeSetRenderOptions)},
     {"nativeSetTint", "(JFFFF)V", reinterpret_cast<void*>(nativeSetTint)},
+    {"nativeSetLips", "(JZFFFFIFF)V", reinterpret_cast<void*>(nativeSetLips)},
     {"nativeDrawFrame", "(J[FIIJJ)I", reinterpret_cast<void*>(nativeDrawFrame)},
     {"nativeGetStats", "(J[F)V", reinterpret_cast<void*>(nativeGetStats)},
     {"nativeGetTrackerStats", "(J[F)V", reinterpret_cast<void*>(nativeGetTrackerStats)},

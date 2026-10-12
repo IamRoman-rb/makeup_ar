@@ -27,7 +27,6 @@ SHADERS = ROOT / "packages/makeup_engine/android/src/main/cpp/shaders"
 VARIANTS = [
     ("crop_roi.frag", "#define TAPS 4\n"),
     ("crop_roi.frag", "#define TAPS 2\n"),
-    ("tint_oklab.frag", "#define MASKED 1\n"),
     ("lips.frag", "#define SHIMMER 1\n"),
 ]
 INCLUDE_MARKER = "// @include color.glsl"

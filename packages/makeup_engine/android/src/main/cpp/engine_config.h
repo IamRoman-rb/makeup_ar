@@ -59,9 +59,31 @@ struct EngineConfig {
   // 0,3 ≈ media de los últimos ~3 resultados (~0,2 s a 15 Hz).
   static constexpr float kAppearanceSmoothing = 0.3f;
 
-  // Máscara de región (labios) a 1/N de la resolución de salida: el filtrado
-  // lineal al ampliarla da el borde suave.
-  static constexpr int kMaskDownscale = 4;
+  // --- Labios (P4; diseño en docs/ar_engine/LIPS.md, shader lips.frag) ---
+
+  // L OKLab del labio si todavía no se midió (valor del informe §5.5).
+  static constexpr float kLipsFallbackLightness = 0.55f;
+  // Desplazamiento del brillo por unidad de dirección de vista (UV canónico):
+  // con ~1 cm de radio de curvatura del labio y el labio de ~0,236 UV para
+  // ~5 cm, girar 20° corre el reflejo ~0,016 UV. Tope para giros grandes.
+  static constexpr float kLipsGlossShiftPerView = 0.045f;
+  static constexpr float kLipsGlossShiftMaxUv = 0.02f;
+  // Exponente sobre el mapa de brillo por acabado: satinado ancho y suave,
+  // brillo chico e intenso. Shimmer usa el del satinado más destellos.
+  static constexpr float kLipsSharpnessSatin = 1.5f;
+  static constexpr float kLipsSharpnessGloss = 4.0f;
+  // El satinado refleja menos que el brillo con el mismo "gloss" de la receta.
+  static constexpr float kLipsSatinGlossScale = 0.5f;
+  // Intensidad de los destellos de shimmer (relativa a gloss). Celdas, densidad
+  // y ritmo están en lips.frag (SPARKLE_*).
+  static constexpr float kLipsSparkle = 0.6f;
+  // Luz de la escena según la L de las mejillas: solo atenúa el brillo en
+  // escenas muy oscuras (L < ~0,25). No más arriba: la L de la piel depende
+  // también del tono de piel y no hay que quitarle brillo a las pieles oscuras.
+  static constexpr float kLipsLightDarkLightness = 0.10f;
+  static constexpr float kLipsLightFullLightness = 0.25f;
+  static constexpr float kLipsLightMin = 0.3f;
+
   // Tamaño de los puntos del overlay de depuración (px de salida).
   static constexpr float kLandmarkPointSizePx = 5.0f;
 };

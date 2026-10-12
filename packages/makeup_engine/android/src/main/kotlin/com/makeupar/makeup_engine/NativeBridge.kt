@@ -58,6 +58,12 @@ internal object NativeBridge {
     const val REGION_FULL = 0
     const val REGION_LIPS = 1
 
+    // [finish] de nativeSetLips(); mismo orden que LipFinish en renderer.h.
+    const val LIP_FINISH_MATTE = 0
+    const val LIP_FINISH_SATIN = 1
+    const val LIP_FINISH_GLOSS = 2
+    const val LIP_FINISH_SHIMMER = 3
+
     // Valores de nativeTrackerReadyKind(); mismo valor que CropKind en tracking_state.h.
     const val CROP_NONE = 0
     const val CROP_DETECTOR = 1
@@ -85,6 +91,22 @@ internal object NativeBridge {
     /** [region]: REGION_FULL o REGION_LIPS. */
     @JvmStatic external fun nativeSetRenderOptions(handle: Long, showLandmarks: Boolean, region: Int)
     @JvmStatic external fun nativeSetTint(handle: Long, r: Float, g: Float, b: Float, amount: Float)
+
+    /**
+     * Labial de la receta (REGION_LIPS): color sRGB [0,1], opacidad, acabado
+     * (LIP_FINISH_*), brillo y lumaFollow [0,1]. [enabled] = false lo apaga.
+     */
+    @JvmStatic external fun nativeSetLips(
+        handle: Long,
+        enabled: Boolean,
+        r: Float,
+        g: Float,
+        b: Float,
+        opacity: Float,
+        finish: Int,
+        gloss: Float,
+        lumaFollow: Float,
+    )
 
     /** Devuelve bits FRAME_FLAG_*. */
     @JvmStatic external fun nativeDrawFrame(

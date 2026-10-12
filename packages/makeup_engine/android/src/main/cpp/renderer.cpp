@@ -3,12 +3,14 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2ext.h>
 
+#include <cmath>
 #include <cstring>
 #include <ctime>
 
 #include "color_math.h"
 #include "gl_program.h"
 #include "mesh/canonical_mesh.h"
+#include "mesh/lips_maps.h"
 #include "shader_sources.h"
 
 namespace makeup {
@@ -17,15 +19,24 @@ namespace {
 
 // Triangle strip de pantalla completa en clip space.
 constexpr GLfloat kQuad[] = {-1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f};
-constexpr char kMaskedDefines[] = "#define MASKED 1\n";
+constexpr char kShimmerDefines[] = "#define SHIMMER 1\n";
 // Color de los puntos del overlay (verde menta, visible sobre piel y fondo).
 constexpr float kLandmarkColor[3] = {0.2f, 1.0f, 0.6f};
-// Unidad de textura de la máscara (la 0 es la cámara).
-constexpr int kMaskTextureUnit = 1;
+// Unidad de textura del mapa de labios (la 0 es la cámara).
+constexpr int kLipsMapTextureUnit = 1;
+// Ubicaciones de atributos de la capa de labios.
+constexpr GLuint kPointAttribute = 0;
+constexpr GLuint kUvAttribute = 1;
 constexpr float kNsPerSecond = 1.0e9f;
 // Si pasó más que esto entre frames (pausa, primer frame), el fundido avanza
 // como si fuera un frame normal.
 constexpr float kMaxFrameDtSeconds = 0.1f;
+// uTime del shimmer: módulo para que el float no pierda precisión.
+constexpr double kTimeWrapSeconds = 1000.0;
+
+static_assert(sizeof(mesh::kLipsMapRg) ==
+                  static_cast<size_t>(mesh::kLipsMapWidth) * mesh::kLipsMapHeight * 2,
+              "mapa de labios RG8 incompleto");
 
 int64_t monotonicNowNs() {
   timespec ts{};
@@ -36,6 +47,11 @@ int64_t monotonicNowNs() {
 const char* glString(GLenum name) {
   const auto* value = reinterpret_cast<const char*>(glGetString(name));
   return value != nullptr ? value : "?";
+}
+
+float smoothstep(float edge0, float edge1, float x) {
+  const float t = std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+  return t * t * (3.0f - 2.0f * t);
 }
 
 }  // namespace
@@ -55,14 +71,11 @@ GLuint Renderer::initGl() {
   }
 
   if (!buildProgram(passthrough_, shaders::k_passthrough_frag, nullptr) ||
-      !buildProgram(tint_, shaders::k_tint_oklab_frag, nullptr) ||
-      !buildProgram(tintMasked_, shaders::k_tint_oklab_frag, kMaskedDefines) ||
-      !buildMeshProgram() || !buildMeshGeometry()) {
+      !buildProgram(tint_, shaders::k_tint_oklab_frag, nullptr) || !buildMeshProgram() ||
+      !buildLipsProgram(lips_, nullptr) || !buildLipsProgram(lipsShimmer_, kShimmerDefines) ||
+      !buildMeshGeometry() || !buildLipsMap()) {
     return 0;
   }
-  glUseProgram(tintMasked_.program.get());
-  glUniform1i(glGetUniformLocation(tintMasked_.program.get(), "uMask"), kMaskTextureUnit);
-  glUseProgram(0);
 
   std::string error;
   if (!crop_.init(&error)) {
@@ -140,71 +153,114 @@ bool Renderer::buildMeshProgram() {
   return true;
 }
 
-// VBO dinámico con los puntos (se actualiza por frame sin realocar) e IBO
-// estático con los triángulos de los labios de la malla canónica.
+bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
+  std::string error;
+  // Mismo orden que kPointAttribute / kUvAttribute.
+  const char* attributes[] = {"aPoint", "aUv"};
+  GlProgram program =
+      buildGlProgram(shaders::k_lips_vert, shaders::k_lips_frag, attributes, 2, &error, defines);
+  if (!program) {
+    setError(error);
+    return false;
+  }
+  const GLuint id = program.get();
+  out.imageToClip = glGetUniformLocation(id, "uImageToClip");
+  out.displayMatrix = glGetUniformLocation(id, "uDisplayMatrix");
+  out.texMatrix = glGetUniformLocation(id, "uTexMatrix");
+  out.targetLab = glGetUniformLocation(id, "uTargetLab");
+  out.opacity = glGetUniformLocation(id, "uOpacity");
+  out.lumaFollow = glGetUniformLocation(id, "uLumaFollow");
+  out.lipLightness = glGetUniformLocation(id, "uLipLightness");
+  out.gloss = glGetUniformLocation(id, "uGloss");
+  out.sharpness = glGetUniformLocation(id, "uSharpness");
+  out.light = glGetUniformLocation(id, "uLight");
+  out.glossShift = glGetUniformLocation(id, "uGlossShift");
+  out.time = glGetUniformLocation(id, "uTime");
+  out.sparkle = glGetUniformLocation(id, "uSparkle");
+  // Constantes de la sesión: samplers y la transformación UV -> mapa.
+  const float* rect = mesh::kLipsMapUvRect;
+  glUseProgram(id);
+  glUniform1i(glGetUniformLocation(id, "uCamera"), 0);
+  glUniform1i(glGetUniformLocation(id, "uLipsMap"), kLipsMapTextureUnit);
+  glUniform4f(glGetUniformLocation(id, "uMapTransform"), 1.0f / rect[2], 1.0f / rect[3],
+              -rect[0] / rect[2], -rect[1] / rect[3]);
+  if (out.sparkle >= 0) glUniform1f(out.sparkle, EngineConfig::kLipsSparkle);
+  glUseProgram(0);
+  out.uploadedDisplayVersion = 0;
+  out.program = std::move(program);
+  MAKEUP_GL_CHECK("buildLipsProgram");
+  return true;
+}
+
+// VBO dinámico con los puntos tracked (se actualiza por frame sin realocar),
+// VBO estático con las UV canónicas e IBO estático con los triángulos de la
+// zona de labios. meshVao_ (puntos) e lipsVao_ (puntos + UV + IBO) comparten
+// el VBO de puntos.
 bool Renderer::buildMeshGeometry() {
-  GLuint vao = 0;
-  glGenVertexArrays(1, &vao);
-  meshVao_.reset(vao);
-  GLuint vbo = 0;
-  glGenBuffers(1, &vbo);
-  meshVbo_.reset(vbo);
-  GLuint ibo = 0;
-  glGenBuffers(1, &ibo);
-  lipsIbo_.reset(ibo);
+  GLuint vaos[2] = {0, 0};
+  glGenVertexArrays(2, vaos);
+  meshVao_.reset(vaos[0]);
+  lipsVao_.reset(vaos[1]);
+  GLuint buffers[3] = {0, 0, 0};
+  glGenBuffers(3, buffers);
+  meshVbo_.reset(buffers[0]);
+  uvVbo_.reset(buffers[1]);
+  lipsIbo_.reset(buffers[2]);
+
+  glBindBuffer(GL_ARRAY_BUFFER, meshVbo_.get());
+  glBufferData(GL_ARRAY_BUFFER, sizeof(meshPoints_), nullptr, GL_DYNAMIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, uvVbo_.get());
+  glBufferData(GL_ARRAY_BUFFER, sizeof(mesh::kUvs), mesh::kUvs, GL_STATIC_DRAW);
 
   glBindVertexArray(meshVao_.get());
   glBindBuffer(GL_ARRAY_BUFFER, meshVbo_.get());
-  glBufferData(GL_ARRAY_BUFFER, sizeof(meshPoints_), nullptr, GL_DYNAMIC_DRAW);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glEnableVertexAttribArray(kPointAttribute);
+  glVertexAttribPointer(kPointAttribute, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+  glBindVertexArray(lipsVao_.get());
+  glBindBuffer(GL_ARRAY_BUFFER, meshVbo_.get());
+  glEnableVertexAttribArray(kPointAttribute);
+  glVertexAttribPointer(kPointAttribute, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glBindBuffer(GL_ARRAY_BUFFER, uvVbo_.get());
+  glEnableVertexAttribArray(kUvAttribute);
+  glVertexAttribPointer(kUvAttribute, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lipsIbo_.get());
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(mesh::kLipTriangles), mesh::kLipTriangles,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(mesh::kLipsRegionTriangles),
+               mesh::kLipsRegionTriangles, GL_STATIC_DRAW);
+
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   MAKEUP_GL_CHECK("buildMeshGeometry");
   return true;
 }
 
-// Textura R8 a 1/kMaskDownscale de la salida. Se crea la primera vez que se
-// usa (o si cambia el tamaño de salida), nunca por frame.
-bool Renderer::ensureMask(int width, int height) {
-  const int maskWidth = std::max(1, width / EngineConfig::kMaskDownscale);
-  const int maskHeight = std::max(1, height / EngineConfig::kMaskDownscale);
-  if (maskWidth == maskWidth_ && maskHeight == maskHeight_) {
-    // Ya creada, o ya falló con este tamaño: no se reintenta en cada frame.
-    return static_cast<bool>(maskFramebuffer_);
+// Mapa de labios RG8 (mesh/lips_maps.h): se sube una vez. Lineal para que la
+// máscara y el brillo se amplíen suaves; CLAMP_TO_EDGE con borde vacío (0)
+// para que el brillo desplazado fuera del mapa no aparezca.
+bool Renderer::buildLipsMap() {
+  // Descarta errores previos (en release MAKEUP_GL_CHECK no los consume) para
+  // que el chequeo de abajo sea solo de esta textura.
+  while (glGetError() != GL_NO_ERROR) {
   }
-  maskWidth_ = maskWidth;
-  maskHeight_ = maskHeight;
-  maskFramebuffer_.reset();
-  maskTexture_.reset();
   GLuint texture = 0;
   glGenTextures(1, &texture);
-  maskTexture_.reset(texture);
+  lipsMap_.reset(texture);
   glBindTexture(GL_TEXTURE_2D, texture);
-  glTexStorage2D(GL_TEXTURE_2D, 1, GL_R8, maskWidth, maskHeight);
-  // Lineal: al ampliar la máscara chica, el borde sale suave sin costo extra.
+  glTexStorage2D(GL_TEXTURE_2D, 1, GL_RG8, mesh::kLipsMapWidth, mesh::kLipsMapHeight);
+  // Filas de 256 × 2 bytes: múltiplo de 4, pero se fija por si el mapa cambia.
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, mesh::kLipsMapWidth, mesh::kLipsMapHeight, GL_RG,
+                  GL_UNSIGNED_BYTE, mesh::kLipsMapRg);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glBindTexture(GL_TEXTURE_2D, 0);
-  GLuint framebuffer = 0;
-  glGenFramebuffers(1, &framebuffer);
-  maskFramebuffer_.reset(framebuffer);
-  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-  const bool complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  if (!complete) {
-    maskFramebuffer_.reset();
-    maskTexture_.reset();
-    setError("FBO de máscara incompleto");
+  if (glGetError() != GL_NO_ERROR) {
+    setError("no se pudo crear el mapa de labios");
     return false;
   }
-  MAKEUP_GL_CHECK("ensureMask");
   return true;
 }
 
@@ -218,6 +274,12 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
     drawMirrored_ = mirrored_;
     drawDisplayVersion_ = displayVersion;
   }
+  const uint32_t lipsVersion = lipsVersion_.load(std::memory_order_acquire);
+  if (lipsVersion != drawLipsVersion_) {
+    std::lock_guard<std::mutex> lock(configMutex_);  // solo al cambiar la receta
+    drawLips_ = lipUniforms_;
+    drawLipsVersion_ = lipsVersion;
+  }
 
   int flags = 0;
   runCropPass(texMatrix, width, height, cameraTimestampNs, frameStartNs, &flags);
@@ -225,6 +287,7 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   // Malla del tracker extrapolada a este frame (si alguna opción la usa).
   const bool showLandmarks = showLandmarks_.load(std::memory_order_relaxed);
   const auto region = static_cast<TintRegion>(region_.load(std::memory_order_relaxed));
+  const bool wantLips = region == TintRegion::kLips && drawLips_.enabled && drawLips_.opacity > 0.0f;
   float frameDt = lastFrameStartNs_ > 0
                       ? static_cast<float>(frameStartNs - lastFrameStartNs_) / kNsPerSecond
                       : 0.0f;
@@ -240,14 +303,7 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   if (hasMesh) uploadMesh(landmarks.points);
 
   const float amount = tintAmount_.load(std::memory_order_relaxed);
-  Program* program = &passthrough_;
-  if (amount > 0.0f && region == TintRegion::kFull) {
-    program = &tint_;
-  } else if (amount > 0.0f && hasMesh && ensureMask(width, height)) {
-    // Solo labios: sin cara no hay máscara y se dibuja en paso directo.
-    drawLipsMask(landmarks.alpha, imageToClip);
-    program = &tintMasked_;
-  }
+  Program* program = amount > 0.0f && region == TintRegion::kFull ? &tint_ : &passthrough_;
 
   glViewport(0, 0, width, height);
   // El quad cubre toda la superficie: en una GPU de tiles (Mali) esto evita
@@ -257,11 +313,6 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   glUseProgram(program->program.get());
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_EXTERNAL_OES, cameraTexture_.get());
-  if (program == &tintMasked_) {
-    glActiveTexture(GL_TEXTURE0 + kMaskTextureUnit);
-    glBindTexture(GL_TEXTURE_2D, maskTexture_.get());
-    glActiveTexture(GL_TEXTURE0);
-  }
   if (program->uploadedDisplayVersion != drawDisplayVersion_) {
     glUniformMatrix4fv(program->displayMatrix, 1, GL_FALSE, drawDisplayMatrix_.data());
     program->uploadedDisplayVersion = drawDisplayVersion_;
@@ -277,6 +328,8 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   glBindVertexArray(0);
   MAKEUP_GL_CHECK("drawFrame");
 
+  // Sin cara no hay labios: queda el paso directo.
+  if (wantLips && hasMesh) drawLips(landmarks, imageToClip, texMatrix, frameStartNs);
   if (showLandmarks && hasMesh) drawLandmarks(landmarks.alpha, imageToClip, width, height);
 
   eglSwapBuffers(eglGetCurrentDisplay(), eglGetCurrentSurface(EGL_DRAW));
@@ -319,19 +372,57 @@ void Renderer::uploadMesh(const float* points) {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void Renderer::drawLipsMask(float alpha, const float* imageToClip) {
-  glBindFramebuffer(GL_FRAMEBUFFER, maskFramebuffer_.get());
-  glViewport(0, 0, maskWidth_, maskHeight_);
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glUseProgram(mesh_.program.get());
-  glUniform4fv(mesh_.imageToClip, 1, imageToClip);
-  glUniform4f(mesh_.color, alpha, 0.0f, 0.0f, 1.0f);
-  glBindVertexArray(meshVao_.get());
-  glDrawElements(GL_TRIANGLES, mesh::kLipTriangleCount * 3, GL_UNSIGNED_SHORT, nullptr);
+// Triángulos de la zona de labios sobre el quad de cámara, sin blending: el
+// shader devuelve el píxel final (cámara tal cual fuera del labio).
+void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToClip,
+                        const float* texMatrix, int64_t frameStartNs) {
+  LipsProgram& program = drawLips_.shimmer ? lipsShimmer_ : lips_;
+  const FaceAppearance& look = landmarks.appearance;
+  const float lipLightness = std::isnan(look.lipLightness) ? EngineConfig::kLipsFallbackLightness
+                                                           : look.lipLightness;
+  // Sin medición todavía: luz plena (no apagar el brillo por falta de dato).
+  const float light =
+      std::isnan(look.skinLightness)
+          ? 1.0f
+          : EngineConfig::kLipsLightMin +
+                (1.0f - EngineConfig::kLipsLightMin) *
+                    smoothstep(EngineConfig::kLipsLightDarkLightness,
+                               EngineConfig::kLipsLightFullLightness, look.skinLightness);
+  // El reflejo cae donde la superficie mira a la cámara: se corre hacia la
+  // dirección de vista. En el shader se muestrea en (uv - shift).
+  const float* rect = mesh::kLipsMapUvRect;
+  const float maxShift = EngineConfig::kLipsGlossShiftMaxUv;
+  const float shiftU = std::clamp(look.viewX * EngineConfig::kLipsGlossShiftPerView, -maxShift, maxShift);
+  const float shiftV = std::clamp(look.viewY * EngineConfig::kLipsGlossShiftPerView, -maxShift, maxShift);
+
+  glUseProgram(program.program.get());
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_EXTERNAL_OES, cameraTexture_.get());
+  glActiveTexture(GL_TEXTURE0 + kLipsMapTextureUnit);
+  glBindTexture(GL_TEXTURE_2D, lipsMap_.get());
+  glActiveTexture(GL_TEXTURE0);
+  if (program.uploadedDisplayVersion != drawDisplayVersion_) {
+    glUniformMatrix4fv(program.displayMatrix, 1, GL_FALSE, drawDisplayMatrix_.data());
+    program.uploadedDisplayVersion = drawDisplayVersion_;
+  }
+  glUniformMatrix4fv(program.texMatrix, 1, GL_FALSE, texMatrix);
+  glUniform4fv(program.imageToClip, 1, imageToClip);
+  glUniform3fv(program.targetLab, 1, drawLips_.targetLab);
+  glUniform1f(program.opacity, drawLips_.opacity * landmarks.alpha);
+  glUniform1f(program.lumaFollow, drawLips_.lumaFollow);
+  glUniform1f(program.lipLightness, lipLightness);
+  glUniform1f(program.gloss, drawLips_.gloss);
+  glUniform1f(program.sharpness, drawLips_.sharpness);
+  glUniform1f(program.light, light);
+  glUniform2f(program.glossShift, shiftU / rect[2], shiftV / rect[3]);
+  if (program.time >= 0) {
+    const double seconds = static_cast<double>(frameStartNs) / 1.0e9;
+    glUniform1f(program.time, static_cast<float>(std::fmod(seconds, kTimeWrapSeconds)));
+  }
+  glBindVertexArray(lipsVao_.get());
+  glDrawElements(GL_TRIANGLES, mesh::kLipsRegionTriangleCount * 3, GL_UNSIGNED_SHORT, nullptr);
   glBindVertexArray(0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  MAKEUP_GL_CHECK("drawLipsMask");
+  MAKEUP_GL_CHECK("drawLips");
 }
 
 void Renderer::drawLandmarks(float alpha, const float* imageToClip, int width, int height) {
@@ -355,15 +446,17 @@ void Renderer::releaseGl() {
   crop_.release();
   passthrough_.program.reset();
   tint_.program.reset();
-  tintMasked_.program.reset();
   mesh_.program.reset();
+  lips_.program.reset();
+  lipsShimmer_.program.reset();
   quadVbo_.reset();
   quadVao_.reset();
   meshVbo_.reset();
+  uvVbo_.reset();
   lipsIbo_.reset();
   meshVao_.reset();
-  maskFramebuffer_.reset();
-  maskTexture_.reset();
+  lipsVao_.reset();
+  lipsMap_.reset();
   cameraTexture_.reset();
 }
 
@@ -373,6 +466,38 @@ void Renderer::setTint(float r, float g, float b, float amount) {
   tintA_.store(lab.y, std::memory_order_relaxed);
   tintB_.store(lab.z, std::memory_order_relaxed);
   tintAmount_.store(std::clamp(amount, 0.0f, 1.0f), std::memory_order_relaxed);
+}
+
+void Renderer::setLips(const LipStyle& style) {
+  LipUniforms uniforms;
+  uniforms.enabled = style.enabled;
+  const Vec3 lab = srgbToOklab(std::clamp(style.r, 0.0f, 1.0f), std::clamp(style.g, 0.0f, 1.0f),
+                               std::clamp(style.b, 0.0f, 1.0f));
+  uniforms.targetLab[0] = lab.x;
+  uniforms.targetLab[1] = lab.y;
+  uniforms.targetLab[2] = lab.z;
+  uniforms.opacity = std::clamp(style.opacity, 0.0f, 1.0f);
+  uniforms.lumaFollow = std::clamp(style.lumaFollow, 0.0f, 1.0f);
+  const float gloss = std::clamp(style.gloss, 0.0f, 1.0f);
+  switch (style.finish) {
+    case LipFinish::kMatte:
+      uniforms.gloss = 0.0f;
+      break;
+    case LipFinish::kGloss:
+      uniforms.gloss = gloss;
+      uniforms.sharpness = EngineConfig::kLipsSharpnessGloss;
+      break;
+    case LipFinish::kShimmer:
+      uniforms.shimmer = true;
+      [[fallthrough]];
+    case LipFinish::kSatin:
+      uniforms.gloss = gloss * EngineConfig::kLipsSatinGlossScale;
+      uniforms.sharpness = EngineConfig::kLipsSharpnessSatin;
+      break;
+  }
+  std::lock_guard<std::mutex> lock(configMutex_);
+  lipUniforms_ = uniforms;
+  lipsVersion_.fetch_add(1, std::memory_order_release);
 }
 
 void Renderer::setDisplayMatrices(const float* display, const float* tracker, bool mirrored) {
