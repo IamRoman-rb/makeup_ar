@@ -37,7 +37,7 @@
   },
   "cheeks": {
     "apple": {"u": 0.3, "v": 0.44, "sigmaU": 0.045, "sigmaV": 0.035, "angleDeg": 0.0},
-    "high": {"u": 0.235, "v": 0.475, "sigmaU": 0.06, "sigmaV": 0.028, "angleDeg": -24.0},
+    "high": {"u": 0.215, "v": 0.49, "sigmaU": 0.06, "sigmaV": 0.026, "angleDeg": -28.0},
     "low": {"u": 0.27, "v": 0.39, "sigmaU": 0.05, "sigmaV": 0.03, "angleDeg": -10.0}
   },
   "eyeMap": {
@@ -49,12 +49,12 @@
     "vMax": 0.77,
     "contourSubdivision": 6,
     "openingFeather": 0.002,
-    "lid": {"tEnd": 0.42, "tFeather": 0.1, "sStart": -0.1, "sEnd": 1.04, "sFeather": 0.16},
+    "lid": {"tEnd": 0.45, "tFeather": 0.3, "sStart": -0.1, "sEnd": 1.04, "sFeather": 0.2},
     "crease": {"t": 0.5, "sigmaT": 0.11, "sStart": -0.08, "sEnd": 0.95, "sFeather": 0.2, "innerAmount": 0.5},
     "outerV": {"s": 0.02, "t": 0.22, "sigmaS": 0.17, "sigmaT": 0.32, "sMax": 0.5},
     "innerCorner": {"du": 0.006, "dv": 0.0, "sigma": 0.008},
     "browBone": {"tStart": 0.62, "tEnd": 0.95, "tFeather": 0.1, "sStart": 0.05, "sEnd": 1.1, "sFeather": 0.2},
-    "liner": {"maxDistance": 0.012, "innerTaper": 0.35, "taperStart": 0.3},
-    "wing": {"angleDeg": 22.0, "length": 0.035, "tipTaper": 0.85}
+    "liner": {"maxDistance": 0.012, "innerTaper": 0.35, "taperStart": 0.3, "cornerFeather": 0.0015},
+    "wing": {"liftDeg": 10.0, "length": 0.035, "tipTaper": 0.85, "lowerEdgeFeather": 0.0012}
   }
 }

@@ -133,13 +133,22 @@ TEST(ojosMapas_delineadoYWing) {
   // Más fino hacia el lagrimal: a la misma distancia, valor normalizado mayor.
   const float d = 0.003f;
   CHECK(eyeB(vertexU(158), vertexV(158) + d, 1) > eyeB(vertexU(160), vertexV(160) + d, 1));
-  // El wing arranca en el ángulo externo y sale hacia afuera y arriba.
+  // El wing arranca en el ángulo externo y sale hacia afuera y arriba, por
+  // encima de la prolongación del párpado inferior.
   const float cu = vertexU(33);
   const float cv = vertexV(33);
-  CHECK(eyeB(cu - 0.003f, cv + 0.001f, 3) < 0.2f);
-  CHECK(eyeB(cu - 0.025f, cv + 0.01f, 3) > 0.6f);
-  CHECK(eyeB(cu - 0.025f, cv + 0.01f, 2) < 0.6f);
+  const float* dir = mesh::kWingDirectionUv;
+  CHECK(dir[0] < 0.0f && dir[1] > 0.0f);
+  const float along = 0.6f * mesh::kWingLengthUv;
+  CHECK(eyeB(cu + dir[0] * 0.003f, cv + dir[1] * 0.003f, 3) < 0.2f);
+  CHECK(eyeB(cu + dir[0] * along, cv + dir[1] * along, 3) > 0.5f);
+  CHECK(eyeB(cu + dir[0] * along, cv + dir[1] * along, 2) < 0.3f);
   CHECK(eyeB(cu + 0.02f, cv, 2) > 0.95f);  // hacia adentro del ojo no hay wing
+  // Debajo del ángulo externo no se pinta: ni la línea (termina en el ángulo)
+  // ni el wing (no baja de la prolongación del párpado inferior).
+  CHECK(eyeB(cu - 0.004f, cv - 0.004f, 1) > 0.95f);
+  CHECK(eyeB(cu - 0.004f, cv - 0.004f, 2) > 0.95f);
+  CHECK(eyeB(cu - 0.008f, cv, 1) > 0.95f);
 }
 
 TEST(caraMapas_triangulosDeZona) {

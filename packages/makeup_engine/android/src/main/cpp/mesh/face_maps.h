@@ -22,7 +22,7 @@ inline constexpr float kFaceMapUvRect[4] = {0.000000f, 0.035000f, 0.500000f, 0.8
 inline constexpr int kCheekPlacementCount = 3;
 inline constexpr float kCheekPlacements[3][5] = {
     {0.300000f, 0.440000f, 0.045000f, 0.035000f, 0.000000f},  // apple
-    {0.235000f, 0.475000f, 0.060000f, 0.028000f, -0.418879f},  // high
+    {0.215000f, 0.490000f, 0.060000f, 0.026000f, -0.488692f},  // high
     {0.270000f, 0.390000f, 0.050000f, 0.030000f, -0.174533f},  // low
 };
 

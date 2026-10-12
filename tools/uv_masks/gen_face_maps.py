@@ -29,6 +29,10 @@ Salidas (versionadas: el build de Android no necesita Python):
         los dos ojos, sin los que cruzan la abertura.
   docs/ar_engine/img/face_maps.png, docs/ar_engine/img/eye_maps.png: vistas previas.
 
+Delineado: la línea de pestañas superior termina en el ángulo externo; el
+wing sigue la prolongación del párpado inferior levantada liftDeg y nunca
+pinta debajo de ella.
+
 Coordenadas del ojo (para párpado, pliegue, etc.): s va de 0 en el ángulo
 externo a 1 en el lagrimal; t va de 0 en la línea de pestañas superior a 1 en
 el borde inferior de la ceja (negativo debajo del párpado inferior). Todas las
@@ -231,22 +235,40 @@ def build_eyes(params: dict, geo: Geometry):
     lash = catmull_rom_open(geo.eye_upper, steps)
     taper = 1.0 + (p["innerTaper"] - 1.0) * smoothstep(p["taperStart"], 1.0, s)
     liner = np.clip(polyline_distance(points, lash) / (max_distance * taper), 0.0, 1.0)
+    # La línea termina en el ángulo externo (sin tapa redonda): más allá sigue
+    # el wing. En el E20 la tapa, estirada por la malla alrededor del ángulo,
+    # se veía como un gancho hacia abajo.
+    corner = geo.eye_upper[0]
+    rel = points - corner
+    axis = corner - geo.eye_upper[-1]
+    axis = axis / np.linalg.norm(axis)  # hacia afuera, a lo largo del ojo
+    beyond = rel @ axis
+    liner = np.maximum(liner, smoothstep(0.0, p["cornerFeather"], beyond))
 
+    # Wing: sale del ángulo externo en la prolongación del párpado inferior
+    # (sigue la forma real del ojo, que la malla transfiere) levantada
+    # liftDeg, y nunca pinta debajo de esa prolongación.
     p = em["wing"]
-    angle = np.radians(p["angleDeg"])
-    direction = np.array([-np.cos(angle), np.sin(angle)])  # hacia afuera y arriba (ojo derecho)
-    rel = points - geo.eye_upper[0]
+    lower = corner - geo.eye_lower[1]
+    lower = lower / np.linalg.norm(lower)  # prolongación del párpado inferior, hacia afuera
+    lift = np.radians(p["liftDeg"])
+    # Ojo derecho: la dirección apunta a -u; levantar = acercarse a +v.
+    angle = np.arctan2(lower[1], lower[0]) - lift
+    direction = np.array([np.cos(angle), np.sin(angle)])
     along = rel @ direction / p["length"]
     perpendicular = np.abs(rel[:, 0] * direction[1] - rel[:, 1] * direction[0])
     wing_taper = 1.0 - p["tipTaper"] * np.clip(along, 0.0, 1.0)
     wing_distance = np.where((along >= 0.0) & (along <= 1.0),
                              np.clip(perpendicular / (max_distance * wing_taper), 0.0, 1.0), 1.0)
+    # Del lado de abajo de la prolongación del párpado inferior: sin wing.
+    below = lower[0] * rel[:, 1] - lower[1] * rel[:, 0]
+    wing_distance = np.maximum(wing_distance, smoothstep(0.0, p["lowerEdgeFeather"], below))
 
     masks_a = np.stack([lid, crease, outer_v, inner_corner], axis=1) * outside[:, None]
     masks_b = np.stack([brow_bone * outside, liner, wing_distance, np.clip(along, 0.0, 1.0)], axis=1)
     a8 = quantize(masks_a).reshape(height, width, 4)
     b8 = quantize(masks_b).reshape(height, width, 4)
-    return a8, b8, rect, max_distance, p["length"]
+    return a8, b8, rect, max_distance, p["length"], direction
 
 
 def region_triangles(geo: Geometry, crossing: set, eye_rect):
@@ -308,7 +330,7 @@ def face_header(params, rgb, rect, cheeks, face, counts) -> str:
     ])
 
 
-def eye_header(params, a8, b8, rect, max_distance, wing_length, eyes) -> str:
+def eye_header(params, a8, b8, rect, max_distance, wing_length, wing_direction, eyes) -> str:
     height, width, _ = a8.shape
     return "\n".join([
         "// Generado por tools/uv_masks/gen_face_maps.py desde tools/uv_masks/face.json.",
@@ -334,6 +356,8 @@ def eye_header(params, a8, b8, rect, max_distance, wing_length, eyes) -> str:
         f"inline constexpr float kLinerMaxDistanceUv = {fmt(max_distance)};",
         f"// Largo UV del wing con wing = 1 en la receta.",
         f"inline constexpr float kWingLengthUv = {fmt(wing_length)};",
+        f"// Dirección UV del wing del ojo derecho (unitaria; afuera y arriba).",
+        f"inline constexpr float kWingDirectionUv[2] = {{{fmt(wing_direction[0])}, {fmt(wing_direction[1])}}};",
         "",
         "// Triángulos que tocan el rectángulo de cualquiera de los dos ojos, sin los",
         "// que cruzan la abertura.",
@@ -382,12 +406,12 @@ def main() -> int:
     params = json.loads(PARAMS.read_text(encoding="utf-8"))
     geo = Geometry(params)
     rgb, face_rect, cheeks = build_face(params, geo)
-    a8, b8, eye_rect, max_distance, wing_length = build_eyes(params, geo)
+    a8, b8, eye_rect, max_distance, wing_length, wing_direction = build_eyes(params, geo)
     crossing, counts = geo.opening_crossers()
     face, eyes = region_triangles(geo, crossing, eye_rect)
     outputs = {
         FACE_HEADER: face_header(params, rgb, face_rect, cheeks, face, counts).encode("utf-8"),
-        EYE_HEADER: eye_header(params, a8, b8, eye_rect, max_distance, wing_length, eyes).encode("utf-8"),
+        EYE_HEADER: eye_header(params, a8, b8, eye_rect, max_distance, wing_length, wing_direction, eyes).encode("utf-8"),
         FACE_PREVIEW: face_preview(rgb),
         EYE_PREVIEW: eye_preview(a8, b8),
     }

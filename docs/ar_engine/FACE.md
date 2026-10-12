@@ -58,7 +58,7 @@ Los genera `tools/uv_masks/gen_face_maps.py` con los parámetros de `tools/uv_ma
 
 **Delineado por distancia:**
 - **Grosor:** el canal guarda la distancia a la línea de pestañas, normalizada por `kLinerMaxDistanceUv` (0,012 UV, unos 3 mm) y afinada hacia el lagrimal. El shader corta en `mix(kLinerThicknessMin, kLinerThicknessMax, thickness)` con un borde de `kLinerFeather`. El `thickness` de la receta es continuo sin regenerar nada.
-- **Wing:** sale del ángulo externo a 22° hacia arriba y se afina hacia la punta. Se ve hasta `wing × kWingLengthUv`.
+- **Wing:** la línea de pestañas termina en el ángulo externo, sin tapa redonda. El wing sale de ahí en la prolongación del párpado inferior, levantada 10° (`liftDeg`). Nunca pinta debajo de esa prolongación, se afina hacia la punta y se ve hasta `wing × kWingLengthUv`. Así sigue la forma real del ojo, que la malla transfiere, en vez de un ángulo fijo: con el ángulo fijo de 22° y la tapa redonda, en el E20 se veía como un gancho hacia abajo (§7).
 
 **Rubor analítico:**
 - No usa textura: es una gaussiana elíptica en la UV espejada, `exp(−½·|M·uv' + o|²)`. `M` y `o` salen de `kCheekPlacements` (apple, high, low).
@@ -170,6 +170,7 @@ flutter run --profile -t lib/main_tracker.dart -d <id-del-E20>
 | Fecha | Render fps | Tracker Hz | Notas |
 |---|---|---|---|
 | 2026-10-12 | 29 (emulador, sin cara) | — | Los programas de cara y ojos compilan y enlazan en el driver del emulador, también después de los arreglos de §8. El filtro de prueba nuevo y el respaldo (`AR_RENDERER=painter`) funcionan. **Falta medir en el E20 con cara.** |
+| 2026-10-12 | 28 | 14 (19–20 ms) | **E20 con cara**, look completo con cada preset: el render no bajó respecto de solo labios. Sombras, delineado y labios caen en su lugar y no pintan el ojo, tampoco con un ojo cerrado. Base, rubor, contorno e iluminador se ven sutiles con las opacidades de los presets. **Problemas** (capturas ampliadas): el wing salía como un gancho hacia abajo y las sombras tenían el borde superior duro. Corregido: wing sobre la prolongación del párpado inferior, sin tapa en el ángulo (§3); borde del párpado más difuminado (`tFeather` 0,1 → 0,3); rubor "high" más alto, hacia el pómulo. **Falta confirmar en el E20.** |
 
 ## 8. Revisiones de cierre (`perf-auditor` y `shader-reviewer`, 2026-10-12)
 
