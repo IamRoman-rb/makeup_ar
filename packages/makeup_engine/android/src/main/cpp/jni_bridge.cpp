@@ -110,6 +110,58 @@ void nativeSetLips(JNIEnv*, jclass, jlong handle, jboolean enabled, jfloat r, jf
   fromHandle(handle)->renderer.setLips(style);
 }
 
+makeup::ColorLayer colorLayer(jboolean enabled, jfloat r, jfloat g, jfloat b, jfloat amount) {
+  makeup::ColorLayer layer;
+  layer.enabled = enabled == JNI_TRUE;
+  layer.r = r;
+  layer.g = g;
+  layer.b = b;
+  layer.amount = amount;
+  return layer;
+}
+
+// Enums fuera de rango caen al primero (Kotlin ya valida; segunda defensa).
+template <typename E>
+E enumOr(jint value, E last) {
+  return value >= 0 && value <= static_cast<jint>(last) ? static_cast<E>(value) : static_cast<E>(0);
+}
+
+void nativeSetCheeks(JNIEnv*, jclass, jlong handle, jboolean enabled, jfloat r, jfloat g, jfloat b,
+                     jfloat opacity, jfloat spread, jint placement) {
+  makeup::CheekStyle style;
+  style.color = colorLayer(enabled, r, g, b, opacity);
+  style.spread = spread;
+  style.placement = enumOr(placement, makeup::CheekPlacement::kLow);
+  fromHandle(handle)->renderer.setCheeks(style);
+}
+
+void nativeSetSkinLayer(JNIEnv*, jclass, jlong handle, jint layer, jboolean enabled, jfloat r, jfloat g,
+                        jfloat b, jfloat amount) {
+  if (layer < 0 || layer >= makeup::kSkinLayerCount) return;
+  fromHandle(handle)->renderer.setSkinLayer(static_cast<makeup::SkinLayer>(layer),
+                                            colorLayer(enabled, r, g, b, amount));
+}
+
+void nativeSetEyeShadow(JNIEnv*, jclass, jlong handle, jint slot, jboolean enabled, jfloat r, jfloat g,
+                        jfloat b, jfloat opacity, jint region, jint finish) {
+  makeup::EyeShadowStyle style;
+  style.color = colorLayer(enabled, r, g, b, opacity);
+  style.region = enumOr(region, makeup::EyeRegion::kBrowBone);
+  style.finish = enumOr(finish, makeup::ShadowFinish::kShimmer);
+  fromHandle(handle)->renderer.setEyeShadow(slot, style);
+}
+
+void nativeSetLiner(JNIEnv*, jclass, jlong handle, jboolean enabled, jfloat r, jfloat g, jfloat b,
+                    jfloat opacity, jfloat thickness, jfloat wing) {
+  makeup::LinerStyle style;
+  style.color = colorLayer(enabled, r, g, b, opacity);
+  style.thickness = thickness;
+  style.wing = wing;
+  fromHandle(handle)->renderer.setLiner(style);
+}
+
+void nativeCommitRecipe(JNIEnv*, jclass, jlong handle) { fromHandle(handle)->renderer.commitRecipe(); }
+
 jint nativeDrawFrame(JNIEnv* env, jclass, jlong handle, jfloatArray texMatrix, jint width,
                      jint height, jlong frameStartNs, jlong cameraTimestampNs) {
   float matrix[16];
@@ -203,6 +255,11 @@ const JNINativeMethod kMethods[] = {
     {"nativeSetRenderOptions", "(JZI)V", reinterpret_cast<void*>(nativeSetRenderOptions)},
     {"nativeSetTint", "(JFFFF)V", reinterpret_cast<void*>(nativeSetTint)},
     {"nativeSetLips", "(JZFFFFIFF)V", reinterpret_cast<void*>(nativeSetLips)},
+    {"nativeSetCheeks", "(JZFFFFFI)V", reinterpret_cast<void*>(nativeSetCheeks)},
+    {"nativeSetSkinLayer", "(JIZFFFF)V", reinterpret_cast<void*>(nativeSetSkinLayer)},
+    {"nativeSetEyeShadow", "(JIZFFFFII)V", reinterpret_cast<void*>(nativeSetEyeShadow)},
+    {"nativeSetLiner", "(JZFFFFFF)V", reinterpret_cast<void*>(nativeSetLiner)},
+    {"nativeCommitRecipe", "(J)V", reinterpret_cast<void*>(nativeCommitRecipe)},
     {"nativeDrawFrame", "(J[FIIJJ)I", reinterpret_cast<void*>(nativeDrawFrame)},
     {"nativeGetStats", "(J[F)V", reinterpret_cast<void*>(nativeGetStats)},
     {"nativeGetTrackerStats", "(J[F)V", reinterpret_cast<void*>(nativeGetTrackerStats)},

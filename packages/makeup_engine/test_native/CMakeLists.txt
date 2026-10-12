@@ -18,13 +18,15 @@ add_executable(makeup_engine_host_tests
     canonical_mesh_test.cpp
     lips_maps_test.cpp
     face_maps_test.cpp
+    face_style_test.cpp
     appearance_test.cpp
     tracking_state_test.cpp
     ${ENGINE_CPP}/tracking/roi.cpp
     ${ENGINE_CPP}/tracking/umeyama.cpp
     ${ENGINE_CPP}/tracking/blazeface_decoder.cpp
     ${ENGINE_CPP}/tracking/tracking_state.cpp
-    ${ENGINE_CPP}/tracking/appearance.cpp)
+    ${ENGINE_CPP}/tracking/appearance.cpp
+    ${ENGINE_CPP}/face_style.cpp)
 
 target_include_directories(makeup_engine_host_tests PRIVATE ${ENGINE_CPP} ${CMAKE_CURRENT_SOURCE_DIR})
 

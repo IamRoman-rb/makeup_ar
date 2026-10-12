@@ -91,6 +91,22 @@ struct EngineConfig {
   static constexpr float kLipsLightFullLightness = 0.25f;
   static constexpr float kLipsLightMin = 0.3f;
 
+  // --- Cara y ojos (P5; docs/ar_engine/FACE.md, face_style.cpp) ---
+
+  // Escala de los sigmas del rubor según spread (0 -> mínima, 1 -> máxima).
+  static constexpr float kCheekSpreadScaleMin = 0.7f;
+  static constexpr float kCheekSpreadScaleMax = 1.4f;
+  // Brillo aditivo (lineal) del iluminador con opacidad 1, solo donde hay luz.
+  static constexpr float kHighlightShine = 0.12f;
+  // Brillo de las sombras satinadas y destellos de las shimmer (con opacidad 1).
+  static constexpr float kShadowSatinShine = 0.08f;
+  static constexpr float kShadowShimmerSparkle = 0.5f;
+  // Delineado en distancia normalizada (kLinerMaxDistanceUv = 1, ~3 mm):
+  // grosor con thickness 0 y 1 de la receta, y ancho del borde suave.
+  static constexpr float kLinerThicknessMin = 0.12f;
+  static constexpr float kLinerThicknessMax = 0.6f;
+  static constexpr float kLinerFeather = 0.08f;
+
   // Tamaño de los puntos del overlay de depuración (px de salida).
   static constexpr float kLandmarkPointSizePx = 5.0f;
 };

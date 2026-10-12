@@ -80,6 +80,13 @@ GLuint Renderer::initGl() {
       !buildMeshGeometry() || !buildLipsMap()) {
     return 0;
   }
+  {
+    std::string layersError;
+    if (!faceLayers_.init(meshVbo_.get(), uvVbo_.get(), normalVbo_.get(), &layersError)) {
+      setError(layersError);
+      return 0;
+    }
+  }
 
   std::string error;
   if (!crop_.init(&error)) {
@@ -293,11 +300,13 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
     drawMirrored_ = mirrored_;
     drawDisplayVersion_ = displayVersion;
   }
-  const uint32_t lipsVersion = lipsVersion_.load(std::memory_order_acquire);
-  if (lipsVersion != drawLipsVersion_) {
+  const uint32_t recipeVersion = recipeVersion_.load(std::memory_order_acquire);
+  if (recipeVersion != drawRecipeVersion_) {
     std::lock_guard<std::mutex> lock(configMutex_);  // solo al cambiar la receta
     drawLips_ = lipUniforms_;
-    drawLipsVersion_ = lipsVersion;
+    drawFace_ = faceUniforms_;
+    drawEyes_ = eyeUniforms_;
+    drawRecipeVersion_ = recipeVersion;
   }
 
   int flags = 0;
@@ -307,6 +316,7 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   const bool showLandmarks = showLandmarks_.load(std::memory_order_relaxed);
   const auto region = static_cast<TintRegion>(region_.load(std::memory_order_relaxed));
   const bool wantLips = region == TintRegion::kLips && drawLips_.enabled && drawLips_.opacity > 0.0f;
+  const bool wantFace = region == TintRegion::kLips && (drawFace_.any() || drawEyes_.any());
   float frameDt = lastFrameStartNs_ > 0
                       ? static_cast<float>(frameStartNs - lastFrameStartNs_) / kNsPerSecond
                       : 0.0f;
@@ -347,7 +357,9 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   glBindVertexArray(0);
   MAKEUP_GL_CHECK("drawFrame");
 
-  // Sin cara no hay labios: queda el paso directo.
+  // Sin cara no hay maquillaje: queda el paso directo. Orden de las capas:
+  // cara (base, contorno, rubor, iluminador), ojos, labios.
+  if (wantFace && hasMesh) drawFaceLayers(landmarks, imageToClip, texMatrix, frameStartNs);
   if (wantLips && hasMesh) drawLips(landmarks, imageToClip, texMatrix, frameStartNs);
   if (showLandmarks && hasMesh) drawLandmarks(landmarks.alpha, imageToClip, width, height);
 
@@ -389,6 +401,29 @@ void Renderer::uploadMesh(const float* points) {
   glBindBuffer(GL_ARRAY_BUFFER, meshVbo_.get());
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(meshPoints_), meshPoints_.data());
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void Renderer::drawFaceLayers(const RenderLandmarks& landmarks, const float* imageToClip,
+                              const float* texMatrix, int64_t frameStartNs) {
+  const FaceAppearance& look = landmarks.appearance;
+  LayerFrame frame;
+  frame.cameraTexture = cameraTexture_.get();
+  frame.imageToClip = imageToClip;
+  frame.displayMatrix = drawDisplayMatrix_.data();
+  frame.displayVersion = drawDisplayVersion_;
+  frame.texMatrix = texMatrix;
+  frame.view[0] = look.viewX;
+  frame.view[1] = look.viewY;
+  frame.view[2] = look.viewZ;
+  // Los shaders dividen por ella (sombreado relativo a la piel).
+  frame.skinLightness = std::isnan(look.skinLightness)
+                            ? EngineConfig::kLipsFallbackLightness
+                            : std::max(look.skinLightness, EngineConfig::kLipsMinLightness);
+  frame.alpha = landmarks.alpha;
+  frame.timeSeconds =
+      static_cast<float>(std::fmod(static_cast<double>(frameStartNs) / 1.0e9, kTimeWrapSeconds));
+  faceLayers_.drawFace(drawFace_, frame);
+  faceLayers_.drawEyes(drawEyes_, frame);
 }
 
 // Triángulos de la zona de labios encima de lo ya dibujado (cámara y capas de
@@ -470,6 +505,7 @@ void Renderer::drawLandmarks(float alpha, const float* imageToClip, int width, i
 
 void Renderer::releaseGl() {
   crop_.release();
+  faceLayers_.release();
   passthrough_.program.reset();
   tint_.program.reset();
   mesh_.program.reset();
@@ -523,8 +559,38 @@ void Renderer::setLips(const LipStyle& style) {
       break;
   }
   std::lock_guard<std::mutex> lock(configMutex_);
-  lipUniforms_ = uniforms;
-  lipsVersion_.fetch_add(1, std::memory_order_release);
+  pendingLips_ = uniforms;
+}
+
+void Renderer::setCheeks(const CheekStyle& style) {
+  std::lock_guard<std::mutex> lock(configMutex_);
+  pendingCheek_ = style;
+}
+
+void Renderer::setSkinLayer(SkinLayer layer, const ColorLayer& style) {
+  const int index = static_cast<int>(layer);
+  if (index < 0 || index >= kSkinLayerCount) return;
+  std::lock_guard<std::mutex> lock(configMutex_);
+  pendingSkin_[index] = style;
+}
+
+void Renderer::setEyeShadow(int slot, const EyeShadowStyle& style) {
+  if (slot < 0 || slot >= kMaxEyeShadows) return;
+  std::lock_guard<std::mutex> lock(configMutex_);
+  pendingShadows_[slot] = style;
+}
+
+void Renderer::setLiner(const LinerStyle& style) {
+  std::lock_guard<std::mutex> lock(configMutex_);
+  pendingLiner_ = style;
+}
+
+void Renderer::commitRecipe() {
+  std::lock_guard<std::mutex> lock(configMutex_);
+  lipUniforms_ = pendingLips_;
+  faceUniforms_ = resolveFace(pendingSkin_, pendingCheek_);
+  eyeUniforms_ = resolveEyes(pendingShadows_, pendingLiner_);
+  recipeVersion_.fetch_add(1, std::memory_order_release);
 }
 
 void Renderer::setDisplayMatrices(const float* display, const float* tracker, bool mirrored) {

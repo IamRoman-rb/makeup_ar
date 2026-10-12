@@ -6,10 +6,11 @@ si cambia uno, cambia el otro. Los labios siguen en tools/lips/lip_shading.py
 
 Cada pasada (cara u ojos) parte del píxel de cámara en OKLab y aplica sus
 capas en orden con el modelo de P4:
-    s   = L_píxel / L_referencia          (sombreado; L de la piel medida)
-    lit = color · s                       (el producto bajo la misma luz)
-    L   = mix(L, lit.L, a · lumaFollow)
-    ab  = mix(ab, lit.ab, a)
+    s      = L_píxel / L_referencia       (sombreado; L de la piel medida)
+    lit    = color · s                    (el producto bajo la misma luz)
+    L      = mix(L, lit.L, a · lumaFollow)
+    ab     = mix(ab, lit.ab, a)
+    brillo = mix(brillo, brillo_capa, a)  (una capa encima tapa el de abajo)
 y convierte una sola vez (bajando croma si sale de gamut). La cobertura de la
 pasada es A = 1 - Π(1 - a_i); la salida va premultiplicada (layer_over) y el
 blending la compone sobre lo ya dibujado (blend).
@@ -71,7 +72,7 @@ def compose(camera_srgb: np.ndarray, layers: list[Layer], reference_lightness: f
         lightness = lab[..., 0] + (lit[..., 0] - lab[..., 0]) * a * layer.luma_follow
         ab = lab[..., 1:] + (lit[..., 1:] - lab[..., 1:]) * a[..., None]
         lab = np.concatenate([np.clip(lightness, 0.0, 1.0)[..., None], ab], axis=-1)
-        shine = shine + layer.shine * a
+        shine = shine + (layer.shine - shine) * a
         keep = keep * (1.0 - a)
     out = oklab_to_linear_in_gamut(lab)
     out = np.minimum(out + (shine * _smoothstep(SHINE_SHADING_LOW, SHINE_SHADING_HIGH, shading))[..., None], 1.0)

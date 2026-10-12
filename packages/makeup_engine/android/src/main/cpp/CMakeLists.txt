@@ -17,7 +17,10 @@ set(SHADER_FILES
     ${SHADER_DIR}/face_mesh.vert
     ${SHADER_DIR}/solid_color.frag
     ${SHADER_DIR}/lips.vert
-    ${SHADER_DIR}/lips.frag)
+    ${SHADER_DIR}/lips.frag
+    ${SHADER_DIR}/face.vert
+    ${SHADER_DIR}/face.frag
+    ${SHADER_DIR}/eyes.frag)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${SHADER_FILES})
 
 set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
@@ -38,6 +41,8 @@ file(CONFIGURE OUTPUT ${GENERATED_DIR}/shader_sources.h CONTENT "${SHADER_HEADER
 
 add_library(makeup_engine SHARED
     crop_pass.cpp
+    face_layers.cpp
+    face_style.cpp
     frame_stats.cpp
     gl_program.cpp
     jni_bridge.cpp

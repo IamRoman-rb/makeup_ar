@@ -64,6 +64,23 @@ internal object NativeBridge {
     const val LIP_FINISH_GLOSS = 2
     const val LIP_FINISH_SHIMMER = 3
 
+    // Regiones de cara y ojos (P5); mismo orden que los enums de face_style.h.
+    const val CHEEK_APPLE = 0
+    const val CHEEK_HIGH = 1
+    const val CHEEK_LOW = 2
+    const val SKIN_FOUNDATION = 0
+    const val SKIN_CONTOUR = 1
+    const val SKIN_HIGHLIGHT = 2
+    const val EYE_REGION_LID = 0
+    const val EYE_REGION_CREASE = 1
+    const val EYE_REGION_OUTER_V = 2
+    const val EYE_REGION_INNER_CORNER = 3
+    const val EYE_REGION_BROW_BONE = 4
+    const val SHADOW_FINISH_MATTE = 0
+    const val SHADOW_FINISH_SATIN = 1
+    const val SHADOW_FINISH_SHIMMER = 2
+    const val MAX_EYE_SHADOWS = 4
+
     // Valores de nativeTrackerReadyKind(); mismo valor que CropKind en tracking_state.h.
     const val CROP_NONE = 0
     const val CROP_DETECTOR = 1
@@ -93,8 +110,11 @@ internal object NativeBridge {
     @JvmStatic external fun nativeSetTint(handle: Long, r: Float, g: Float, b: Float, amount: Float)
 
     /**
-     * Labial de la receta (REGION_LIPS): color sRGB [0,1], opacidad, acabado
-     * (LIP_FINISH_*), brillo y lumaFollow [0,1]. [enabled] = false lo apaga.
+     * Receta (REGION_LIPS). Cada nativeSet* guarda una región en la receta
+     * pendiente; nativeCommitRecipe() la publica entera al render. Colores sRGB
+     * [0,1]; intensidades [0,1]; [enabled] = false apaga la región.
+     *
+     * Labial: opacidad, acabado (LIP_FINISH_*), brillo y lumaFollow.
      */
     @JvmStatic external fun nativeSetLips(
         handle: Long,
@@ -107,6 +127,56 @@ internal object NativeBridge {
         gloss: Float,
         lumaFollow: Float,
     )
+
+    /** Rubor: opacidad, spread [0,1] y placement (CHEEK_*). */
+    @JvmStatic external fun nativeSetCheeks(
+        handle: Long,
+        enabled: Boolean,
+        r: Float,
+        g: Float,
+        b: Float,
+        opacity: Float,
+        spread: Float,
+        placement: Int,
+    )
+
+    /** Base (coverage), contorno o iluminador (opacidad): [layer] = SKIN_*. */
+    @JvmStatic external fun nativeSetSkinLayer(
+        handle: Long,
+        layer: Int,
+        enabled: Boolean,
+        r: Float,
+        g: Float,
+        b: Float,
+        amount: Float,
+    )
+
+    /** Sombra [slot] (0..MAX_EYE_SHADOWS-1, en el orden de la receta): región EYE_REGION_*, acabado SHADOW_FINISH_*. */
+    @JvmStatic external fun nativeSetEyeShadow(
+        handle: Long,
+        slot: Int,
+        enabled: Boolean,
+        r: Float,
+        g: Float,
+        b: Float,
+        opacity: Float,
+        region: Int,
+        finish: Int,
+    )
+
+    /** Delineado: opacidad, grosor y largo del wing [0,1]. */
+    @JvmStatic external fun nativeSetLiner(
+        handle: Long,
+        enabled: Boolean,
+        r: Float,
+        g: Float,
+        b: Float,
+        opacity: Float,
+        thickness: Float,
+        wing: Float,
+    )
+
+    @JvmStatic external fun nativeCommitRecipe(handle: Long)
 
     /** Devuelve bits FRAME_FLAG_*. */
     @JvmStatic external fun nativeDrawFrame(

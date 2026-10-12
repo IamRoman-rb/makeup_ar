@@ -338,14 +338,35 @@ internal class EngineSession(
 
     /**
      * Hilo de plataforma. Receta `makeup-recipe/2` como mapa (ver RecipeParams);
-     * null o sin labios apaga el labial. Se dibuja con REGION_LIPS.
+     * las regiones que faltan se apagan (null apaga todo). Se dibuja con
+     * REGION_LIPS. El render recibe la receta entera en el commit.
      */
     fun setRecipe(recipe: Map<*, *>?) {
         if (released) return
-        val lips = RecipeParams.fromMap(recipe).lips
+        val params = RecipeParams.fromMap(recipe)
+        val handle = nativeHandle
+        val lips = params.lips
         NativeBridge.nativeSetLips(
-            nativeHandle, lips.enabled, lips.r, lips.g, lips.b, lips.opacity, lips.finish, lips.gloss, lips.lumaFollow,
+            handle, lips.enabled, lips.r, lips.g, lips.b, lips.opacity, lips.finish, lips.gloss, lips.lumaFollow,
         )
+        val cheeks = params.cheeks
+        val blush = cheeks.color
+        NativeBridge.nativeSetCheeks(
+            handle, blush.enabled, blush.r, blush.g, blush.b, blush.amount, cheeks.spread, cheeks.placement,
+        )
+        params.skin.layers.forEachIndexed { layer, color ->
+            NativeBridge.nativeSetSkinLayer(handle, layer, color.enabled, color.r, color.g, color.b, color.amount)
+        }
+        params.eyes.shadows.forEachIndexed { slot, shadow ->
+            val color = shadow.color
+            NativeBridge.nativeSetEyeShadow(
+                handle, slot, color.enabled, color.r, color.g, color.b, color.amount, shadow.region, shadow.finish,
+            )
+        }
+        val liner = params.eyes.liner
+        val ink = liner.color
+        NativeBridge.nativeSetLiner(handle, ink.enabled, ink.r, ink.g, ink.b, ink.amount, liner.thickness, liner.wing)
+        NativeBridge.nativeCommitRecipe(handle)
     }
 
     fun resetStats() {

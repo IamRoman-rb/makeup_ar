@@ -59,4 +59,79 @@ class RecipeParamsTest {
         assertFalse(RecipeParams.fromMap(mapOf("name" to "sin labios")).lips.enabled)
         assertFalse(RecipeParams.fromMap(null).lips.enabled)
     }
+
+    @Test
+    fun `rubor, piel y ojos de un preset`() {
+        val recipe = mapOf(
+            "schema" to "makeup-recipe/2",
+            "name" to "Glam dorado",
+            "cheeks" to mapOf("color" to "#D9826B", "opacity" to 0.3, "spread" to 0.6, "placement" to "high"),
+            "skin" to mapOf(
+                "foundation" to mapOf("color" to "#D9A98B", "coverage" to 0.35),
+                "highlight" to mapOf("color" to "#F6E3C2", "opacity" to 0.35),
+            ),
+            "eyes" to mapOf(
+                "shadow" to listOf(
+                    mapOf("color" to "#C9A15A", "opacity" to 0.5, "region" to "lid", "finish" to "shimmer"),
+                    mapOf("color" to "#6B4423", "opacity" to 0.45, "region" to "crease"),
+                    mapOf("color" to "#F1D9A6", "opacity" to 0.4, "region" to "inner_corner", "finish" to "satin"),
+                ),
+                "liner" to mapOf("color" to "#2A1A12", "opacity" to 0.85, "thickness" to 0.4, "wing" to 0.3),
+            ),
+        )
+        val params = RecipeParams.fromMap(recipe)
+        assertFalse(params.lips.enabled)
+        assertTrue(params.cheeks.color.enabled)
+        assertNear(0.3f, params.cheeks.color.amount)
+        assertNear(0.6f, params.cheeks.spread)
+        assertEquals(NativeBridge.CHEEK_HIGH, params.cheeks.placement)
+        assertNear(0.35f, params.skin.foundation.amount)
+        assertFalse(params.skin.contour.enabled)
+        assertTrue(params.skin.highlight.enabled)
+        assertEquals(3, params.skin.layers.size)
+
+        val shadows = params.eyes.shadows
+        assertEquals(NativeBridge.MAX_EYE_SHADOWS, shadows.size)
+        assertEquals(NativeBridge.EYE_REGION_LID, shadows[0].region)
+        assertEquals(NativeBridge.SHADOW_FINISH_SHIMMER, shadows[0].finish)
+        assertEquals(NativeBridge.EYE_REGION_CREASE, shadows[1].region)
+        assertEquals(NativeBridge.SHADOW_FINISH_MATTE, shadows[1].finish)
+        assertEquals(NativeBridge.EYE_REGION_INNER_CORNER, shadows[2].region)
+        assertFalse(shadows[3].color.enabled)
+        val liner = params.eyes.liner
+        assertNear(0x2A / 255f, liner.color.r)
+        assertNear(0.4f, liner.thickness)
+        assertNear(0.3f, liner.wing)
+    }
+
+    @Test
+    fun `regiones inválidas se apagan sin romper el resto`() {
+        val params = RecipeParams.fromMap(
+            mapOf(
+                "cheeks" to mapOf("color" to "#D9826B", "opacity" to 0.3, "placement" to "frente"),
+                "skin" to mapOf("foundation" to mapOf("color" to "#D9A98B", "opacity" to 0.5)),  // sin coverage
+                "eyes" to mapOf(
+                    "shadow" to listOf(
+                        mapOf("color" to "#C9A15A", "opacity" to 0.5, "region" to "nariz"),
+                        "no es un mapa",
+                        mapOf("color" to "#6B4423", "opacity" to 0.45, "region" to "brow_bone", "finish" to "neon"),
+                        mapOf("color" to "#6B4423", "opacity" to 0.2, "region" to "outer_v"),
+                        mapOf("color" to "#6B4423", "opacity" to 0.2, "region" to "lid"),  // quinta: se ignora
+                    ),
+                    "liner" to mapOf("color" to "negro", "opacity" to 1),
+                ),
+            ),
+        )
+        assertEquals(NativeBridge.CHEEK_APPLE, params.cheeks.placement)
+        assertNear(0.5f, params.cheeks.spread)
+        assertFalse(params.skin.foundation.enabled)
+        val shadows = params.eyes.shadows
+        assertEquals(NativeBridge.MAX_EYE_SHADOWS, shadows.size)
+        assertFalse(shadows[0].color.enabled)
+        assertFalse(shadows[1].color.enabled)
+        assertEquals(NativeBridge.EYE_REGION_BROW_BONE, shadows[2].region)
+        assertEquals(NativeBridge.SHADOW_FINISH_MATTE, shadows[2].finish)
+        assertEquals(NativeBridge.EYE_REGION_OUTER_V, shadows[3].region)
+        assertFalse(params.eyes.liner.color.enabled)
+    }
 }

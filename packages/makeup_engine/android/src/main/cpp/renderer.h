@@ -1,12 +1,14 @@
 // Compositor: dibuja el frame de cámara (textura OES) en la superficie de
-// Flutter, en paso directo o con tinte OKLab de pantalla completa; encima, la
-// capa de labios de la receta sobre la malla tracked (docs/ar_engine/LIPS.md);
+// Flutter, en paso directo o con tinte OKLab de pantalla completa; encima, las
+// capas de la receta sobre la malla tracked: cara, ojos (FaceLayers,
+// docs/ar_engine/FACE.md) y labios (docs/ar_engine/LIPS.md);
 // alimenta al tracker con recortes del mismo frame (CropPass) y, opcionalmente,
 // dibuja los landmarks.
 //
 // Hilos: initGl/drawFrame/releaseGl en el hilo de render (dueño del contexto
-// GL); setTint/setLips/setDisplayMatrices/setRenderOptions desde cualquier
-// hilo (atómicos / mutex corto que el render solo toma cuando algo cambió).
+// GL); setTint/set* de la receta/commitRecipe/setDisplayMatrices/
+// setRenderOptions desde cualquier hilo (atómicos / mutex corto que el render
+// solo toma cuando algo cambió).
 #pragma once
 
 #include <array>
@@ -15,6 +17,8 @@
 #include <string>
 
 #include "crop_pass.h"
+#include "face_layers.h"
+#include "face_style.h"
 #include "frame_stats.h"
 #include "gl_utils.h"
 #include "tracking/tracking_state.h"
@@ -28,7 +32,7 @@ enum FrameFlag : int {
 
 // Qué se pinta. Mismo orden que TintRegion en Dart.
 //   kFull: tinte de pantalla completa (setTint).
-//   kLips: labial de la receta (setLips) sobre la malla tracked.
+//   kLips: maquillaje de la receta (set* + commitRecipe) sobre la malla tracked.
 enum class TintRegion : int { kFull = 0, kLips = 1 };
 
 // Acabado del labial. Mismo orden que LIP_FINISH_* en NativeBridge.kt.
@@ -67,8 +71,16 @@ class Renderer {
   // intensidad [0,1]. amount == 0 usa el shader de paso directo.
   void setTint(float r, float g, float b, float amount);
 
-  // Labial (TintRegion::kLips). Los valores se recortan a rango.
+  // Receta (TintRegion::kLips): cada set* guarda la región en una receta
+  // pendiente; commitRecipe() la publica entera, así el render nunca dibuja
+  // media receta. Los valores se recortan a rango.
   void setLips(const LipStyle& style);
+  void setCheeks(const CheekStyle& style);
+  void setSkinLayer(SkinLayer layer, const ColorLayer& style);
+  // [slot] en [0, kMaxEyeShadows): en el orden de la receta (se pintan en ese orden).
+  void setEyeShadow(int slot, const EyeShadowStyle& style);
+  void setLiner(const LinerStyle& style);
+  void commitRecipe();
 
   // 16 floats column-major cada una (ver camera_quad.vert, uDisplayMatrix):
   // [display] con espejo, para la pantalla; [tracker] sin espejo, para los
@@ -138,6 +150,8 @@ class Renderer {
   void runCropPass(const float* texMatrix, int width, int height, int64_t cameraTimestampNs,
                    int64_t nowNs, int* flags);
   void uploadMesh(const float* points);
+  void drawFaceLayers(const RenderLandmarks& landmarks, const float* imageToClip, const float* texMatrix,
+                      int64_t frameStartNs);
   void drawLips(const RenderLandmarks& landmarks, const float* imageToClip, const float* texMatrix,
                 int64_t frameStartNs);
   void drawLandmarks(float alpha, const float* imageToClip, int width, int height);
@@ -150,6 +164,7 @@ class Renderer {
   MeshProgram mesh_;
   LipsProgram lips_;
   LipsProgram lipsShimmer_;
+  FaceLayers faceLayers_;
   CropPass crop_;
   GlVertexArray quadVao_;
   GlBuffer quadVbo_;
@@ -169,16 +184,25 @@ class Renderer {
   std::atomic<bool> showLandmarks_{false};
   std::atomic<int> region_{static_cast<int>(TintRegion::kFull)};
 
-  // Protege displayMatrix_, trackerMatrix_, mirrored_, lipUniforms_, glInfo_ y lastError_.
+  // Protege displayMatrix_, trackerMatrix_, mirrored_, la receta pendiente y la
+  // publicada, glInfo_ y lastError_.
   mutable std::mutex configMutex_;
   std::array<float, 16> displayMatrix_{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
   std::array<float, 16> trackerMatrix_{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
   bool mirrored_ = true;
+  // Receta pendiente (set*) y publicada (commitRecipe).
+  LipUniforms pendingLips_;
+  ColorLayer pendingSkin_[kSkinLayerCount];
+  CheekStyle pendingCheek_;
+  EyeShadowStyle pendingShadows_[kMaxEyeShadows];
+  LinerStyle pendingLiner_;
   LipUniforms lipUniforms_;
-  // Se incrementan en cada set*: el hilo de render solo toma el mutex cuando
-  // cambian (al aplicar una receta), no en cada frame.
+  FaceUniforms faceUniforms_;
+  EyeUniforms eyeUniforms_;
+  // Se incrementan al cambiar la geometría o publicar una receta: el hilo de
+  // render solo toma el mutex cuando cambian, no en cada frame.
   std::atomic<uint32_t> displayVersion_{1};
-  std::atomic<uint32_t> lipsVersion_{1};
+  std::atomic<uint32_t> recipeVersion_{1};
 
   // Solo hilo de render.
   std::array<float, 16> drawDisplayMatrix_{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
@@ -186,7 +210,9 @@ class Renderer {
   bool drawMirrored_ = true;
   uint32_t drawDisplayVersion_ = 0;
   LipUniforms drawLips_;
-  uint32_t drawLipsVersion_ = 0;
+  FaceUniforms drawFace_;
+  EyeUniforms drawEyes_;
+  uint32_t drawRecipeVersion_ = 0;
   std::array<float, EngineConfig::kLandmarkCount * 2> meshPoints_{};
   int64_t lastFrameStartNs_ = 0;
   std::string glInfo_;
