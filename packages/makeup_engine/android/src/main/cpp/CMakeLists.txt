@@ -33,7 +33,10 @@ file(CONFIGURE OUTPUT ${GENERATED_DIR}/shader_sources.h CONTENT "${SHADER_HEADER
 add_library(makeup_engine SHARED
     frame_stats.cpp
     jni_bridge.cpp
-    renderer.cpp)
+    renderer.cpp
+    tracking/blazeface_decoder.cpp
+    tracking/roi.cpp
+    tracking/umeyama.cpp)
 
 target_include_directories(makeup_engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${GENERATED_DIR})
 target_compile_options(makeup_engine PRIVATE -Wall -Wextra -Werror -fno-exceptions -fno-rtti)
