@@ -227,10 +227,11 @@ final class TrackerStats {
 
 /// Dónde se aplica el tinte.
 enum TintRegion {
-  /// Toda la imagen (no necesita tracker).
+  /// Tinte de toda la imagen con [MakeupEngine.setTint] (no necesita tracker).
   full,
 
-  /// Solo los labios (prende el tracker).
+  /// Labial de la receta ([MakeupEngine.setRecipe]) sobre la cara (prende el
+  /// tracker).
   lips,
 }
 
@@ -324,8 +325,16 @@ final class MakeupEngine {
         'amount': amount.clamp(0.0, 1.0),
       });
 
+  /// Receta `makeup-recipe/2` ya validada (RecipeValidator en la app; p. ej.
+  /// `recipe.toJson()`). El motor dibuja por ahora solo `lips` (color,
+  /// opacidad, acabado, brillo, lumaFollow) con [TintRegion.lips]; el resto de
+  /// las regiones se ignora. Del lado nativo los valores se vuelven a recortar
+  /// a rango y una receta sin labios válidos apaga el labial.
+  Future<void> setRecipe(Map<String, Object?> recipe) =>
+      _channel.invokeMethod<void>('setRecipe', {'recipe': recipe});
+
   /// [showLandmarks] dibuja los puntos del tracker (depuración); [region]
-  /// limita el tinte. El tracker se prende si alguno lo necesita: la primera
+  /// elige qué se pinta. El tracker se prende si alguno lo necesita: la primera
   /// vez carga los modelos (segundos) y mientras tanto no hay cara.
   Future<void> setRenderOptions({bool showLandmarks = false, TintRegion region = TintRegion.full}) =>
       _channel.invokeMethod<void>('setRenderOptions', {

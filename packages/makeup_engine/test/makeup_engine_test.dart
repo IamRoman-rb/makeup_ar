@@ -87,6 +87,17 @@ void main() {
     expect(calls.single.arguments, {'r': 1.0, 'g': 0.0, 'b': 0.5, 'amount': 1.0});
   });
 
+  test('setRecipe manda la receta como mapa', () async {
+    final recipe = <String, Object?>{
+      'schema': 'makeup-recipe/2',
+      'name': 'Rojo clásico',
+      'lips': {'color': '#B3122D', 'opacity': 0.85, 'finish': 'gloss', 'gloss': 0.6, 'lumaFollow': 0.35},
+    };
+    await MakeupEngine().setRecipe(recipe);
+    expect(calls.single.method, 'setRecipe');
+    expect(calls.single.arguments, {'recipe': recipe});
+  });
+
   test('setRenderOptions manda puntos y región', () async {
     await MakeupEngine().setRenderOptions(showLandmarks: true, region: TintRegion.lips);
     expect(calls.single.method, 'setRenderOptions');

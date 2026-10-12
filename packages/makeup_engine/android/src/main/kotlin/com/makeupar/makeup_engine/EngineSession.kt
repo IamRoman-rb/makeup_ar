@@ -336,6 +336,18 @@ internal class EngineSession(
         if (!released) NativeBridge.nativeSetTint(nativeHandle, r, g, b, amount)
     }
 
+    /**
+     * Hilo de plataforma. Receta `makeup-recipe/2` como mapa (ver RecipeParams);
+     * null o sin labios apaga el labial. Se dibuja con REGION_LIPS.
+     */
+    fun setRecipe(recipe: Map<*, *>?) {
+        if (released) return
+        val lips = RecipeParams.fromMap(recipe).lips
+        NativeBridge.nativeSetLips(
+            nativeHandle, lips.enabled, lips.r, lips.g, lips.b, lips.opacity, lips.finish, lips.gloss, lips.lumaFollow,
+        )
+    }
+
     fun resetStats() {
         if (!released) NativeBridge.nativeResetStats(nativeHandle)
     }
@@ -416,7 +428,7 @@ internal class EngineSession(
      *
      * Parte asíncrona: cámara -> GL -> Renderer nativo y, en paralelo, el
      * tracker; el núcleo nativo se destruye cuando terminaron los dos.
-     * setTint/stats/resetStats chequean [released] en este mismo hilo, así que
+     * setTint/setRecipe/stats/resetStats chequean [released] en este mismo hilo, así que
      * no pueden usar el Renderer destruido.
      */
     fun release() {
