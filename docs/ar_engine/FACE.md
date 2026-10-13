@@ -333,3 +333,15 @@ El motor ya adaptaba la luminosidad: el sombreado es relativo a la L medida del 
 **Limitaciones:**
 - Gray-world se equivoca con escenas dominadas por un color, como una pared o un sillón de un solo color. Por eso el grado es 0,5 y la ganancia tiene tope.
 - **Falta comparar en el E20** con el chip prendido y apagado, con luz cálida y fría.
+
+### Revisiones de cierre de P7 (2026-10-13)
+
+`perf-auditor` y `shader-reviewer` no encontraron hallazgos críticos. Se aplicó:
+- **`lips.frag`:** salida temprana también después de la oclusión. Con la mano entera fuera del labial, el píxel queda exactamente como la cámara. Antes, `layerOver` con cobertura 0 dejaba el ruido del ida y vuelta de color, y no coincidía con `lip_shading.py`.
+- **Pestañas:** el corrimiento de la base bajó de ±0,15 a ±0,12, para dejar margen al antialiasado antes del borde de la celda. El rango de `uLashParams.z` quedó documentado en [0, 0,32].
+- **Pasada de escena:**
+  - corre solo con la adaptación prendida, con cara y con maquillaje que adaptar. Cada lectura cierra un render pass chico en Mali, y sin cara la piel entraba en el gray-world;
+  - LUT sRGB→lineal en lugar de `pow` por píxel;
+  - al cambiar la receta, los colores se adaptan antes de decidir qué se dibuja (antes había un frame de atraso).
+
+**Sin cambios, hasta tener números del E20:** el costo de las hebras (~60 ALU por píxel de pestaña, menos del 1 % del frame) y el de la oclusión (~15 ALU, solo con la compuerta prendida).

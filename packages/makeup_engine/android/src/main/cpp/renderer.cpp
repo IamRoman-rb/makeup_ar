@@ -318,6 +318,10 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
     drawRecipeVersion_ = recipeVersion;
     adapt = true;
   }
+  // Antes de decidir qué se dibuja: draw*_ ya tiene la receta nueva.
+  const bool lightAdaptation = lightAdaptation_.load(std::memory_order_relaxed);
+  if (lightAdaptation != drawLightAdapted_) adapt = true;
+  if (adapt) adaptRecipeColors(lightAdaptation);
 
   int flags = 0;
   runCropPass(texMatrix, width, height, cameraTimestampNs, frameStartNs, &flags);
@@ -342,15 +346,16 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   if (hasMesh) uploadMesh(landmarks.points);
   // Luz de la escena: una miniatura cada ~0,5 s, sin la cara; los colores se
   // vuelven a adaptar solo si la ganancia cambió (o la receta, o la opción).
-  const bool lightAdaptation = lightAdaptation_.load(std::memory_order_relaxed);
-  if (scene_.poll()) {
+  // Solo si hay maquillaje que adaptar y cara: cada lectura cierra un render
+  // pass chico en Mali, y sin cara la piel entraría en el gray-world.
+  if (lightAdaptation && hasMesh && (wantLips || wantFace)) {
     float face[4];
-    const bool hasFace = hasMesh && faceRect(landmarks.points, width, height, face);
-    if (sceneLight_.update(scene_.pixels(), EngineConfig::kScenePassSize, hasFace ? face : nullptr)) adapt = true;
+    if (scene_.poll() && faceRect(landmarks.points, width, height, face) &&
+        sceneLight_.update(scene_.pixels(), EngineConfig::kScenePassSize, face)) {
+      adaptRecipeColors(true);
+    }
+    scene_.maybeIssue(quadVao_.get(), cameraTexture_.get(), texMatrix, drawTrackerMatrix_.data(), frameStartNs);
   }
-  scene_.maybeIssue(quadVao_.get(), cameraTexture_.get(), texMatrix, drawTrackerMatrix_.data(), frameStartNs);
-  if (lightAdaptation != drawLightAdapted_) adapt = true;
-  if (adapt) adaptRecipeColors(lightAdaptation);
 
   const float amount = tintAmount_.load(std::memory_order_relaxed);
   Program* program = amount > 0.0f && region == TintRegion::kFull ? &tint_ : &passthrough_;

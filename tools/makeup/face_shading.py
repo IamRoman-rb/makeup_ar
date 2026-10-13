@@ -130,7 +130,7 @@ def lash_strands(x, s, h, length_max, half_width, aa, side):
     length = length_max * (0.45 + 0.55 * length_jitter) * (0.55 + 0.45 * (1.0 - _smoothstep(0.6, 1.0, s)))
     t = h / np.maximum(length, 1e-3)
     w = half_width * np.power(np.maximum(1.0 - t, 0.0), 0.7)
-    offset = (jitter - 0.5) * 0.3 + lean * 2.0 * LASH_LEAN * t * t
+    offset = (jitter - 0.5) * 0.24 + lean * 2.0 * LASH_LEAN * t * t
     f = np.abs(x - np.floor(x) - 0.5 - offset)
     strand = 1.0 - _smoothstep_any(w - aa, w + aa, f)
     window = _smoothstep(LASH_S_START, LASH_S_START + 0.04, s) * (1.0 - _smoothstep(LASH_S_END - 0.03, LASH_S_END, s))

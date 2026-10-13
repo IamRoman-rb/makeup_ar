@@ -12,32 +12,47 @@ namespace {
 // Luminancia de RGB lineal (Rec. 709, la de sRGB).
 float luminance(const Vec3& c) { return 0.2126f * c.x + 0.7152f * c.y + 0.0722f * c.z; }
 
+// sRGB 8 bits -> lineal (srgbToLinear de color_math.h), calculada una vez.
+struct LinearLut {
+  float value[256];
+  LinearLut() {
+    for (int i = 0; i < 256; ++i) value[i] = srgbToLinear(static_cast<float>(i) / 255.0f);
+  }
+};
+const LinearLut& linearLut() {
+  static const LinearLut lut;
+  return lut;
+}
+
 }  // namespace
 
 void SceneLightEstimator::reset() { *this = SceneLightEstimator{}; }
 
 bool SceneLightEstimator::update(const uint8_t* rgba, int size, const float* exclude) {
-  constexpr float kNorm = 1.0f / 255.0f;
+  const float* lut = linearLut().value;
   const int pixelCount = size * size;
   const float cell = 1.0f / static_cast<float>(size);
   Vec3 sum{0.0f, 0.0f, 0.0f};
   int used = 0;
-  for (int i = 0; i < pixelCount; ++i) {
-    if (exclude != nullptr) {
-      const float x = (static_cast<float>(i % size) + 0.5f) * cell;
-      const float y = (static_cast<float>(i / size) + 0.5f) * cell;
-      if (x >= exclude[0] && x <= exclude[2] && y >= exclude[1] && y <= exclude[3]) continue;
+  for (int row = 0; row < size; ++row) {
+    const float y = (static_cast<float>(row) + 0.5f) * cell;
+    const bool rowInFace = exclude != nullptr && y >= exclude[1] && y <= exclude[3];
+    for (int col = 0; col < size; ++col) {
+      if (rowInFace) {
+        const float x = (static_cast<float>(col) + 0.5f) * cell;
+        if (x >= exclude[0] && x <= exclude[2]) continue;
+      }
+      const uint8_t* p = rgba + (row * size + col) * 4;
+      // Quemados: un canal saturado ya no dice el color de la luz.
+      if (std::max({p[0], p[1], p[2]}) >= EngineConfig::kLightAdaptClippedValue) continue;
+      const Vec3 linear{lut[p[0]], lut[p[1]], lut[p[2]]};
+      // Casi negros: ruido de la cámara.
+      if (luminance(linear) < EngineConfig::kLightAdaptMinLuminance) continue;
+      sum.x += linear.x;
+      sum.y += linear.y;
+      sum.z += linear.z;
+      ++used;
     }
-    const uint8_t* p = rgba + i * 4;
-    // Quemados: un canal saturado ya no dice el color de la luz.
-    if (std::max({p[0], p[1], p[2]}) >= EngineConfig::kLightAdaptClippedValue) continue;
-    const Vec3 linear{srgbToLinear(p[0] * kNorm), srgbToLinear(p[1] * kNorm), srgbToLinear(p[2] * kNorm)};
-    // Casi negros: ruido de la cámara.
-    if (luminance(linear) < EngineConfig::kLightAdaptMinLuminance) continue;
-    sum.x += linear.x;
-    sum.y += linear.y;
-    sum.z += linear.z;
-    ++used;
   }
   if (used < pixelCount * EngineConfig::kLightAdaptMinFraction || used == 0) return false;
 

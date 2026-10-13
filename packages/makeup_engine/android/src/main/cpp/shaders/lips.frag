@@ -147,6 +147,12 @@ void main() {
     float visible = mix(1.0, lipLike, uOcclusionGate);
     w *= visible;
     liner *= visible;
+    // La mano entera fuera: el píxel queda como la cámara, exacto (sin esto
+    // layerOver con cobertura 0 dejaba el ruido del ida y vuelta de color).
+    if (w <= 0.0 && liner <= 0.0) {
+      fragColor = vec4(0.0);
+      return;
+    }
   }
   // max: la CPU ya la limita a >= 0,1; esto cubre un uniform sin cargar (0).
   highp float shading = clamp(lab.x / max(uLipLightness, 0.1), 0.0, SHADING_MAX);
