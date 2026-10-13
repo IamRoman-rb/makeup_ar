@@ -170,6 +170,16 @@ void nativeSetLashes(JNIEnv*, jclass, jlong handle, jboolean enabled, jfloat opa
   fromHandle(handle)->renderer.setLashes(style);
 }
 
+void nativeSetEffect(JNIEnv*, jclass, jlong handle, jint slot, jboolean enabled, jint type, jfloat intensity,
+                     jint region) {
+  makeup::EffectStyle style;
+  style.enabled = enabled == JNI_TRUE;
+  style.type = enumOr(type, makeup::EffectType::kSheen);
+  style.intensity = intensity;
+  style.region = enumOr(region, makeup::EffectRegion::kFullFace);
+  fromHandle(handle)->renderer.setEffect(slot, style);
+}
+
 void nativeCommitRecipe(JNIEnv*, jclass, jlong handle) { fromHandle(handle)->renderer.commitRecipe(); }
 
 jint nativeDrawFrame(JNIEnv* env, jclass, jlong handle, jfloatArray texMatrix, jint width,
@@ -270,6 +280,7 @@ const JNINativeMethod kMethods[] = {
     {"nativeSetEyeShadow", "(JIZFFFFII)V", reinterpret_cast<void*>(nativeSetEyeShadow)},
     {"nativeSetLiner", "(JZFFFFFF)V", reinterpret_cast<void*>(nativeSetLiner)},
     {"nativeSetLashes", "(JZFFF)V", reinterpret_cast<void*>(nativeSetLashes)},
+    {"nativeSetEffect", "(JIZIFI)V", reinterpret_cast<void*>(nativeSetEffect)},
     {"nativeCommitRecipe", "(J)V", reinterpret_cast<void*>(nativeCommitRecipe)},
     {"nativeDrawFrame", "(J[FIIJJ)I", reinterpret_cast<void*>(nativeDrawFrame)},
     {"nativeGetStats", "(J[F)V", reinterpret_cast<void*>(nativeGetStats)},

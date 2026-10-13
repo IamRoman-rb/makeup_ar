@@ -32,6 +32,19 @@
 //                         [0,1] (1 salvo el iluminador).
 //   uHighlightShine float brillo aditivo máximo del iluminador, [0, ~0,3]
 //                         (lineal).
+//   uEffectAmount  vec3   (EFFECTS) pecas (opacidad [0,1]), glitter (brillo de
+//                         cada destello [0,1]) y sheen (brillo [0, ~0,2]),
+//                         × fundido; 0 = apagado.
+//   uEffectOnSkin  vec3   (EFFECTS) por efecto: 1 = región full_face (canal de
+//                         piel), 0 = cheeks_nose (canal A).
+//   uEffectDensity vec2   (EFFECTS) probabilidad por celda de glitter y pecas, [0,1].
+//   uTime          float  (EFFECTS) segundos, módulo 1000.
+//
+// Variante EFFECTS (Renderer la usa si la receta tiene efectos de cara):
+//   pecas    puntos por celda (hash: presencia, centro, radio), color = la piel
+//            del píxel más oscura y cálida; capa después de la base.
+//   glitter  destellos por celda que cambian con el tiempo, aditivos.
+//   sheen    brillo aditivo suave.
 
 precision mediump float;
 
@@ -45,6 +58,20 @@ uniform highp vec3 uLayerLab[4];
 uniform vec4 uLayerAmount;
 uniform vec4 uLayerLumaFollow;
 uniform float uHighlightShine;
+#ifdef EFFECTS
+uniform vec3 uEffectAmount;
+uniform vec3 uEffectOnSkin;
+uniform vec2 uEffectDensity;
+uniform highp float uTime;
+
+// Celdas sobre el mapa de media cara (~1,5 mm las pecas, ~1 mm el glitter).
+#define FRECKLE_CELLS vec2(80.0, 140.0)
+#define GLITTER_CELLS vec2(120.0, 210.0)
+#define GLITTER_RATE 5.0
+#define TICK_PERIOD 256.0
+#define FRECKLE_DARKEN 0.74
+#define FRECKLE_WARM vec2(0.018, 0.03)
+#endif
 
 
 // highp: coordenadas de textura (ver camera_quad.vert).
@@ -52,6 +79,7 @@ in highp vec2 vTexCoord;
 in highp vec2 vMapUv;
 in highp vec2 vCheek;
 in float vFacing;
+in float vSide;
 out vec4 fragColor;
 
 // Mezcla una capa en OKLab, su brillo y acumula lo que queda sin cubrir.
@@ -63,13 +91,27 @@ void mixLayer(inout highp vec3 lab, inout highp float keep, inout float shine, h
 }
 
 void main() {
-  vec3 map = texture(uFaceMap, vMapUv).rgb;
+  vec4 map = texture(uFaceMap, vMapUv);
   // Rubor analítico: la coordenada ya viene escalada por los sigmas.
   float cheek = exp(-0.5 * dot(vCheek, vCheek));
   vec4 a = clamp(vec4(map.r, map.g, map.r * cheek, map.b) * uLayerAmount * vFacing, 0.0, 1.0);
+  vec3 effect = vec3(0.0);  // pecas, glitter, sheen ya por máscara
+  float freckle = 0.0;
+#ifdef EFFECTS
+  effect = mix(vec3(map.a), vec3(map.r), uEffectOnSkin) * uEffectAmount * vFacing;
+  // Pecas: un punto por celda (si toca), con centro y radio propios. fwidth
+  // antes de cualquier rama.
+  highp vec2 fc = vMapUv * FRECKLE_CELLS;
+  highp vec2 fcell = floor(fc) + vec2(vSide * 613.0, 0.0);
+  highp float faa = fwidth(fc.x);
+  vec2 center = vec2(hash12(fcell + 17.0), hash12(fcell + 41.0)) * 0.6 + 0.2;
+  float radius = mix(0.1, 0.26, hash12(fcell + 73.0));
+  float present = step(hash12(fcell), uEffectDensity.y);
+  freckle = present * (1.0 - smoothstep(radius - faa, radius + faa, length(fract(fc) - center))) * effect.x;
+#endif
   // Sin ninguna capa en el píxel (fuera de la piel o receta sin cara): no
   // cambia nada. Coherente por zonas grandes.
-  if (a.x + a.y + a.z + a.w <= 0.0) {
+  if (a.x + a.y + a.z + a.w + freckle + effect.y + effect.z <= 0.0) {
     fragColor = vec4(0.0);
     return;
   }
@@ -87,12 +129,25 @@ void main() {
   // quedaba sin cobertura.
   highp float keep = 1.0;
   float shine = 0.0;
+#ifdef EFFECTS
+  // Color de las pecas: la piel de la cámara más oscura y más cálida.
+  highp vec3 freckleLab = vec3(lab.x * FRECKLE_DARKEN, lab.yz + FRECKLE_WARM);
+#endif
   mixLayer(lab, keep, shine, uLayerLab[0] * shading, a.x, uLayerLumaFollow.x, 0.0);
+#ifdef EFFECTS
+  mixLayer(lab, keep, shine, freckleLab, freckle, 1.0, 0.0);
+#endif
   mixLayer(lab, keep, shine, uLayerLab[1] * shading, a.y, uLayerLumaFollow.y, 0.0);
   mixLayer(lab, keep, shine, uLayerLab[2] * shading, a.z, uLayerLumaFollow.z, 0.0);
   mixLayer(lab, keep, shine, uLayerLab[3] * shading, a.w, uLayerLumaFollow.w, uHighlightShine);
   vec3 outLinear = oklabToLinearInGamut(lab);
 
+#ifdef EFFECTS
+  highp vec2 gcell = floor(vMapUv * GLITTER_CELLS) + vec2(vSide * 997.0, 0.0);
+  highp float tick = mod(floor(uTime * GLITTER_RATE), TICK_PERIOD);
+  float sparkle = step(1.0 - uEffectDensity.x, hash12(gcell + vec2(tick * 17.0, tick * 31.0)));
+  shine += sparkle * effect.y + effect.z;
+#endif
   shine *= smoothstep(SHINE_SHADING_LOW, SHINE_SHADING_HIGH, shading);
   outLinear = min(outLinear + vec3(shine), vec3(1.0));
   fragColor = layerOver(linearToSrgb(outLinear), camera, 1.0 - keep);

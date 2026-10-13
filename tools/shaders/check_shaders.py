@@ -28,6 +28,8 @@ VARIANTS = [
     ("crop_roi.frag", "#define TAPS 4\n"),
     ("crop_roi.frag", "#define TAPS 2\n"),
     ("lips.frag", "#define SHIMMER 1\n"),
+    ("eyes.frag", "#define SHIMMER 1\n"),
+    ("face.frag", "#define EFFECTS 1\n"),
 ]
 INCLUDE_MARKER = "// @include color.glsl"
 OES_EXTENSION = "#extension GL_OES_EGL_image_external_essl3 : require"

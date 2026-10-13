@@ -55,6 +55,10 @@
 //   uLashRoot       float  oscurecimiento de la raíz (volumen), [0,1].
 //   uWing           float  largo del wing, [0,1] del largo máximo (0 = sin wing).
 //                          Con uWing = 0 la máscara del wing es 0 (smoothstep(0, 0, x) = 1).
+//   uEyeSheen       float  brillo del efecto sheen sobre párpado y pliegue × fundido,
+//                          [0, ~0,2] (lineal); 0 = apagado.
+//   uGlitter        float  (SHIMMER) brillo de los destellos del efecto glitter
+//                          sobre párpado y pliegue × fundido, [0,1].
 //   uTime           float  (SHIMMER) segundos, módulo 1000.
 //   uShadowSparkle  vec4   (SHIMMER) intensidad de los destellos por slot, [0,1].
 
@@ -82,9 +86,11 @@ uniform float uLashAmount;
 uniform float uLowerLashAmount;
 uniform vec4 uLashParams;
 uniform float uLashRoot;
+uniform float uEyeSheen;
 #ifdef SHIMMER
 uniform highp float uTime;
 uniform vec4 uShadowSparkle;
+uniform float uGlitter;
 
 // Mismo esquema que los destellos del labial (lips.frag).
 #define SPARKLE_CELLS vec2(160.0, 128.0)
@@ -185,7 +191,13 @@ void main() {
   float wing = (1.0 - smoothstep(uLinerEdge.x, wingEdge, mapB.b)) *
                (1.0 - smoothstep(wingEnd, uWing, mapB.a));
   float liner = clamp(max(line, wing) * uLinerAmount * vFacing, 0.0, 1.0);
-  if (a.x + a.y + a.z + a.w + liner + lash <= 0.0) {
+  // Zona de los efectos de ojos: párpado + pliegue.
+  float effectZone = clamp(mapA.r + mapA.g, 0.0, 1.0) * vFacing;
+  float effectShine = effectZone * uEyeSheen;
+#ifdef SHIMMER
+  effectShine += effectZone * uGlitter;  // se multiplica por el destello más abajo
+#endif
+  if (a.x + a.y + a.z + a.w + liner + lash + effectShine <= 0.0) {
     fragColor = vec4(0.0);
     return;
   }
@@ -204,6 +216,9 @@ void main() {
   highp float tick = mod(floor(uTime * SPARKLE_RATE), TICK_PERIOD);
   float sparkle = step(1.0 - SPARKLE_DENSITY, hash12(cell + vec2(tick * 17.0, tick * 31.0)));
   layerShine += sparkle * uShadowSparkle;
+  float glitter = sparkle * effectZone * uGlitter;
+#else
+  float glitter = 0.0;
 #endif
   // highp: con fp16, 1 - a para a < ~2e-4 da 1 y el borde de las máscaras
   // quedaba sin cobertura.
@@ -217,6 +232,8 @@ void main() {
   mixLayer(lab, keep, shine, uLashLab * shading, lash, 0.0);
   vec3 outLinear = oklabToLinearInGamut(lab);
 
+  // Efectos encima de todo: el delineado y las pestañas los tapan.
+  shine += (glitter + effectZone * uEyeSheen) * (1.0 - liner) * (1.0 - lash);
   shine *= smoothstep(SHINE_SHADING_LOW, SHINE_SHADING_HIGH, shading);
   outLinear = min(outLinear + vec3(shine), vec3(1.0));
   fragColor = layerOver(linearToSrgb(outLinear), camera, 1.0 - keep);

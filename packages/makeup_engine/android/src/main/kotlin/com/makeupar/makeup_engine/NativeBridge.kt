@@ -80,6 +80,14 @@ internal object NativeBridge {
     const val SHADOW_FINISH_SATIN = 1
     const val SHADOW_FINISH_SHIMMER = 2
     const val MAX_EYE_SHADOWS = 4
+    const val EFFECT_FRECKLES = 0
+    const val EFFECT_GLITTER = 1
+    const val EFFECT_SHEEN = 2
+    const val EFFECT_REGION_CHEEKS_NOSE = 0
+    const val EFFECT_REGION_EYES = 1
+    const val EFFECT_REGION_LIPS = 2
+    const val EFFECT_REGION_FULL_FACE = 3
+    const val MAX_EFFECTS = 3
 
     // Valores de nativeTrackerReadyKind(); mismo valor que CropKind en tracking_state.h.
     const val CROP_NONE = 0
@@ -178,6 +186,9 @@ internal object NativeBridge {
 
     /** Pestañas: opacidad, largo y volumen [0,1]. */
     @JvmStatic external fun nativeSetLashes(handle: Long, enabled: Boolean, opacity: Float, length: Float, volume: Float)
+
+    /** Efecto [slot] (0..MAX_EFFECTS-1): tipo EFFECT_*, intensidad [0,1], región EFFECT_REGION_*. */
+    @JvmStatic external fun nativeSetEffect(handle: Long, slot: Int, enabled: Boolean, type: Int, intensity: Float, region: Int)
 
     @JvmStatic external fun nativeCommitRecipe(handle: Long)
 

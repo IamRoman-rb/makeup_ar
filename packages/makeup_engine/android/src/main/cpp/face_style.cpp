@@ -26,11 +26,15 @@ void toLab(const ColorLayer& layer, float out[3]) {
 }  // namespace
 
 bool FaceUniforms::any() const {
-  return std::any_of(std::begin(amount), std::end(amount), [](float a) { return a > 0.0f; });
+  return effects() || std::any_of(std::begin(amount), std::end(amount), [](float a) { return a > 0.0f; });
+}
+
+bool FaceUniforms::effects() const {
+  return std::any_of(std::begin(effectAmount), std::end(effectAmount), [](float a) { return a > 0.0f; });
 }
 
 bool EyeUniforms::any() const {
-  return linerAmount > 0.0f || lashAmount > 0.0f ||
+  return linerAmount > 0.0f || lashAmount > 0.0f || glitter > 0.0f || sheen > 0.0f ||
          std::any_of(std::begin(shadowAmount), std::end(shadowAmount), [](float a) { return a > 0.0f; });
 }
 
@@ -127,6 +131,56 @@ EyeUniforms resolveEyes(const EyeShadowStyle shadows[kMaxEyeShadows], const Line
   out.lashParams[3] = EngineConfig::kLashCurl;
   out.lashRoot = volume * EngineConfig::kLashRootMax;
   return out;
+}
+
+void applyEffects(const EffectStyle effects[kMaxEffects], FaceUniforms* face, EyeUniforms* eyes, LipEffects* lips) {
+  const auto lerp = [](float a, float b, float t) { return a + (b - a) * t; };
+  for (int i = 0; i < kMaxEffects; ++i) {
+    const EffectStyle& effect = effects[i];
+    const float k = effect.enabled ? unit(effect.intensity) : 0.0f;
+    if (k <= 0.0f) continue;
+    const int type = static_cast<int>(effect.type);
+    if (type < 0 || type >= kEffectTypeCount) continue;
+    switch (effect.region) {
+      case EffectRegion::kCheeksNose:
+      case EffectRegion::kFullFace: {
+        float value = 0.0f;
+        switch (effect.type) {
+          case EffectType::kFreckles:
+            value = k * EngineConfig::kFreckleOpacity;
+            face->freckleDensity = std::max(
+                face->freckleDensity, lerp(EngineConfig::kFreckleDensityMin, EngineConfig::kFreckleDensityMax, k));
+            break;
+          case EffectType::kGlitter:
+            value = k * EngineConfig::kGlitterSparkle;
+            face->glitterDensity = std::max(
+                face->glitterDensity, lerp(EngineConfig::kGlitterDensityMin, EngineConfig::kGlitterDensityMax, k));
+            break;
+          case EffectType::kSheen:
+            value = k * EngineConfig::kSheenShine;
+            break;
+        }
+        face->effectAmount[type] = std::max(face->effectAmount[type], value);
+        if (effect.region == EffectRegion::kFullFace) face->effectOnSkin[type] = 1.0f;
+        break;
+      }
+      case EffectRegion::kEyes:
+        if (effect.type == EffectType::kGlitter) {
+          eyes->glitter = std::max(eyes->glitter, k * EngineConfig::kGlitterSparkle);
+          eyes->shimmer = true;
+        } else if (effect.type == EffectType::kSheen) {
+          eyes->sheen = std::max(eyes->sheen, k * EngineConfig::kSheenShine);
+        }
+        break;
+      case EffectRegion::kLips:
+        if (effect.type == EffectType::kGlitter) {
+          lips->sparkle = std::max(lips->sparkle, k * EngineConfig::kGlitterSparkle);
+        } else if (effect.type == EffectType::kSheen) {
+          lips->gloss = std::max(lips->gloss, k * EngineConfig::kLipSheenGloss);
+        }
+        break;
+    }
+  }
 }
 
 }  // namespace makeup

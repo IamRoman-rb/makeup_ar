@@ -81,6 +81,8 @@ class Renderer {
   void setEyeShadow(int slot, const EyeShadowStyle& style);
   void setLiner(const LinerStyle& style);
   void setLashes(const LashStyle& style);
+  // [slot] en [0, kMaxEffects).
+  void setEffect(int slot, const EffectStyle& style);
   void commitRecipe();
 
   // 16 floats column-major cada una (ver camera_quad.vert, uDisplayMatrix):
@@ -141,6 +143,7 @@ class Renderer {
     float lumaFollow = 0.0f;
     float gloss = 0.0f;
     float sharpness = 1.0f;
+    float sparkle = 0.0f;  // destellos (SHIMMER): acabado shimmer o efecto glitter
   };
 
   bool buildProgram(Program& out, const char* fragmentSource, const char* defines);
@@ -198,6 +201,7 @@ class Renderer {
   EyeShadowStyle pendingShadows_[kMaxEyeShadows];
   LinerStyle pendingLiner_;
   LashStyle pendingLashes_;
+  EffectStyle pendingEffects_[kMaxEffects];
   LipUniforms lipUniforms_;
   FaceUniforms faceUniforms_;
   EyeUniforms eyeUniforms_;

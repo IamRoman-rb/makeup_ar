@@ -124,6 +124,33 @@ class RecipeParamsTest {
     }
 
     @Test
+    fun `efectos con región por defecto según el tipo`() {
+        val params = RecipeParams.fromMap(
+            mapOf(
+                "effects" to listOf(
+                    mapOf("type" to "glitter", "intensity" to 0.3),
+                    mapOf("type" to "sheen", "intensity" to 0.25, "region" to "cheeks_nose"),
+                    mapOf("type" to "freckles", "intensity" to 1.4, "region" to "full_face"),
+                    mapOf("type" to "sheen", "intensity" to 0.5),  // cuarto: se ignora
+                ),
+            ),
+        )
+        val effects = params.effects
+        assertEquals(NativeBridge.MAX_EFFECTS, effects.size)
+        assertEquals(NativeBridge.EFFECT_GLITTER, effects[0].type)
+        assertEquals(NativeBridge.EFFECT_REGION_EYES, effects[0].region)
+        assertEquals(NativeBridge.EFFECT_REGION_CHEEKS_NOSE, effects[1].region)
+        assertNear(1f, effects[2].intensity)
+        assertEquals(NativeBridge.EFFECT_REGION_FULL_FACE, effects[2].region)
+        assertEquals(NativeBridge.EFFECT_REGION_CHEEKS_NOSE, EffectParams.fromMap(mapOf("type" to "freckles", "intensity" to 0.2)).region)
+        assertFalse(EffectParams.fromMap(mapOf("type" to "confetti", "intensity" to 0.5)).enabled)
+        assertFalse(EffectParams.fromMap(mapOf("type" to "glitter", "intensity" to 0)).enabled)
+        assertFalse(EffectParams.fromMap(mapOf("type" to "glitter")).enabled)
+        assertEquals(NativeBridge.MAX_EFFECTS, RecipeParams.fromMap(null).effects.size)
+        assertTrue(RecipeParams.fromMap(null).effects.none { it.enabled })
+    }
+
+    @Test
     fun `regiones inválidas se apagan sin romper el resto`() {
         val params = RecipeParams.fromMap(
             mapOf(

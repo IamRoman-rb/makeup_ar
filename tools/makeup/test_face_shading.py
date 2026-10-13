@@ -13,7 +13,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lips"))
-from face_shading import Layer, blend, compose, hash12, hex_to_srgb, lash_alpha, layer_over, srgb_to_oklab  # noqa: E402
+from face_shading import (Layer, blend, compose, freckle_alpha, freckle_lab, glitter_sparkle, hash12,  # noqa: E402
+                          hex_to_srgb, lash_alpha, layer_over, srgb_to_oklab)
 from lip_shading import LipParams, shade, to_ok  # noqa: E402
 
 
@@ -161,6 +162,33 @@ class LashTest(unittest.TestCase):
         lower = lash_alpha(self.strip(0.2, lower=True), 1.0, 0.45, self.params, 0.0, aa=aa)
         self.assertLessEqual(float(lower.max()), 0.45 + 1e-9)
         self.assertGreater(float(upper.max()), 0.9)
+
+
+class EffectsTest(unittest.TestCase):
+    def grid(self, n: int = 400) -> np.ndarray:
+        u, v = np.meshgrid(np.linspace(0.0, 0.5, n), np.linspace(0.3, 0.7, n))
+        return np.stack([u, v], axis=-1)
+
+    def test_densidad_de_pecas(self):
+        uv = self.grid()
+        sparse = freckle_alpha(uv, 0.12, aa=0.05)
+        dense = freckle_alpha(uv, 0.42, aa=0.05)
+        self.assertGreater(float((dense > 0.5).mean()), 2.0 * float((sparse > 0.5).mean()))
+        self.assertLess(float((dense > 0.5).mean()), 0.2)  # puntos, no manchas
+        self.assertEqual(float(freckle_alpha(uv, 0.0, aa=0.05).max()), 0.0)
+
+    def test_color_de_pecas_mas_oscuro_y_calido(self):
+        skin = srgb_to_oklab(np.array([0.85, 0.66, 0.55]))
+        freckle = freckle_lab(skin)
+        self.assertLess(freckle[0], skin[0])
+        self.assertGreater(freckle[2], skin[2])
+
+    def test_glitter_por_densidad_y_cambia_con_el_tiempo(self):
+        uv = self.grid()
+        a = glitter_sparkle(uv, 0.1, tick=0)
+        b = glitter_sparkle(uv, 0.1, tick=1)
+        self.assertAlmostEqual(float(a.mean()), 0.1, delta=0.03)
+        self.assertGreater(float(np.abs(a - b).mean()), 0.05)
 
 
 if __name__ == "__main__":

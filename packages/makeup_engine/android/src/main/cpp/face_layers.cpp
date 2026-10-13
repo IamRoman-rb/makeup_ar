@@ -14,6 +14,7 @@ namespace makeup {
 namespace {
 
 constexpr char kShimmerDefines[] = "#define SHIMMER 1\n";
+constexpr char kEffectsDefines[] = "#define EFFECTS 1\n";
 // Unidades de textura (0 = cámara, 1 = mapa de labios).
 constexpr int kFaceMapUnit = 2;
 constexpr int kEyeMapAUnit = 3;
@@ -52,13 +53,15 @@ void uploadTexture(GlTexture& out, GLenum internalFormat, GLenum format, int wid
 }  // namespace
 
 bool FaceLayers::init(GLuint pointVbo, GLuint uvVbo, GLuint normalVbo, std::string* error) {
-  return buildFaceProgram(error) && buildEyesProgram(eyes_, nullptr, error) &&
+  return buildFaceProgram(face_, nullptr, error) && buildFaceProgram(faceEffects_, kEffectsDefines, error) &&
+         buildEyesProgram(eyes_, nullptr, error) &&
          buildEyesProgram(eyesShimmer_, kShimmerDefines, error) && buildGeometry(pointVbo, uvVbo, normalVbo) &&
          buildTextures(error);
 }
 
 void FaceLayers::release() {
   face_.program.reset();
+  faceEffects_.program.reset();
   eyes_.program.reset();
   eyesShimmer_.program.reset();
   faceVao_.reset();
@@ -96,15 +99,19 @@ bool FaceLayers::buildCommon(Common& out, const char* fragmentSource, const char
   return true;
 }
 
-bool FaceLayers::buildFaceProgram(std::string* error) {
-  if (!buildCommon(face_, shaders::k_face_frag, nullptr, mesh::kFaceMapUvRect, error)) return false;
-  const GLuint id = face_.program.get();
-  face_.cheekMatrix = glGetUniformLocation(id, "uCheekMatrix");
-  face_.cheekOffset = glGetUniformLocation(id, "uCheekOffset");
-  face_.layerLab = glGetUniformLocation(id, "uLayerLab[0]");
-  face_.layerAmount = glGetUniformLocation(id, "uLayerAmount");
-  face_.layerLumaFollow = glGetUniformLocation(id, "uLayerLumaFollow");
-  face_.highlightShine = glGetUniformLocation(id, "uHighlightShine");
+bool FaceLayers::buildFaceProgram(FaceProgram& out, const char* defines, std::string* error) {
+  if (!buildCommon(out, shaders::k_face_frag, defines, mesh::kFaceMapUvRect, error)) return false;
+  const GLuint id = out.program.get();
+  out.cheekMatrix = glGetUniformLocation(id, "uCheekMatrix");
+  out.cheekOffset = glGetUniformLocation(id, "uCheekOffset");
+  out.layerLab = glGetUniformLocation(id, "uLayerLab[0]");
+  out.layerAmount = glGetUniformLocation(id, "uLayerAmount");
+  out.layerLumaFollow = glGetUniformLocation(id, "uLayerLumaFollow");
+  out.highlightShine = glGetUniformLocation(id, "uHighlightShine");
+  out.effectAmount = glGetUniformLocation(id, "uEffectAmount");
+  out.effectOnSkin = glGetUniformLocation(id, "uEffectOnSkin");
+  out.effectDensity = glGetUniformLocation(id, "uEffectDensity");
+  out.time = glGetUniformLocation(id, "uTime");
   glUseProgram(id);
   glUniform1i(glGetUniformLocation(id, "uFaceMap"), kFaceMapUnit);
   glUseProgram(0);
@@ -129,6 +136,8 @@ bool FaceLayers::buildEyesProgram(EyesProgram& out, const char* defines, std::st
   out.lowerLashAmount = glGetUniformLocation(id, "uLowerLashAmount");
   out.lashParams = glGetUniformLocation(id, "uLashParams");
   out.lashRoot = glGetUniformLocation(id, "uLashRoot");
+  out.eyeSheen = glGetUniformLocation(id, "uEyeSheen");
+  out.glitter = glGetUniformLocation(id, "uGlitter");
   out.time = glGetUniformLocation(id, "uTime");
   out.shadowSparkle = glGetUniformLocation(id, "uShadowSparkle");
   glUseProgram(id);
@@ -218,17 +227,25 @@ void FaceLayers::bindCommon(Common& program, const LayerFrame& frame) {
 
 void FaceLayers::drawFace(const FaceUniforms& face, const LayerFrame& frame) {
   if (!face.any()) return;
-  bindCommon(face_, frame);
+  FaceProgram& program = face.effects() ? faceEffects_ : face_;
+  bindCommon(program, frame);
   glActiveTexture(GL_TEXTURE0 + kFaceMapUnit);
   glBindTexture(GL_TEXTURE_2D, faceMap_.get());
   glActiveTexture(GL_TEXTURE0);
-  glUniformMatrix2fv(face_.cheekMatrix, 1, GL_FALSE, face.cheekMatrix);
-  glUniform2fv(face_.cheekOffset, 1, face.cheekOffset);
-  glUniform3fv(face_.layerLab, kFaceLayerCount, &face.lab[0][0]);
-  glUniform4f(face_.layerAmount, face.amount[0] * frame.alpha, face.amount[1] * frame.alpha,
+  glUniformMatrix2fv(program.cheekMatrix, 1, GL_FALSE, face.cheekMatrix);
+  glUniform2fv(program.cheekOffset, 1, face.cheekOffset);
+  glUniform3fv(program.layerLab, kFaceLayerCount, &face.lab[0][0]);
+  glUniform4f(program.layerAmount, face.amount[0] * frame.alpha, face.amount[1] * frame.alpha,
               face.amount[2] * frame.alpha, face.amount[3] * frame.alpha);
-  glUniform4fv(face_.layerLumaFollow, 1, face.lumaFollow);
-  glUniform1f(face_.highlightShine, face.highlightShine);
+  glUniform4fv(program.layerLumaFollow, 1, face.lumaFollow);
+  glUniform1f(program.highlightShine, face.highlightShine);
+  if (program.effectAmount >= 0) {
+    const float a = frame.alpha;
+    glUniform3f(program.effectAmount, face.effectAmount[0] * a, face.effectAmount[1] * a, face.effectAmount[2] * a);
+    glUniform3fv(program.effectOnSkin, 1, face.effectOnSkin);
+    glUniform2f(program.effectDensity, face.glitterDensity, face.freckleDensity);
+    glUniform1f(program.time, frame.timeSeconds);
+  }
 
   glEnable(GL_BLEND);
   glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
@@ -266,6 +283,8 @@ void FaceLayers::drawEyes(const EyeUniforms& eyes, const LayerFrame& frame) {
   glUniform1f(program.lowerLashAmount, eyes.lowerLashAmount * a);
   glUniform4fv(program.lashParams, 1, eyes.lashParams);
   glUniform1f(program.lashRoot, eyes.lashRoot);
+  glUniform1f(program.eyeSheen, eyes.sheen * a);
+  if (program.glitter >= 0) glUniform1f(program.glitter, eyes.glitter * a);
   if (program.time >= 0) glUniform1f(program.time, frame.timeSeconds);
   if (program.shadowSparkle >= 0) glUniform4fv(program.shadowSparkle, 1, eyes.shadowSparkle);
 

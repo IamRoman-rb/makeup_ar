@@ -138,6 +138,23 @@ struct EngineConfig {
   static constexpr float kLashRootMax = 0.7f;
   static constexpr float kLowerLashOpacity = 0.45f;
 
+  // --- Efectos procedurales (P6; face.frag/eyes.frag/lips.frag) ---
+  // Glitter: brillo de cada destello con intensity 1 y probabilidad de que una
+  // celda brille con intensity 0 y 1.
+  static constexpr float kGlitterSparkle = 0.9f;
+  static constexpr float kGlitterDensityMin = 0.03f;
+  static constexpr float kGlitterDensityMax = 0.12f;
+  // Sheen: brillo aditivo suave (lineal) con intensity 1, solo donde hay luz.
+  static constexpr float kSheenShine = 0.14f;
+  // En los labios el sheen suma brillo al mapa de brillo del labial.
+  static constexpr float kLipSheenGloss = 0.35f;
+  // Pecas: opacidad con intensity 1, probabilidad por celda con intensity 0 y
+  // 1, y cuánto oscurecen la piel (factor de L OKLab).
+  static constexpr float kFreckleOpacity = 0.75f;
+  static constexpr float kFreckleDensityMin = 0.12f;
+  static constexpr float kFreckleDensityMax = 0.42f;
+  static constexpr float kFreckleDarken = 0.74f;
+
   // Tamaño de los puntos del overlay de depuración (px de salida).
   static constexpr float kLandmarkPointSizePx = 5.0f;
 };

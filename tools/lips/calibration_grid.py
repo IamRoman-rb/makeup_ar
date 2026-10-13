@@ -127,7 +127,7 @@ def lip_params(lips: dict, lip_lightness: float, k: dict[str, float]) -> tuple[L
         gloss *= k["kLipsSatinGlossScale"]
         sharpness = k["kLipsSharpnessSatin"]
         if finish == "shimmer":
-            sparkle = k["kLipsSparkle"]
+            sparkle = k["kLipsSparkle"] * gloss  # Renderer::setLips: uSparkle = kLipsSparkle · gloss
     params = LipParams(target_lab=srgb_to_oklab(hex_to_srgb(lips["color"])), opacity=float(lips["opacity"]),
                        luma_follow=float(lips.get("lumaFollow", 0.8)), lip_lightness=lip_lightness,
                        gloss=gloss, sharpness=sharpness, light=1.0)

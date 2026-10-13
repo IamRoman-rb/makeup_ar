@@ -86,7 +86,8 @@ def shade(camera_srgb: np.ndarray, mask: np.ndarray, gloss_map: np.ndarray, p: L
     out = oklab_to_linear_in_gamut(np.concatenate([lightness[..., None], ab], axis=-1))
     # El brillo necesita luz: no aparece en las sombras y pliegues del labio.
     lit_gate = _smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading)
-    spec = (np.power(gloss_map, p.sharpness) + sparkle) * p.gloss * p.light * w * lit_gate
+    # Los destellos ya vienen con su brillo (uSparkle): no se multiplican por gloss.
+    spec = (np.power(gloss_map, p.sharpness) * p.gloss + sparkle) * p.light * w * lit_gate
     out = np.minimum(out + spec[..., None], 1.0)
     # Fuera de la máscara el shader devuelve la cámara tal cual.
     return np.where((w > 0.0)[..., None], lin_to_srgb(out), camera_srgb)

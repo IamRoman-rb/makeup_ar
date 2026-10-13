@@ -4,7 +4,7 @@ package com.makeupar.makeup_engine
  * Receta `makeup-recipe/2` (ya validada en Dart: RecipeValidator) llegada por
  * el canal como mapa, reducida a los parámetros que el motor dibuja: labios
  * (P4), rubor, piel (base, contorno, iluminador) y ojos (sombras, delineado)
- * (P5), y pestañas (P6). Los efectos todavía no se dibujan.
+ * (P5), pestañas y efectos procedurales (P6).
  *
  * Es la segunda línea de defensa: cualquier valor ausente, mal tipado o fuera
  * de rango se recorta o apaga la región, nunca rompe el render.
@@ -14,6 +14,7 @@ internal data class RecipeParams(
     val cheeks: CheekParams = CheekParams.DISABLED,
     val skin: SkinParams = SkinParams.DISABLED,
     val eyes: EyesParams = EyesParams.DISABLED,
+    val effects: List<EffectParams> = EffectParams.NONE,
 ) {
     companion object {
         fun fromMap(recipe: Map<*, *>?): RecipeParams = RecipeParams(
@@ -21,7 +22,50 @@ internal data class RecipeParams(
             cheeks = CheekParams.fromMap(recipe?.get("cheeks") as? Map<*, *>),
             skin = SkinParams.fromMap(recipe?.get("skin") as? Map<*, *>),
             eyes = EyesParams.fromMap(recipe?.get("eyes") as? Map<*, *>),
+            effects = EffectParams.listFromRecipe(recipe?.get("effects") as? List<*>),
         )
+    }
+}
+
+/**
+ * Efecto procedural (P6): tipo NativeBridge.EFFECT_*, región
+ * NativeBridge.EFFECT_REGION_*. Sin región, la del tipo: glitter en los ojos,
+ * sheen y pecas en mejillas y nariz.
+ */
+internal data class EffectParams(val enabled: Boolean, val type: Int, val intensity: Float, val region: Int) {
+    companion object {
+        val DISABLED = EffectParams(false, NativeBridge.EFFECT_GLITTER, 0f, NativeBridge.EFFECT_REGION_EYES)
+
+        /** Siempre NativeBridge.MAX_EFFECTS (los que faltan, apagados), en el orden de la receta. */
+        val NONE: List<EffectParams> = List(NativeBridge.MAX_EFFECTS) { DISABLED }
+
+        private val TYPES = mapOf(
+            "freckles" to NativeBridge.EFFECT_FRECKLES,
+            "glitter" to NativeBridge.EFFECT_GLITTER,
+            "sheen" to NativeBridge.EFFECT_SHEEN,
+        )
+        private val REGIONS = mapOf(
+            "cheeks_nose" to NativeBridge.EFFECT_REGION_CHEEKS_NOSE,
+            "eyes" to NativeBridge.EFFECT_REGION_EYES,
+            "lips" to NativeBridge.EFFECT_REGION_LIPS,
+            "full_face" to NativeBridge.EFFECT_REGION_FULL_FACE,
+        )
+
+        fun fromMap(effect: Map<*, *>?): EffectParams {
+            val type = TYPES[effect?.get("type") as? String] ?: return DISABLED
+            val intensity = unit(effect?.get("intensity")) ?: return DISABLED
+            if (intensity <= 0f) return DISABLED
+            val region = REGIONS[effect?.get("region") as? String] ?: defaultRegion(type)
+            return EffectParams(true, type, intensity, region)
+        }
+
+        fun listFromRecipe(effects: List<*>?): List<EffectParams> {
+            val list = effects.orEmpty()
+            return List(NativeBridge.MAX_EFFECTS) { i -> fromMap(list.getOrNull(i) as? Map<*, *>) }
+        }
+
+        private fun defaultRegion(type: Int): Int =
+            if (type == NativeBridge.EFFECT_GLITTER) NativeBridge.EFFECT_REGION_EYES else NativeBridge.EFFECT_REGION_CHEEKS_NOSE
     }
 }
 

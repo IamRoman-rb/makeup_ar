@@ -198,7 +198,6 @@ bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
               -rect[0] / rect[2], -rect[1] / rect[3]);
   glUniform2f(glGetUniformLocation(id, "uFacingFade"), EngineConfig::kLipsFacingFadeStart,
               EngineConfig::kLipsFacingFadeEnd);
-  if (out.sparkle >= 0) glUniform1f(out.sparkle, EngineConfig::kLipsSparkle);
   glUseProgram(0);
   out.uploadedDisplayVersion = 0;
   out.program = std::move(program);
@@ -469,6 +468,7 @@ void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToCl
   glUniform1f(program.lumaFollow, drawLips_.lumaFollow);
   glUniform1f(program.lipLightness, lipLightness);
   glUniform1f(program.gloss, drawLips_.gloss);
+  if (program.sparkle >= 0) glUniform1f(program.sparkle, drawLips_.sparkle);
   glUniform1f(program.sharpness, drawLips_.sharpness);
   glUniform1f(program.light, light);
   glUniform2f(program.glossShift, shiftU / rect[2], shiftV / rect[3]);
@@ -558,6 +558,8 @@ void Renderer::setLips(const LipStyle& style) {
       uniforms.sharpness = EngineConfig::kLipsSharpnessSatin;
       break;
   }
+  // Mismo brillo de destellos que antes (se multiplicaban por gloss en el shader).
+  if (uniforms.shimmer) uniforms.sparkle = EngineConfig::kLipsSparkle * uniforms.gloss;
   std::lock_guard<std::mutex> lock(configMutex_);
   pendingLips_ = uniforms;
 }
@@ -590,11 +592,27 @@ void Renderer::setLashes(const LashStyle& style) {
   pendingLashes_ = style;
 }
 
+void Renderer::setEffect(int slot, const EffectStyle& style) {
+  if (slot < 0 || slot >= kMaxEffects) return;
+  std::lock_guard<std::mutex> lock(configMutex_);
+  pendingEffects_[slot] = style;
+}
+
 void Renderer::commitRecipe() {
   std::lock_guard<std::mutex> lock(configMutex_);
   lipUniforms_ = pendingLips_;
   faceUniforms_ = resolveFace(pendingSkin_, pendingCheek_);
   eyeUniforms_ = resolveEyes(pendingShadows_, pendingLiner_, pendingLashes_);
+  LipEffects lipEffects;
+  applyEffects(pendingEffects_, &faceUniforms_, &eyeUniforms_, &lipEffects);
+  // Glitter y sheen en los labios: solo si hay labial (si no, no hay capa).
+  if (lipUniforms_.enabled) {
+    if (lipEffects.sparkle > 0.0f) {
+      lipUniforms_.shimmer = true;
+      lipUniforms_.sparkle = std::max(lipUniforms_.sparkle, lipEffects.sparkle);
+    }
+    lipUniforms_.gloss = std::min(1.0f, lipUniforms_.gloss + lipEffects.gloss);
+  }
   recipeVersion_.fetch_add(1, std::memory_order_release);
 }
 

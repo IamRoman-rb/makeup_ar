@@ -12,7 +12,7 @@
 //           sombras y pliegues quedan oscuros y menos saturados, los reflejos
 //           más claros (sin eso el color plano parece una calcomanía).
 //   color = OKLab -> lineal bajando croma si sale de gamut (color.glsl)
-//   + brillo: (mapa^nitidez [+ destellos]) · gloss · luz · w · iluminado(s),
+//   + brillo: (mapa^nitidez · gloss [+ destellos]) · luz · w · iluminado(s),
 //           aditivo en lineal; no aparece en las sombras del labio.
 //   salida: layerOver(color, cámara, w) con blending premultiplicado
 //           (color.glsl): el labial va encima de la base sin pisarla
@@ -40,7 +40,9 @@
 //                         brillo más chico y concentrado.
 //   uLight         float  atenuación del brillo por luz de la escena, [0,1].
 //   uTime          float  (SHIMMER) segundos, módulo 1000.
-//   uSparkle       float  (SHIMMER) intensidad de los destellos, [0,1].
+//   uSparkle       float  (SHIMMER) brillo de cada destello, [0,1] (acabado shimmer:
+//                         kLipsSparkle · gloss; efecto glitter en labios: su
+//                         intensidad). Ya no se multiplica por uGloss.
 
 precision mediump float;
 
@@ -118,9 +120,12 @@ void main() {
   // Desplazamientos distintos en x e y: cada cambio es otro patrón, no el
   // mismo corrido en diagonal.
   float sparkle = step(1.0 - SPARKLE_DENSITY, hash12(cell + vec2(tick * 17.0, tick * 31.0)));
+  spec *= uGloss;
   spec += sparkle * uSparkle;
+#else
+  spec *= uGloss;
 #endif
-  spec *= uGloss * uLight * w * smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading);
+  spec *= uLight * w * smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading);
   outLinear = min(outLinear + vec3(spec), vec3(1.0));
   fragColor = layerOver(linearToSrgb(outLinear), camera, w);
 }

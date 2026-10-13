@@ -53,6 +53,10 @@ class FaceLayers {
     GLint layerAmount = -1;
     GLint layerLumaFollow = -1;
     GLint highlightShine = -1;
+    GLint effectAmount = -1;   // solo EFFECTS
+    GLint effectOnSkin = -1;   // solo EFFECTS
+    GLint effectDensity = -1;  // solo EFFECTS
+    GLint time = -1;           // solo EFFECTS
   };
   struct EyesProgram : Common {
     GLint shadowLab = -1;
@@ -69,19 +73,22 @@ class FaceLayers {
     GLint lowerLashAmount = -1;
     GLint lashParams = -1;
     GLint lashRoot = -1;
+    GLint eyeSheen = -1;
+    GLint glitter = -1;  // solo SHIMMER
     GLint time = -1;           // solo SHIMMER
     GLint shadowSparkle = -1;  // solo SHIMMER
   };
 
   bool buildCommon(Common& out, const char* fragmentSource, const char* defines, const float* mapRect,
                    std::string* error);
-  bool buildFaceProgram(std::string* error);
+  bool buildFaceProgram(FaceProgram& out, const char* defines, std::string* error);
   bool buildEyesProgram(EyesProgram& out, const char* defines, std::string* error);
   bool buildGeometry(GLuint pointVbo, GLuint uvVbo, GLuint normalVbo);
   bool buildTextures(std::string* error);
   void bindCommon(Common& program, const LayerFrame& frame);
 
   FaceProgram face_;
+  FaceProgram faceEffects_;
   EyesProgram eyes_;
   EyesProgram eyesShimmer_;
   GlVertexArray faceVao_;

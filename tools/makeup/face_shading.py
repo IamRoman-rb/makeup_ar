@@ -162,3 +162,36 @@ def _fwidth(x: np.ndarray) -> np.ndarray:
         return np.zeros_like(x)
     gy, gx = np.gradient(x)
     return np.abs(gx) + np.abs(gy)
+
+
+# --- Efectos procedurales (face.frag variante EFFECTS) ---
+
+FRECKLE_CELLS = np.array([80.0, 140.0])
+GLITTER_CELLS = np.array([120.0, 210.0])
+FRECKLE_DARKEN = 0.74
+FRECKLE_WARM = np.array([0.018, 0.03])
+
+
+def freckle_alpha(map_uv: np.ndarray, density: float, side: float = 0.0, aa: np.ndarray | float | None = None):
+    """Puntos de pecas (cobertura [0,1] sin intensidad ni máscara). map_uv
+    (..., 2) en coordenadas del mapa de media cara."""
+    fc = map_uv * FRECKLE_CELLS
+    cell = np.floor(fc) + np.array([side * 613.0, 0.0])
+    if aa is None:
+        aa = _fwidth(fc[..., 0])
+    center = np.stack([hash12(cell + 17.0), hash12(cell + 41.0)], axis=-1) * 0.6 + 0.2
+    radius = 0.1 + (0.26 - 0.1) * hash12(cell + 73.0)
+    present = hash12(cell) <= density
+    dist = np.linalg.norm(fc - np.floor(fc) - center, axis=-1)
+    return present * (1.0 - _smoothstep_any(radius - aa, radius + aa, dist))
+
+
+def freckle_lab(camera_lab: np.ndarray) -> np.ndarray:
+    """Color de las pecas: la piel del píxel más oscura y más cálida."""
+    return np.concatenate([camera_lab[..., :1] * FRECKLE_DARKEN, camera_lab[..., 1:] + FRECKLE_WARM], axis=-1)
+
+
+def glitter_sparkle(map_uv: np.ndarray, density: float, tick: float = 0.0, side: float = 0.0) -> np.ndarray:
+    """Destellos 0/1 por celda (cambian con tick)."""
+    cell = np.floor(map_uv * GLITTER_CELLS) + np.array([side * 997.0, 0.0])
+    return (hash12(cell + np.array([tick * 17.0, tick * 31.0])) >= 1.0 - density).astype(float)

@@ -172,3 +172,62 @@ TEST(estiloOjos_pestanas) {
   CHECK_NEAR(b.lashRoot, makeup::EngineConfig::kLashRootMax, 1e-6);
   CHECK(a.lashLab[0] < 0.3f);  // negro de máscara
 }
+
+TEST(estiloEfectos_repartoPorPasada) {
+  makeup::EffectStyle effects[makeup::kMaxEffects];
+  effects[0].enabled = true;
+  effects[0].type = makeup::EffectType::kGlitter;
+  effects[0].intensity = 0.3f;
+  effects[0].region = makeup::EffectRegion::kEyes;
+  effects[1].enabled = true;
+  effects[1].type = makeup::EffectType::kSheen;
+  effects[1].intensity = 0.25f;
+  effects[1].region = makeup::EffectRegion::kCheeksNose;
+  effects[2].enabled = true;
+  effects[2].type = makeup::EffectType::kFreckles;
+  effects[2].intensity = 2.0f;  // se recorta
+  effects[2].region = makeup::EffectRegion::kFullFace;
+
+  makeup::FaceUniforms face;
+  makeup::EyeUniforms eyes;
+  makeup::LipEffects lips;
+  makeup::applyEffects(effects, &face, &eyes, &lips);
+  CHECK(face.effects());
+  CHECK(face.any());  // solo efectos alcanza para dibujar la pasada
+  CHECK_NEAR(face.effectAmount[static_cast<int>(makeup::EffectType::kSheen)],
+             0.25 * makeup::EngineConfig::kSheenShine, 1e-6);
+  CHECK_NEAR(face.effectOnSkin[static_cast<int>(makeup::EffectType::kSheen)], 0.0, 0.0);
+  CHECK_NEAR(face.effectAmount[static_cast<int>(makeup::EffectType::kFreckles)],
+             makeup::EngineConfig::kFreckleOpacity, 1e-6);
+  CHECK_NEAR(face.effectOnSkin[static_cast<int>(makeup::EffectType::kFreckles)], 1.0, 0.0);
+  CHECK_NEAR(face.freckleDensity, makeup::EngineConfig::kFreckleDensityMax, 1e-6);
+  CHECK_NEAR(face.effectAmount[static_cast<int>(makeup::EffectType::kGlitter)], 0.0, 0.0);  // fue a los ojos
+  CHECK_NEAR(eyes.glitter, 0.3 * makeup::EngineConfig::kGlitterSparkle, 1e-6);
+  CHECK(eyes.shimmer);
+  CHECK(eyes.any());
+  CHECK_NEAR(lips.sparkle, 0.0, 0.0);
+}
+
+TEST(estiloEfectos_labiosYApagados) {
+  makeup::EffectStyle effects[makeup::kMaxEffects];
+  effects[0].enabled = true;
+  effects[0].type = makeup::EffectType::kGlitter;
+  effects[0].intensity = 0.5f;
+  effects[0].region = makeup::EffectRegion::kLips;
+  effects[1].enabled = true;
+  effects[1].type = makeup::EffectType::kSheen;
+  effects[1].intensity = 1.0f;
+  effects[1].region = makeup::EffectRegion::kLips;
+  effects[2].enabled = false;  // apagado aunque tenga intensidad
+  effects[2].type = makeup::EffectType::kFreckles;
+  effects[2].intensity = 1.0f;
+  effects[2].region = makeup::EffectRegion::kCheeksNose;
+  makeup::FaceUniforms face;
+  makeup::EyeUniforms eyes;
+  makeup::LipEffects lips;
+  makeup::applyEffects(effects, &face, &eyes, &lips);
+  CHECK(!face.effects());
+  CHECK(!eyes.any());
+  CHECK_NEAR(lips.sparkle, 0.5 * makeup::EngineConfig::kGlitterSparkle, 1e-6);
+  CHECK_NEAR(lips.gloss, makeup::EngineConfig::kLipSheenGloss, 1e-6);
+}
