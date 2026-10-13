@@ -683,6 +683,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Gently apply the highlighter to the high points of your face: tops of your cheekbones, bridge of your nose, and cupid\'s bow for a dazzling glow.'**
   String get tutStep3Desc;
+
+  /// Botón que abre el espejo con el maquillaje del look.
+  ///
+  /// In en, this message translates to:
+  /// **'Try on in AR'**
+  String get tryOnAr;
+
+  /// Título de la pantalla de creación de looks con IA (admin).
+  ///
+  /// In en, this message translates to:
+  /// **'AI Studio'**
+  String get studioTitle;
+
+  /// Opción del menú de admin del catálogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Create with AI (Studio)'**
+  String get studioMenuStudio;
+
+  /// Opción del menú de admin del catálogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit tutorial steps'**
+  String get studioMenuSteps;
+
+  /// Ayuda del campo de texto del Studio.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the look (e.g. gothic lips and orange blush)'**
+  String get studioPromptHint;
+
+  /// Botón que pide 3 variantes a la IA.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get studioGenerate;
+
+  /// Ayuda del campo de remix.
+  ///
+  /// In en, this message translates to:
+  /// **'Tweak (e.g. more natural, warmer tones)'**
+  String get studioRemixHint;
+
+  /// Botón que modifica la variante elegida con IA.
+  ///
+  /// In en, this message translates to:
+  /// **'Remix'**
+  String get studioRemix;
+
+  /// Nota sobre la vista previa del Studio.
+  ///
+  /// In en, this message translates to:
+  /// **'Studio: pick a variant and adjust it before publishing.'**
+  String get studioNote;
+
+  /// Estado inicial del Studio.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a request and tap Generate.'**
+  String get studioEmpty;
+
+  /// Botón del Studio.
+  ///
+  /// In en, this message translates to:
+  /// **'Save draft'**
+  String get studioSaveDraft;
+
+  /// Botón del Studio.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get studioPublish;
+
+  /// Lista de borradores del Studio.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get studioDrafts;
+
+  /// Lista de borradores vacía.
+  ///
+  /// In en, this message translates to:
+  /// **'No drafts.'**
+  String get studioNoDrafts;
+
+  /// Acción sobre un borrador.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete draft'**
+  String get studioDeleteDraft;
+
+  /// Confirmación.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved.'**
+  String get studioSaved;
+
+  /// Confirmación.
+  ///
+  /// In en, this message translates to:
+  /// **'Look published to the catalog.'**
+  String get studioPublished;
+
+  /// Error al guardar o publicar.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save. Check your connection.'**
+  String get studioSaveError;
+
+  /// Campo del nombre del look.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get studioName;
+
+  /// Campo de categoría del look.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get studioCategory;
+
+  /// Campo de imagen del catálogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Image URL (optional)'**
+  String get studioImageUrl;
+
+  /// Botón de diálogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get studioCancel;
+
+  /// Botón de diálogo.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get studioAccept;
+
+  /// Quitar una capa de la receta.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get studioRemove;
+
+  /// Campo de color HEX.
+  ///
+  /// In en, this message translates to:
+  /// **'Color (#RRGGBB)'**
+  String get studioColorHex;
+
+  /// Acabado del labial.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get studioFinish;
+
+  /// Capa editable.
+  ///
+  /// In en, this message translates to:
+  /// **'Lipstick'**
+  String get studioLayerLips;
+
+  /// Capa editable.
+  ///
+  /// In en, this message translates to:
+  /// **'Lip liner'**
+  String get studioLayerLipLiner;
+
+  /// Capa editable.
+  ///
+  /// In en, this message translates to:
+  /// **'Blush'**
+  String get studioLayerCheeks;
+
+  /// Capa editable.
+  ///
+  /// In en, this message translates to:
+  /// **'Foundation'**
+  String get studioLayerFoundation;
+
+  /// Capa editable.
+  ///
+  /// In en, this message translates to:
+  /// **'Contour'**
+  String get studioLayerContour;
+
+  /// Capa editable.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighter'**
+  String get studioLayerHighlight;
+
+  /// Capa editable.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyeliner'**
+  String get studioLayerEyeLiner;
+
+  /// Capa editable.
+  ///
+  /// In en, this message translates to:
+  /// **'Lashes'**
+  String get studioLayerLashes;
+
+  /// Capa editable (sombra de ojos número index).
+  ///
+  /// In en, this message translates to:
+  /// **'Shadow {index}'**
+  String studioLayerShadow(int index);
+
+  /// Aviso de respaldo.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI returned no valid variants: showing the closest preset.'**
+  String get studioFallback;
+
+  /// Error de generación.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to use the Studio.'**
+  String get studioErrorAuth;
+
+  /// Error de generación.
+  ///
+  /// In en, this message translates to:
+  /// **'Only admins can generate looks.'**
+  String get studioErrorAdmin;
+
+  /// Error de generación.
+  ///
+  /// In en, this message translates to:
+  /// **'The request must be 1 to 300 characters.'**
+  String get studioErrorInput;
+
+  /// Error de generación.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s quota is used up. Try tomorrow.'**
+  String get studioErrorQuota;
+
+  /// Error de generación.
+  ///
+  /// In en, this message translates to:
+  /// **'The generator isn\'t responding. Try again later.'**
+  String get studioErrorUnavailable;
+
+  /// Error de generación.
+  ///
+  /// In en, this message translates to:
+  /// **'The app failed verification (App Check).'**
+  String get studioErrorAppCheck;
+
+  /// Error de generación.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t generate.'**
+  String get studioErrorUnknown;
 }
 
 class _AppLocalizationsDelegate

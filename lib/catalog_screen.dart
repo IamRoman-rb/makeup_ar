@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'camera_screen.dart';
+import 'features/ar/presentation/test_filter_view.dart';
+import 'features/studio/data/cloud_recipe_generator.dart';
+import 'features/studio/data/firestore_look_repository.dart';
+import 'features/studio/domain/studio_look.dart';
+import 'features/studio/presentation/studio_screen.dart';
 import 'filter_editor_screen.dart';
 import 'step_by_step_screen.dart';
 import 'shared_bottom_nav.dart';
@@ -37,6 +43,39 @@ class _CatalogScreenState extends State<CatalogScreen> {
     super.dispose();
   }
 
+  /// Admin: crear un look con IA (Studio) o editar los pasos de un tutorial.
+  Future<void> _openAdminMenu(BuildContext context, String uid) async {
+    final l10n = AppLocalizations.of(context)!;
+    final navigator = Navigator.of(context);
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.auto_awesome),
+              title: Text(l10n.studioMenuStudio),
+              onTap: () => Navigator.pop(sheet, 'studio'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.list_alt),
+              title: Text(l10n.studioMenuSteps),
+              onTap: () => Navigator.pop(sheet, 'steps'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == 'studio') {
+      await navigator.push(MaterialPageRoute<void>(
+        builder: (_) => StudioScreen(generator: CloudRecipeGenerator(), repository: FirestoreLookRepository(uid: uid)),
+      ));
+    } else if (choice == 'steps') {
+      await navigator.push(MaterialPageRoute<void>(builder: (_) => const FilterEditorScreen()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -65,7 +104,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ? FloatingActionButton(
               backgroundColor: const Color(0xFF1A1A1A),
               tooltip: 'Crear filtro (admin)',
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FilterEditorScreen())),
+              onPressed: () => _openAdminMenu(context, user.uid),
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
@@ -197,6 +236,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
                               final image = data['image'] ?? defaultImage;
 
                               final isSaved = savedLooks.contains(doc.id);
+                              // Looks del Studio: receta válida para este motor.
+                              final recipe = lookRecipe(data);
 
                               return GestureDetector(
                                 onTap: () {
@@ -266,6 +307,19 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                       Text(name, style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A1A))),
                                       const SizedBox(height: 5),
                                       Text(category, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37), letterSpacing: 1.2)),
+                                      if (recipe != null)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 8),
+                                          child: OutlinedButton.icon(
+                                            icon: const Icon(Icons.auto_awesome, size: 18),
+                                            label: Text(l10n.tryOnAr),
+                                            onPressed: () => Navigator.push(context, MaterialPageRoute(
+                                              builder: (_) => CameraScreen(
+                                                initialLook: TestFilterOption(id: 'look-${doc.id}', label: recipe.name, recipe: recipe),
+                                              ),
+                                            )),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),

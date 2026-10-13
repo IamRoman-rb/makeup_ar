@@ -10,8 +10,13 @@ import 'shared_bottom_nav.dart';
 
 /// Espejo: cámara frontal en vivo. Con el botón de la barra se alterna al
 /// filtro de prueba del motor AR nativo (`TestFilterView`).
+///
+/// Con [initialLook] ("Probar en AR" de un look del catálogo) arranca
+/// directamente en el motor con ese look elegido.
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({super.key});
+  const CameraScreen({super.key, this.initialLook});
+
+  final TestFilterOption? initialLook;
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
@@ -22,7 +27,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   bool _isCameraInitialized = false;
 
   /// true = se muestra el motor nativo en lugar de CameraPreview.
-  bool _useNativeEngine = false;
+  late bool _useNativeEngine = widget.initialLook != null;
 
   /// Evita alternar de nuevo mientras se libera o se abre la cámara.
   bool _switching = false;
@@ -34,7 +39,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initializeCamera();
+    // En modo motor la cámara es del motor: no se abre CameraController.
+    if (!_useNativeEngine) _initializeCamera();
   }
 
   /// Como pide la documentación del plugin camera: la cámara se libera al
@@ -146,6 +152,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           unavailable: l10n.testFilterUnavailable,
         ),
         onUnavailable: () => _onEngineUnavailable(l10n.testFilterUnavailable),
+        extraOptions: [?widget.initialLook],
+        initialOptionId: widget.initialLook?.id,
       );
     } else if (_isCameraInitialized && controller != null) {
       body = Stack(

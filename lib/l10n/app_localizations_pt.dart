@@ -313,4 +313,140 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get tutStep3Desc =>
       'Aplique suavemente o iluminador nos pontos altos do rosto: parte superior das maçãs do rosto, ponte do nariz e arco do cupido para um brilho deslumbrante.';
+
+  @override
+  String get tryOnAr => 'Experimentar em RA';
+
+  @override
+  String get studioTitle => 'Studio IA';
+
+  @override
+  String get studioMenuStudio => 'Criar com IA (Studio)';
+
+  @override
+  String get studioMenuSteps => 'Editar passos do tutorial';
+
+  @override
+  String get studioPromptHint =>
+      'Descreva o look (ex.: lábios góticos e blush laranja)';
+
+  @override
+  String get studioGenerate => 'Gerar';
+
+  @override
+  String get studioRemixHint => 'Ajuste (ex.: mais natural, tons mais quentes)';
+
+  @override
+  String get studioRemix => 'Remix';
+
+  @override
+  String get studioNote =>
+      'Studio: escolha uma variante e ajuste antes de publicar.';
+
+  @override
+  String get studioEmpty => 'Escreva um pedido e toque em Gerar.';
+
+  @override
+  String get studioSaveDraft => 'Salvar rascunho';
+
+  @override
+  String get studioPublish => 'Publicar';
+
+  @override
+  String get studioDrafts => 'Rascunhos';
+
+  @override
+  String get studioNoDrafts => 'Não há rascunhos.';
+
+  @override
+  String get studioDeleteDraft => 'Excluir rascunho';
+
+  @override
+  String get studioSaved => 'Rascunho salvo.';
+
+  @override
+  String get studioPublished => 'Look publicado no catálogo.';
+
+  @override
+  String get studioSaveError => 'Não foi possível salvar. Verifique a conexão.';
+
+  @override
+  String get studioName => 'Nome';
+
+  @override
+  String get studioCategory => 'Categoria';
+
+  @override
+  String get studioImageUrl => 'URL da imagem (opcional)';
+
+  @override
+  String get studioCancel => 'Cancelar';
+
+  @override
+  String get studioAccept => 'OK';
+
+  @override
+  String get studioRemove => 'Remover';
+
+  @override
+  String get studioColorHex => 'Cor (#RRGGBB)';
+
+  @override
+  String get studioFinish => 'Acabamento';
+
+  @override
+  String get studioLayerLips => 'Batom';
+
+  @override
+  String get studioLayerLipLiner => 'Contorno labial';
+
+  @override
+  String get studioLayerCheeks => 'Blush';
+
+  @override
+  String get studioLayerFoundation => 'Base';
+
+  @override
+  String get studioLayerContour => 'Contorno';
+
+  @override
+  String get studioLayerHighlight => 'Iluminador';
+
+  @override
+  String get studioLayerEyeLiner => 'Delineador';
+
+  @override
+  String get studioLayerLashes => 'Cílios';
+
+  @override
+  String studioLayerShadow(int index) {
+    return 'Sombra $index';
+  }
+
+  @override
+  String get studioFallback =>
+      'A IA não retornou variantes válidas: mostrando o preset mais parecido.';
+
+  @override
+  String get studioErrorAuth => 'Faça login para usar o Studio.';
+
+  @override
+  String get studioErrorAdmin => 'Somente administradores podem gerar looks.';
+
+  @override
+  String get studioErrorInput => 'O pedido deve ter entre 1 e 300 caracteres.';
+
+  @override
+  String get studioErrorQuota => 'A cota de hoje acabou. Tente amanhã.';
+
+  @override
+  String get studioErrorUnavailable =>
+      'O gerador não responde. Tente novamente mais tarde.';
+
+  @override
+  String get studioErrorAppCheck =>
+      'O app não passou na verificação (App Check).';
+
+  @override
+  String get studioErrorUnknown => 'Não foi possível gerar.';
 }

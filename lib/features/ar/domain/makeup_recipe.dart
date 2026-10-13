@@ -10,6 +10,11 @@ library;
 /// Identificador de esquema que debe traer toda receta v2.
 const String kMakeupRecipeSchemaV2 = 'makeup-recipe/2';
 
+/// Versión del motor de maquillaje instalado. Un look de Firestore con
+/// `minEngine` mayor no se ofrece (lo dibuja un motor más nuevo). Subirla
+/// cuando el motor sume algo que una receta pueda necesitar.
+const int kMakeupEngineVersion = 1;
+
 /// Límites del esquema, compartidos con el validador.
 abstract final class RecipeLimits {
   static const int nameMaxLength = 60;

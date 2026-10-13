@@ -95,5 +95,182 @@
     "tutStep2Title": "Velvet Liquid Blush",
     "tutStep2Desc": "Place three small dots of liquid blush on your high cheekbones. Blend quickly with light taps towards your temples for a spectacular lifting effect.",
     "tutStep3Title": "Gold Highlighter",
-    "tutStep3Desc": "Gently apply the highlighter to the high points of your face: tops of your cheekbones, bridge of your nose, and cupid's bow for a dazzling glow."
+    "tutStep3Desc": "Gently apply the highlighter to the high points of your face: tops of your cheekbones, bridge of your nose, and cupid's bow for a dazzling glow.",
+    "tryOnAr": "Try on in AR",
+    "@tryOnAr": {
+        "description": "Botón que abre el espejo con el maquillaje del look."
+    },
+    "studioTitle": "AI Studio",
+    "@studioTitle": {
+        "description": "Título de la pantalla de creación de looks con IA (admin)."
+    },
+    "studioMenuStudio": "Create with AI (Studio)",
+    "@studioMenuStudio": {
+        "description": "Opción del menú de admin del catálogo."
+    },
+    "studioMenuSteps": "Edit tutorial steps",
+    "@studioMenuSteps": {
+        "description": "Opción del menú de admin del catálogo."
+    },
+    "studioPromptHint": "Describe the look (e.g. gothic lips and orange blush)",
+    "@studioPromptHint": {
+        "description": "Ayuda del campo de texto del Studio."
+    },
+    "studioGenerate": "Generate",
+    "@studioGenerate": {
+        "description": "Botón que pide 3 variantes a la IA."
+    },
+    "studioRemixHint": "Tweak (e.g. more natural, warmer tones)",
+    "@studioRemixHint": {
+        "description": "Ayuda del campo de remix."
+    },
+    "studioRemix": "Remix",
+    "@studioRemix": {
+        "description": "Botón que modifica la variante elegida con IA."
+    },
+    "studioNote": "Studio: pick a variant and adjust it before publishing.",
+    "@studioNote": {
+        "description": "Nota sobre la vista previa del Studio."
+    },
+    "studioEmpty": "Write a request and tap Generate.",
+    "@studioEmpty": {
+        "description": "Estado inicial del Studio."
+    },
+    "studioSaveDraft": "Save draft",
+    "@studioSaveDraft": {
+        "description": "Botón del Studio."
+    },
+    "studioPublish": "Publish",
+    "@studioPublish": {
+        "description": "Botón del Studio."
+    },
+    "studioDrafts": "Drafts",
+    "@studioDrafts": {
+        "description": "Lista de borradores del Studio."
+    },
+    "studioNoDrafts": "No drafts.",
+    "@studioNoDrafts": {
+        "description": "Lista de borradores vacía."
+    },
+    "studioDeleteDraft": "Delete draft",
+    "@studioDeleteDraft": {
+        "description": "Acción sobre un borrador."
+    },
+    "studioSaved": "Draft saved.",
+    "@studioSaved": {
+        "description": "Confirmación."
+    },
+    "studioPublished": "Look published to the catalog.",
+    "@studioPublished": {
+        "description": "Confirmación."
+    },
+    "studioSaveError": "Couldn't save. Check your connection.",
+    "@studioSaveError": {
+        "description": "Error al guardar o publicar."
+    },
+    "studioName": "Name",
+    "@studioName": {
+        "description": "Campo del nombre del look."
+    },
+    "studioCategory": "Category",
+    "@studioCategory": {
+        "description": "Campo de categoría del look."
+    },
+    "studioImageUrl": "Image URL (optional)",
+    "@studioImageUrl": {
+        "description": "Campo de imagen del catálogo."
+    },
+    "studioCancel": "Cancel",
+    "@studioCancel": {
+        "description": "Botón de diálogo."
+    },
+    "studioAccept": "OK",
+    "@studioAccept": {
+        "description": "Botón de diálogo."
+    },
+    "studioRemove": "Remove",
+    "@studioRemove": {
+        "description": "Quitar una capa de la receta."
+    },
+    "studioColorHex": "Color (#RRGGBB)",
+    "@studioColorHex": {
+        "description": "Campo de color HEX."
+    },
+    "studioFinish": "Finish",
+    "@studioFinish": {
+        "description": "Acabado del labial."
+    },
+    "studioLayerLips": "Lipstick",
+    "@studioLayerLips": {
+        "description": "Capa editable."
+    },
+    "studioLayerLipLiner": "Lip liner",
+    "@studioLayerLipLiner": {
+        "description": "Capa editable."
+    },
+    "studioLayerCheeks": "Blush",
+    "@studioLayerCheeks": {
+        "description": "Capa editable."
+    },
+    "studioLayerFoundation": "Foundation",
+    "@studioLayerFoundation": {
+        "description": "Capa editable."
+    },
+    "studioLayerContour": "Contour",
+    "@studioLayerContour": {
+        "description": "Capa editable."
+    },
+    "studioLayerHighlight": "Highlighter",
+    "@studioLayerHighlight": {
+        "description": "Capa editable."
+    },
+    "studioLayerEyeLiner": "Eyeliner",
+    "@studioLayerEyeLiner": {
+        "description": "Capa editable."
+    },
+    "studioLayerLashes": "Lashes",
+    "@studioLayerLashes": {
+        "description": "Capa editable."
+    },
+    "studioLayerShadow": "Shadow {index}",
+    "@studioLayerShadow": {
+        "description": "Capa editable (sombra de ojos número index).",
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "studioFallback": "The AI returned no valid variants: showing the closest preset.",
+    "@studioFallback": {
+        "description": "Aviso de respaldo."
+    },
+    "studioErrorAuth": "Sign in to use the Studio.",
+    "@studioErrorAuth": {
+        "description": "Error de generación."
+    },
+    "studioErrorAdmin": "Only admins can generate looks.",
+    "@studioErrorAdmin": {
+        "description": "Error de generación."
+    },
+    "studioErrorInput": "The request must be 1 to 300 characters.",
+    "@studioErrorInput": {
+        "description": "Error de generación."
+    },
+    "studioErrorQuota": "Today's quota is used up. Try tomorrow.",
+    "@studioErrorQuota": {
+        "description": "Error de generación."
+    },
+    "studioErrorUnavailable": "The generator isn't responding. Try again later.",
+    "@studioErrorUnavailable": {
+        "description": "Error de generación."
+    },
+    "studioErrorAppCheck": "The app failed verification (App Check).",
+    "@studioErrorAppCheck": {
+        "description": "Error de generación."
+    },
+    "studioErrorUnknown": "Couldn't generate.",
+    "@studioErrorUnknown": {
+        "description": "Error de generación."
+    }
 }

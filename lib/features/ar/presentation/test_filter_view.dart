@@ -120,6 +120,9 @@ class TestFilterView extends StatefulWidget {
     this.renderer,
     this.onUnavailable,
     this.extraOptions = const [],
+    this.options,
+    this.initialOptionId,
+    this.onOptionSelected,
   });
 
   final TestFilterLabels labels;
@@ -133,6 +136,18 @@ class TestFilterView extends StatefulWidget {
   /// Opciones después de los presets (el arnés suma recetas de prueba).
   final List<TestFilterOption> extraOptions;
 
+  /// Reemplaza "sin filtro" + presets + [extraOptions] (Studio: las variantes
+  /// generadas). Si cambia, la vista conserva la opción elegida por id y
+  /// vuelve a mandar su receta si cambió (edición en vivo).
+  final List<TestFilterOption>? options;
+
+  /// Opción elegida al iniciar (y si la elegida desaparece); por defecto, la
+  /// primera receta.
+  final String? initialOptionId;
+
+  /// El usuario eligió otra opción.
+  final ValueChanged<TestFilterOption>? onOptionSelected;
+
   @override
   State<TestFilterView> createState() => _TestFilterViewState();
 }
@@ -141,10 +156,7 @@ class _TestFilterViewState extends State<TestFilterView> {
   static const Duration _statsPeriod = Duration(seconds: 1);
 
   late final IMakeupRenderer _renderer = widget.renderer ?? createMakeupRenderer();
-  late final List<TestFilterOption> _options = [
-    ...TestFilterOption.fromPresets(widget.labels.noFilter),
-    ...widget.extraOptions,
-  ];
+  late List<TestFilterOption> _options = _buildOptions();
   final ValueNotifier<MakeupRendererStats> _stats = ValueNotifier(MakeupRendererStats.empty);
 
   MakeupSurface? _surface;
@@ -153,7 +165,7 @@ class _TestFilterViewState extends State<TestFilterView> {
   bool _statsInFlight = false;
   bool _lookInFlight = false;
   bool _lookDirty = false;
-  late TestFilterOption _selected = _options.length > 1 ? _options[1] : _options.first;
+  late TestFilterOption _selected = _initialOption();
   MakeupZone _zone = MakeupZone.all;
   double _intensity = 1.0;
 
@@ -168,6 +180,30 @@ class _TestFilterViewState extends State<TestFilterView> {
     super.initState();
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     unawaited(_start());
+  }
+
+  List<TestFilterOption> _buildOptions() =>
+      widget.options ?? [...TestFilterOption.fromPresets(widget.labels.noFilter), ...widget.extraOptions];
+
+  TestFilterOption _initialOption() {
+    final wanted = widget.initialOptionId;
+    for (final option in _options) {
+      if (option.id == wanted) return option;
+    }
+    return _options.firstWhere((option) => option.recipe != null, orElse: () => _options.first);
+  }
+
+  @override
+  void didUpdateWidget(TestFilterView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(widget.options, oldWidget.options) && identical(widget.extraOptions, oldWidget.extraOptions)) {
+      return;
+    }
+    final previous = _selected;
+    _options = _buildOptions();
+    final current = _options.where((option) => option.id == previous.id).firstOrNull ?? _initialOption();
+    _selected = current;
+    if (!identical(current.recipe, previous.recipe)) unawaited(_applyLook());
   }
 
   @override
@@ -236,6 +272,7 @@ class _TestFilterViewState extends State<TestFilterView> {
       _selected = option;
       _finish = null;
     });
+    widget.onOptionSelected?.call(option);
     unawaited(_applyLook());
   }
 

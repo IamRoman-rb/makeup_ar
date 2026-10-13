@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 import 'camera_screen.dart';
+import 'features/ar/presentation/test_filter_view.dart';
+import 'features/studio/domain/studio_look.dart';
 import 'l10n/app_localizations.dart';
 import 'vip/vip_paywall_screen.dart';
 
@@ -46,6 +48,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
         final data = lookSnapshot.data?.data() as Map<String, dynamic>?;
         final lookName = data?['name'] as String? ?? l10n.stepByStepTitle;
         final videoUrl = data?['video_url'] as String?;
+        final recipe = data == null ? null : lookRecipe(data);
         final rawSteps = data?['steps'];
         final steps = rawSteps is List
             ? rawSteps.whereType<Map>().map((s) => Map<String, dynamic>.from(s)).toList()
@@ -71,10 +74,17 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
                 ),
                 centerTitle: true,
                 actions: [
+                  // Con receta del Studio: el espejo abre con este look puesto.
                   IconButton(
-                    icon: const Icon(Icons.camera_front_outlined, color: Color(0xFF1A1A1A)),
-                    tooltip: l10n.mirror,
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CameraScreen())),
+                    icon: Icon(recipe == null ? Icons.camera_front_outlined : Icons.auto_awesome, color: const Color(0xFF1A1A1A)),
+                    tooltip: recipe == null ? l10n.mirror : l10n.tryOnAr,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => CameraScreen(
+                        initialLook: recipe == null
+                            ? null
+                            : TestFilterOption(id: 'look-${widget.lookId}', label: recipe.name, recipe: recipe),
+                      ),
+                    )),
                   ),
                 ],
               ),

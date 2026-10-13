@@ -316,4 +316,145 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tutStep3Desc =>
       'Appliquez doucement l\'illuminateur sur les points hauts de votre visage : haut des pommettes, arête du nez et arc de cupidon pour un éclat éblouissant.';
+
+  @override
+  String get tryOnAr => 'Essayer en RA';
+
+  @override
+  String get studioTitle => 'Studio IA';
+
+  @override
+  String get studioMenuStudio => 'Créer avec l\'IA (Studio)';
+
+  @override
+  String get studioMenuSteps => 'Modifier les étapes du tutoriel';
+
+  @override
+  String get studioPromptHint =>
+      'Décrivez le look (ex. : lèvres gothiques et blush orange)';
+
+  @override
+  String get studioGenerate => 'Générer';
+
+  @override
+  String get studioRemixHint =>
+      'Ajustement (ex. : plus naturel, tons plus chauds)';
+
+  @override
+  String get studioRemix => 'Remix';
+
+  @override
+  String get studioNote =>
+      'Studio : choisissez une variante et ajustez-la avant de publier.';
+
+  @override
+  String get studioEmpty => 'Écrivez une demande et touchez Générer.';
+
+  @override
+  String get studioSaveDraft => 'Enregistrer le brouillon';
+
+  @override
+  String get studioPublish => 'Publier';
+
+  @override
+  String get studioDrafts => 'Brouillons';
+
+  @override
+  String get studioNoDrafts => 'Aucun brouillon.';
+
+  @override
+  String get studioDeleteDraft => 'Supprimer le brouillon';
+
+  @override
+  String get studioSaved => 'Brouillon enregistré.';
+
+  @override
+  String get studioPublished => 'Look publié dans le catalogue.';
+
+  @override
+  String get studioSaveError =>
+      'Échec de l\'enregistrement. Vérifiez la connexion.';
+
+  @override
+  String get studioName => 'Nom';
+
+  @override
+  String get studioCategory => 'Catégorie';
+
+  @override
+  String get studioImageUrl => 'URL de l\'image (facultatif)';
+
+  @override
+  String get studioCancel => 'Annuler';
+
+  @override
+  String get studioAccept => 'OK';
+
+  @override
+  String get studioRemove => 'Retirer';
+
+  @override
+  String get studioColorHex => 'Couleur (#RRGGBB)';
+
+  @override
+  String get studioFinish => 'Fini';
+
+  @override
+  String get studioLayerLips => 'Rouge à lèvres';
+
+  @override
+  String get studioLayerLipLiner => 'Crayon à lèvres';
+
+  @override
+  String get studioLayerCheeks => 'Blush';
+
+  @override
+  String get studioLayerFoundation => 'Fond de teint';
+
+  @override
+  String get studioLayerContour => 'Contouring';
+
+  @override
+  String get studioLayerHighlight => 'Enlumineur';
+
+  @override
+  String get studioLayerEyeLiner => 'Eye-liner';
+
+  @override
+  String get studioLayerLashes => 'Cils';
+
+  @override
+  String studioLayerShadow(int index) {
+    return 'Fard $index';
+  }
+
+  @override
+  String get studioFallback =>
+      'L\'IA n\'a renvoyé aucune variante valide : affichage du preset le plus proche.';
+
+  @override
+  String get studioErrorAuth => 'Connectez-vous pour utiliser le Studio.';
+
+  @override
+  String get studioErrorAdmin =>
+      'Seuls les administrateurs peuvent générer des looks.';
+
+  @override
+  String get studioErrorInput =>
+      'La demande doit contenir entre 1 et 300 caractères.';
+
+  @override
+  String get studioErrorQuota =>
+      'Le quota du jour est épuisé. Réessayez demain.';
+
+  @override
+  String get studioErrorUnavailable =>
+      'Le générateur ne répond pas. Réessayez plus tard.';
+
+  @override
+  String get studioErrorAppCheck =>
+      'L\'app n\'a pas passé la vérification (App Check).';
+
+  @override
+  String get studioErrorUnknown => 'Échec de la génération.';
 }

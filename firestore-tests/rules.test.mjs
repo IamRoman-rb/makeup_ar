@@ -29,14 +29,19 @@ function userToken(uid) {
   return `${encode({ alg: 'none', typ: 'JWT' })}.${encode(payload)}.`;
 }
 
+function toValue(value) {
+  if (typeof value === 'boolean') return { booleanValue: value };
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  }
+  if (Array.isArray(value)) return { arrayValue: { values: value.map(toValue) } };
+  if (value !== null && typeof value === 'object') return { mapValue: toFields(value) };
+  return { stringValue: String(value) };
+}
+
 function toFields(data) {
   const fields = {};
-  for (const [key, value] of Object.entries(data)) {
-    if (typeof value === 'boolean') fields[key] = { booleanValue: value };
-    else if (typeof value === 'number') fields[key] = { integerValue: String(value) };
-    else if (Array.isArray(value)) fields[key] = { arrayValue: { values: value.map((v) => ({ stringValue: v })) } };
-    else fields[key] = { stringValue: String(value) };
-  }
+  for (const [key, value] of Object.entries(data)) fields[key] = toValue(value);
   return { fields };
 }
 
@@ -154,4 +159,34 @@ test('usage: ni el dueño ni un admin lo leen o escriben desde el cliente', asyn
   assert.equal(await set('users/alice/usage/20261013', 'alice', { count: 0 }), DENIED);
   assert.equal(await remove('users/alice/usage/20261013', 'alice'), DENIED);
   assert.equal(await set('users/admin/usage/20261013', 'admin', { count: 0 }), DENIED);
+});
+
+// --- Studio (F3): borradores y looks con receta -------------------------------
+
+const RECIPE = { schema: 'makeup-recipe/2', name: 'Rojo', lips: { color: '#B3122D', opacity: 0.85 } };
+const DRAFT = { name: 'Rojo', category: 'Lips', recipe: RECIPE, recipeSchema: 'makeup-recipe/2', minEngine: 1 };
+
+test('look_drafts: solo admins leen, escriben y borran', async () => {
+  assert.equal(await set('look_drafts/d1', 'admin', DRAFT), OK);
+  assert.equal(await read('look_drafts/d1', 'admin'), OK);
+  assert.equal(await read('look_drafts/d1', 'alice'), DENIED);
+  assert.equal(await read('look_drafts/d1', null), DENIED);
+  assert.equal(await set('look_drafts/d2', 'alice', DRAFT), DENIED);
+  assert.equal(await remove('look_drafts/d1', 'alice'), DENIED);
+  assert.equal(await remove('look_drafts/d1', 'admin'), OK);
+});
+
+test('look_drafts: sin receta o con tipos incorrectos se rechaza', async () => {
+  assert.equal(await set('look_drafts/d1', 'admin', { name: 'Sin receta' }), DENIED);
+  assert.equal(await set('look_drafts/d1', 'admin', { ...DRAFT, recipe: 'texto' }), DENIED);
+  assert.equal(await set('look_drafts/d1', 'admin', { ...DRAFT, minEngine: 'uno' }), DENIED);
+  assert.equal(await set('look_drafts/d1', 'admin', { ...DRAFT, recipeSchema: 'makeup-recipe/1' }), DENIED);
+});
+
+test('looks: el admin publica con receta; los viejos sin receta siguen valiendo', async () => {
+  assert.equal(await set('looks/nuevo', 'admin', { ...DRAFT, steps: [] }), OK);
+  assert.equal(await read('looks/nuevo', null), OK);
+  assert.equal(await set('looks/malo', 'admin', { ...DRAFT, recipe: 3 }), DENIED);
+  assert.equal(await update('looks/look1', 'admin', { name: 'Rojo 2' }), OK);
+  assert.equal(await set('looks/otro', 'alice', { ...DRAFT }), DENIED);
 });

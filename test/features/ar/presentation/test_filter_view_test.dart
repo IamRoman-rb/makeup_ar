@@ -215,6 +215,44 @@ void main() {
     expect(other.lightAdaptation, [false]);
   });
 
+  testWidgets('opciones propias: la edición en vivo se manda y la elección se conserva', (tester) async {
+    final renderer = FakeRenderer();
+    final red = RecipePresets.byId('classic_red').recipe;
+    final selected = <String>[];
+    Widget view(List<TestFilterOption> options) => MaterialApp(
+          home: Scaffold(
+            body: TestFilterView(
+              labels: labels,
+              renderer: renderer,
+              options: options,
+              initialOptionId: 'b',
+              onOptionSelected: (option) => selected.add(option.id),
+            ),
+          ),
+        );
+    final a = TestFilterOption(id: 'a', label: 'A', recipe: MakeupRecipe(name: 'A', lips: red.lips));
+    final b = TestFilterOption(id: 'b', label: 'B', recipe: MakeupRecipe(name: 'B', lips: red.lips));
+    await tester.pumpWidget(view([a, b]));
+    await tester.pumpAndSettle();
+    expect(renderer.recipes.last?.name, 'B');  // initialOptionId
+    expect(find.text('Rojo clásico'), findsNothing);  // sin presets
+
+    // La opción elegida cambió de receta (edición): se vuelve a mandar.
+    final edited = TestFilterOption(id: 'b', label: 'B2', recipe: MakeupRecipe(name: 'B2', lips: red.lips));
+    await tester.pumpWidget(view([a, edited]));
+    await tester.pumpAndSettle();
+    expect(renderer.recipes.last?.name, 'B2');
+
+    await tester.tap(find.text('A'));
+    await tester.pumpAndSettle();
+    expect(selected, ['a']);
+    expect(renderer.recipes.last?.name, 'A');
+    // Si la elegida desaparece, vuelve a initialOptionId.
+    await tester.pumpWidget(view([edited]));
+    await tester.pumpAndSettle();
+    expect(renderer.recipes.last?.name, 'B2');
+  });
+
   test('etiqueta del tracker según su estado', () {
     expect(trackerLabel(MakeupRendererStats.empty), 'Tracker: iniciando…');
     expect(trackerLabel(const MakeupRendererStats(tracking: FaceTrackingState.loading)), 'Tracker: cargando modelos…');

@@ -311,4 +311,139 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutStep3Desc =>
       'Gently apply the highlighter to the high points of your face: tops of your cheekbones, bridge of your nose, and cupid\'s bow for a dazzling glow.';
+
+  @override
+  String get tryOnAr => 'Try on in AR';
+
+  @override
+  String get studioTitle => 'AI Studio';
+
+  @override
+  String get studioMenuStudio => 'Create with AI (Studio)';
+
+  @override
+  String get studioMenuSteps => 'Edit tutorial steps';
+
+  @override
+  String get studioPromptHint =>
+      'Describe the look (e.g. gothic lips and orange blush)';
+
+  @override
+  String get studioGenerate => 'Generate';
+
+  @override
+  String get studioRemixHint => 'Tweak (e.g. more natural, warmer tones)';
+
+  @override
+  String get studioRemix => 'Remix';
+
+  @override
+  String get studioNote =>
+      'Studio: pick a variant and adjust it before publishing.';
+
+  @override
+  String get studioEmpty => 'Write a request and tap Generate.';
+
+  @override
+  String get studioSaveDraft => 'Save draft';
+
+  @override
+  String get studioPublish => 'Publish';
+
+  @override
+  String get studioDrafts => 'Drafts';
+
+  @override
+  String get studioNoDrafts => 'No drafts.';
+
+  @override
+  String get studioDeleteDraft => 'Delete draft';
+
+  @override
+  String get studioSaved => 'Draft saved.';
+
+  @override
+  String get studioPublished => 'Look published to the catalog.';
+
+  @override
+  String get studioSaveError => 'Couldn\'t save. Check your connection.';
+
+  @override
+  String get studioName => 'Name';
+
+  @override
+  String get studioCategory => 'Category';
+
+  @override
+  String get studioImageUrl => 'Image URL (optional)';
+
+  @override
+  String get studioCancel => 'Cancel';
+
+  @override
+  String get studioAccept => 'OK';
+
+  @override
+  String get studioRemove => 'Remove';
+
+  @override
+  String get studioColorHex => 'Color (#RRGGBB)';
+
+  @override
+  String get studioFinish => 'Finish';
+
+  @override
+  String get studioLayerLips => 'Lipstick';
+
+  @override
+  String get studioLayerLipLiner => 'Lip liner';
+
+  @override
+  String get studioLayerCheeks => 'Blush';
+
+  @override
+  String get studioLayerFoundation => 'Foundation';
+
+  @override
+  String get studioLayerContour => 'Contour';
+
+  @override
+  String get studioLayerHighlight => 'Highlighter';
+
+  @override
+  String get studioLayerEyeLiner => 'Eyeliner';
+
+  @override
+  String get studioLayerLashes => 'Lashes';
+
+  @override
+  String studioLayerShadow(int index) {
+    return 'Shadow $index';
+  }
+
+  @override
+  String get studioFallback =>
+      'The AI returned no valid variants: showing the closest preset.';
+
+  @override
+  String get studioErrorAuth => 'Sign in to use the Studio.';
+
+  @override
+  String get studioErrorAdmin => 'Only admins can generate looks.';
+
+  @override
+  String get studioErrorInput => 'The request must be 1 to 300 characters.';
+
+  @override
+  String get studioErrorQuota => 'Today\'s quota is used up. Try tomorrow.';
+
+  @override
+  String get studioErrorUnavailable =>
+      'The generator isn\'t responding. Try again later.';
+
+  @override
+  String get studioErrorAppCheck => 'The app failed verification (App Check).';
+
+  @override
+  String get studioErrorUnknown => 'Couldn\'t generate.';
 }

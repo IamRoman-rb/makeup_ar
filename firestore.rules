@@ -19,11 +19,31 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('is_admin', false) == true;
     }
 
+    // Campos de receta de un look o borrador del Studio (F3), si vienen. El
+    // contenido de la receta lo valida la app con el esquema JSON antes de
+    // escribir y al leer (RecipeValidator); acá solo se cuidan los tipos.
+    function validRecipeFields(data) {
+      return (!('recipe' in data) || data.recipe is map)
+        && (!('minEngine' in data) || data.minEngine is int)
+        && (!('recipeSchema' in data) || data.recipeSchema == 'makeup-recipe/2');
+    }
+
     // "looks" es el catálogo: cualquiera lo puede leer (con o sin login),
     // pero solo un usuario admin puede crear/editar/borrar looks.
     match /looks/{lookId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin() && validRecipeFields(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Borradores del Studio (F3): solo admins, y siempre con una receta.
+    // Separados de "looks" para que el catálogo siga con lectura pública sin
+    // filtrar por estado (las reglas no filtran consultas).
+    match /look_drafts/{draftId} {
+      allow read, delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.recipe is map
+        && validRecipeFields(request.resource.data);
     }
 
     // "users" tiene datos personales (correo, edad, fecha de nacimiento).
