@@ -29,6 +29,11 @@ bool FaceUniforms::any() const {
   return effects() || std::any_of(std::begin(amount), std::end(amount), [](float a) { return a > 0.0f; });
 }
 
+void resolveColorLayer(const ColorLayer& layer, float lab[3], float* amount) {
+  *amount = amountOf(layer);
+  toLab(layer, lab);
+}
+
 bool FaceUniforms::effects() const {
   return std::any_of(std::begin(effectAmount), std::end(effectAmount), [](float a) { return a > 0.0f; });
 }

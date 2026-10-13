@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lip_shading import LipParams, from_ok, hex_to_srgb, oklab_to_linear_in_gamut, shade, srgb_to_oklab, to_ok  # noqa: E402
+from lip_shading import LipLiner, LipParams, from_ok, liner_alpha, hex_to_srgb, oklab_to_linear_in_gamut, shade, srgb_to_oklab, to_ok  # noqa: E402
 
 
 def hue(lab: np.ndarray) -> float:
@@ -123,6 +123,23 @@ class ShadeTest(unittest.TestCase):
         gain_dark = shade(dark, np.ones(1), np.ones(1), on) - shade(dark, np.ones(1), np.ones(1), off)
         self.assertGreater(float(gain_lit.mean()), 0.05)
         np.testing.assert_allclose(gain_dark, 0.0, atol=1e-9)
+
+    def test_delineado_sobre_el_borde_y_mate(self):
+        liner = LipLiner(target_lab=srgb_to_oklab(hex_to_srgb("#5A0A16")), amount=0.8)
+        distance = np.array([0.0, 0.25, 0.6, 1.0])
+        alpha = liner_alpha(distance, liner, aa=0.05)
+        self.assertAlmostEqual(float(alpha[0]), 0.8)
+        self.assertAlmostEqual(float(alpha[3]), 0.0)
+        self.assertTrue(np.all(np.diff(alpha) <= 0))
+        self.assertTrue(np.all(liner_alpha(distance, LipLiner(liner.target_lab, 0.0), 0.05) == 0))
+        # Afuera del labial (máscara 0) el delineado igual pinta; adentro tapa el brillo.
+        camera = np.array([[0.75, 0.55, 0.5], [0.7, 0.45, 0.43]])
+        p = self.params(gloss=0.8, lip_lightness=0.6)
+        out = shade(camera, np.array([0.0, 1.0]), np.ones(2), p, liner=np.array([0.8, 0.8]), liner_lab=liner.target_lab)
+        self.assertLess(float(out[0].mean()), float(camera[0].mean()) - 0.1)
+        bright = shade(camera, np.ones(2), np.ones(2), p)
+        lined = shade(camera, np.ones(2), np.ones(2), p, liner=np.full(2, 0.8), liner_lab=liner.target_lab)
+        self.assertLess(float(lined[1].mean()), float(bright[1].mean()))
 
     def test_salida_siempre_en_rango(self):
         rng = np.random.default_rng(3)

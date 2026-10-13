@@ -75,6 +75,8 @@ class Renderer {
   // pendiente; commitRecipe() la publica entera, así el render nunca dibuja
   // media receta. Los valores se recortan a rango.
   void setLips(const LipStyle& style);
+  // Delineado de labios (lips.liner): solo se dibuja con labial.
+  void setLipLiner(const ColorLayer& style);
   void setCheeks(const CheekStyle& style);
   void setSkinLayer(SkinLayer layer, const ColorLayer& style);
   // [slot] en [0, kMaxEyeShadows): en el orden de la receta (se pintan en ese orden).
@@ -131,6 +133,8 @@ class Renderer {
     GLint view = -1;
     GLint time = -1;     // solo SHIMMER
     GLint sparkle = -1;  // solo SHIMMER
+    GLint linerLab = -1;
+    GLint linerAmount = -1;
     uint32_t uploadedDisplayVersion = 0;
   };
 
@@ -144,6 +148,8 @@ class Renderer {
     float gloss = 0.0f;
     float sharpness = 1.0f;
     float sparkle = 0.0f;  // destellos (SHIMMER): acabado shimmer o efecto glitter
+    float linerLab[3] = {0.0f, 0.0f, 0.0f};
+    float linerAmount = 0.0f;  // delineado de labios; 0 = sin delineado
   };
 
   bool buildProgram(Program& out, const char* fragmentSource, const char* defines);
@@ -196,6 +202,7 @@ class Renderer {
   bool mirrored_ = true;
   // Receta pendiente (set*) y publicada (commitRecipe).
   LipUniforms pendingLips_;
+  ColorLayer pendingLipLiner_;
   ColorLayer pendingSkin_[kSkinLayerCount];
   CheekStyle pendingCheek_;
   EyeShadowStyle pendingShadows_[kMaxEyeShadows];

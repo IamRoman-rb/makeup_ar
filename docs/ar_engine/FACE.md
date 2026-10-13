@@ -4,7 +4,7 @@ Este documento describe el resto de las regiones de la receta (informe §5.4–5
 - **P5:** rubor, base, contorno, iluminador, sombras y delineado;
 - **P6:** pestañas y efectos procedurales (pecas, glitter, sheen).
 
-También cubre la API Dart que queda estable, cómo regenerar los datos y cómo probarlo en el E20. Los labios están en `LIPS.md`. Con P6 el motor dibuja la receta `makeup-recipe/2` completa, salvo el delineado de labios.
+También cubre la API Dart que queda estable, cómo regenerar los datos y cómo probarlo en el E20. Los labios están en `LIPS.md`. Con P6 (más P6b, el delineado de labios) el motor dibuja la receta `makeup-recipe/2` completa.
 
 ## 1. Qué hace
 
@@ -17,7 +17,6 @@ En Espejo → **Filtro de prueba**, cada look se aplica completo.
 - **Mantené para comparar** y **Ver puntos**: igual que en P4.
 
 **Qué no se dibuja todavía:**
-- **Delineado de labios** (`lips.liner`).
 - **Pestañas en 3D:** las pestañas de P6 se pintan sobre la piel. De perfil no salen del contorno de la cara (§10).
 
 ## 2. Flujo por frame
@@ -289,7 +288,7 @@ No hubo hallazgos críticos.
 
 ## 10. Limitaciones conocidas
 
-- **Delineado de labios:** no se dibuja (§1).
+- **Delineado de labios:** ningún preset lo usa. Para verlo en el teléfono, el arnés (`main_tracker.dart`) suma la opción "Rojo + delineado", que es una receta de prueba (P6b, `LIPS.md`).
 - **Pestañas en 2D:** se pintan sobre la piel del párpado. De perfil o mirando muy abajo no se ven como hebras que salen de la cara: eso necesita geometría propia (fase 2).
 - **Hebras irregulares:** la posición a lo largo de la línea está cuantizada a 8 bits en el mapa. Con ~30 hebras eso las hace un poco irregulares, y no molesta porque las pestañas reales también lo son.
 - **Oclusión:** igual que en los labios, una mano sobre la cara se pinta encima. Es la oclusión de §5.6 (fase 2).

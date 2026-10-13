@@ -23,11 +23,13 @@
 //   SHIMMER      además destellos: celdas del mapa que titilan (hash, sin texturas).
 //
 // Lecturas de textura por fragmento: 3 (cámara, máscara, brillo desplazado; las
-// dos últimas sobre la misma textura RG8 de 64 KB, que entra en caché).
+// dos últimas sobre la misma textura RGBA8 de 128 KB, que entra en caché; el
+// delineado usa la misma lectura que la máscara).
 // Uniforms:
 //   uCamera        samplerExternalOES  frame de cámara (sRGB), unidad 0.
-//   uLipsMap       sampler2D  mapa de labios RG8, unidad 1: .r máscara [0,1],
-//                             .g brillo [0,1] (mesh/lips_maps.h).
+//   uLipsMap       sampler2D  mapa de labios RGBA8, unidad 1: .r máscara [0,1],
+//                             .g brillo [0,1], .b distancia al borde del
+//                             labial (delineado; 1 = lejos) (mesh/lips_maps.h).
 //   uTargetLab     vec3   OKLab del color del labial (L en [0,1], a/b en ±0,4);
 //                         se calcula una vez en CPU.
 //   uOpacity       float  opacidad de la receta × fundido del tracker, [0,1].
@@ -39,6 +41,10 @@
 //   uSharpness     float  exponente sobre el mapa de brillo, [1,8]: más alto,
 //                         brillo más chico y concentrado.
 //   uLight         float  atenuación del brillo por luz de la escena, [0,1].
+//   uLinerLab      vec3   OKLab del delineado de labios.
+//   uLinerAmount   float  opacidad del delineado × fundido, [0,1]; 0 = sin delineado.
+//   uLinerEdge     float  distancia normalizada en que el delineado empieza a
+//                         desvanecerse, (0, 1) (engine_config.h: kLipLinerEdge).
 //   uTime          float  (SHIMMER) segundos, módulo 1000.
 //   uSparkle       float  (SHIMMER) brillo de cada destello, [0,1] (acabado shimmer:
 //                         kLipsSparkle · gloss; efecto glitter en labios: su
@@ -58,6 +64,9 @@ uniform highp float uLipLightness;
 uniform float uGloss;
 uniform float uSharpness;
 uniform float uLight;
+uniform highp vec3 uLinerLab;
+uniform float uLinerAmount;
+uniform float uLinerEdge;
 #ifdef SHIMMER
 uniform highp float uTime;
 uniform float uSparkle;
@@ -92,12 +101,20 @@ out vec4 fragColor;
 void main() {
   // Las lecturas van antes de cualquier rama (flujo uniforme).
   vec3 camera = texture(uCamera, vTexCoord).rgb;
-  float mask = texture(uLipsMap, vMapUv).r;
+  vec4 lipsTexel = texture(uLipsMap, vMapUv);
+  float mask = lipsTexel.r;
   float glossMap = texture(uLipsMap, vGlossUv).g;
   float w = clamp(mask * uOpacity * vFacing, 0.0, 1.0);
-  // Fuera del labio (el borde de la zona dibujada): no cambia el píxel. La
-  // rama es coherente por zonas grandes.
-  if (w <= 0.0) {
+  // Delineado: un anillo sobre el borde del labial, antialiasado (fwidth antes
+  // de cualquier rama, con piso y techo como el delineado de ojos). Sin
+  // delineado (uniform en 0) no se calcula.
+  float linerAa = clamp(fwidth(lipsTexel.b), 1.0e-3, 0.5);
+  float liner = uLinerAmount > 0.0
+                    ? (1.0 - smoothstep(uLinerEdge, uLinerEdge + linerAa, lipsTexel.b)) * uLinerAmount * vFacing
+                    : 0.0;
+  // Fuera del labio y del delineado (el borde de la zona dibujada): no cambia
+  // el píxel. La rama es coherente por zonas grandes.
+  if (w <= 0.0 && liner <= 0.0) {
     fragColor = vec4(0.0);
     return;
   }
@@ -110,6 +127,10 @@ void main() {
   highp vec3 lit = uTargetLab * shading;
   highp float lightness = clamp(mix(lab.x, lit.x, w * uLumaFollow), 0.0, 1.0);
   highp vec2 ab = mix(lab.yz, lit.yz, w);
+  // El delineado encima del labial, con el mismo sombreado.
+  highp vec3 linerLit = uLinerLab * shading;
+  lightness = clamp(mix(lightness, linerLit.x, liner), 0.0, 1.0);
+  ab = mix(ab, linerLit.yz, liner);
   vec3 outLinear = oklabToLinearInGamut(vec3(lightness, ab));
 
   // uSharpness >= 1 y glossMap >= 0: pow está definido.
@@ -125,7 +146,8 @@ void main() {
 #else
   spec *= uGloss;
 #endif
-  spec *= uLight * w * smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading);
+  // El delineado (mate) tapa el brillo del labial que tiene debajo.
+  spec *= uLight * w * (1.0 - liner) * smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading);
   outLinear = min(outLinear + vec3(spec), vec3(1.0));
-  fragColor = layerOver(linearToSrgb(outLinear), camera, w);
+  fragColor = layerOver(linearToSrgb(outLinear), camera, 1.0 - (1.0 - w) * (1.0 - liner));
 }

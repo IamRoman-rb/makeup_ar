@@ -109,7 +109,13 @@ final class TestFilterLabels {
 /// pantalla en vertical, la única orientación validada del motor. Quien la
 /// monte tiene que haber liberado antes cualquier otro uso de la cámara.
 class TestFilterView extends StatefulWidget {
-  const TestFilterView({super.key, required this.labels, this.renderer, this.onUnavailable});
+  const TestFilterView({
+    super.key,
+    required this.labels,
+    this.renderer,
+    this.onUnavailable,
+    this.extraOptions = const [],
+  });
 
   final TestFilterLabels labels;
 
@@ -119,6 +125,9 @@ class TestFilterView extends StatefulWidget {
   /// El renderer no puede mostrar maquillaje (ver [IMakeupRenderer.start]).
   final VoidCallback? onUnavailable;
 
+  /// Opciones después de los presets (el arnés suma recetas de prueba).
+  final List<TestFilterOption> extraOptions;
+
   @override
   State<TestFilterView> createState() => _TestFilterViewState();
 }
@@ -127,7 +136,10 @@ class _TestFilterViewState extends State<TestFilterView> {
   static const Duration _statsPeriod = Duration(seconds: 1);
 
   late final IMakeupRenderer _renderer = widget.renderer ?? createMakeupRenderer();
-  late final List<TestFilterOption> _options = TestFilterOption.fromPresets(widget.labels.noFilter);
+  late final List<TestFilterOption> _options = [
+    ...TestFilterOption.fromPresets(widget.labels.noFilter),
+    ...widget.extraOptions,
+  ];
   final ValueNotifier<MakeupRendererStats> _stats = ValueNotifier(MakeupRendererStats.empty);
 
   MakeupSurface? _surface;

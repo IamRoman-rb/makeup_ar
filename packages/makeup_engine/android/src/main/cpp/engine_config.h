@@ -61,6 +61,11 @@ struct EngineConfig {
 
   // --- Labios (P4; diseño en docs/ar_engine/LIPS.md, shader lips.frag) ---
 
+  // Delineado de labios: borde (distancia normalizada por
+  // kLipLinerMaxDistanceUv, ~1,7 mm) hasta donde es opaco; la receta no trae
+  // grosor. 0,22 ≈ un trazo de ~0,8 mm centrado en el borde del labial.
+  static constexpr float kLipLinerEdge = 0.22f;
+
   // L OKLab del labio si todavía no se midió (valor del informe §5.5).
   static constexpr float kLipsFallbackLightness = 0.55f;
   // Piso de la L medida: el shader divide por ella (sombreado relativo).

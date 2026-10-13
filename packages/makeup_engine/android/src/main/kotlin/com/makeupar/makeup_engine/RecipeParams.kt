@@ -79,6 +79,8 @@ internal data class LipParams(
     val finish: Int,
     val gloss: Float,
     val lumaFollow: Float,
+    /** Delineado de labios (`lips.liner`); apagado si falta o es inválido. */
+    val liner: ColorParams = ColorParams.DISABLED,
 ) {
     companion object {
         val DISABLED = LipParams(false, 0f, 0f, 0f, 0f, NativeBridge.LIP_FINISH_SATIN, 0f, 0f)
@@ -112,6 +114,7 @@ internal data class LipParams(
                 finish = finish,
                 gloss = unit(lips["gloss"]) ?: DEFAULT_GLOSS.getValue(finish),
                 lumaFollow = unit(lips["lumaFollow"]) ?: DEFAULT_LUMA_FOLLOW,
+                liner = ColorParams.fromMap(lips["liner"] as? Map<*, *>, "opacity"),
             )
         }
     }

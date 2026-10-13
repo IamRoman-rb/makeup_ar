@@ -136,6 +136,9 @@ internal object NativeBridge {
         lumaFollow: Float,
     )
 
+    /** Delineado de labios (lips.liner): color y opacidad; solo se ve con labial. */
+    @JvmStatic external fun nativeSetLipLiner(handle: Long, enabled: Boolean, r: Float, g: Float, b: Float, opacity: Float)
+
     /** Rubor: opacidad, spread [0,1] y placement (CHEEK_*). */
     @JvmStatic external fun nativeSetCheeks(
         handle: Long,

@@ -349,6 +349,8 @@ internal class EngineSession(
         NativeBridge.nativeSetLips(
             handle, lips.enabled, lips.r, lips.g, lips.b, lips.opacity, lips.finish, lips.gloss, lips.lumaFollow,
         )
+        val lipLiner = lips.liner
+        NativeBridge.nativeSetLipLiner(handle, lipLiner.enabled, lipLiner.r, lipLiner.g, lipLiner.b, lipLiner.amount)
         val cheeks = params.cheeks
         val blush = cheeks.color
         NativeBridge.nativeSetCheeks(

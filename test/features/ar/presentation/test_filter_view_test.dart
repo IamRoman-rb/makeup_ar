@@ -157,6 +157,22 @@ void main() {
     expect(renderer.recipes, isEmpty);
   });
 
+  testWidgets('las opciones extra van después de los presets', (tester) async {
+    final renderer = FakeRenderer();
+    final extra = TestFilterOption(id: 'x', label: 'Prueba', recipe: MakeupRecipe(name: 'Prueba'));
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: TestFilterView(labels: labels, renderer: renderer, extraOptions: [extra])),
+    ));
+    await tester.pumpAndSettle();
+    // La lista de looks se construye a demanda: hay que desplazarla.
+    final looks = find.ancestor(of: find.text('Natural'), matching: find.byType(Scrollable));
+    await tester.scrollUntilVisible(find.text('Prueba'), 200, scrollable: looks.first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Prueba'));
+    await tester.pumpAndSettle();
+    expect(renderer.recipes.last?.name, 'Prueba');
+  });
+
   test('etiqueta del tracker según su estado', () {
     expect(trackerLabel(MakeupRendererStats.empty), 'Tracker: iniciando…');
     expect(trackerLabel(const MakeupRendererStats(tracking: FaceTrackingState.loading)), 'Tracker: cargando modelos…');

@@ -28,6 +28,14 @@ class RecipeParamsTest {
         assertEquals(NativeBridge.LIP_FINISH_GLOSS, lips.finish)
         assertNear(0.6f, lips.gloss)
         assertNear(0.35f, lips.lumaFollow)
+        assertFalse(lips.liner.enabled)
+        val lined = LipParams.fromMap(
+            mapOf("color" to "#B3122D", "opacity" to 0.85, "liner" to mapOf("color" to "#7A0C1E", "opacity" to 0.7)),
+        )
+        assertTrue(lined.liner.enabled)
+        assertNear(0x7A / 255f, lined.liner.r)
+        assertNear(0.7f, lined.liner.amount)
+        assertFalse(LipParams.fromMap(mapOf("color" to "#B3122D", "opacity" to 0.85, "liner" to mapOf("color" to "#7A0C1E"))).liner.enabled)
     }
 
     @Test

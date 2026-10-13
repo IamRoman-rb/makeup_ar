@@ -168,7 +168,27 @@ No hubo hallazgos críticos. El hilo de render no aloca memoria por frame, hay u
 - **Saltos de la pose:** la vista se actualiza a la tasa del tracker (14 Hz). Si el desvanecido de perfil se ve a saltos al girar rápido, interpolar la vista en `landmarksForRender`.
 - **`glBufferSubData` de los puntos:** son 3,8 KB por frame. Rotar VBOs solo si aparecen stalls.
 
-## 8. Limitaciones conocidas
+## 8. Delineado de labios (P6b)
+
+El campo `lips.liner` de la receta (color y opacidad) se dibuja en la misma pasada de labios: no suma pasadas ni lecturas.
+
+**Datos:**
+- **Mapa:** `kLipsMapRgba` (antes RG8) suma el canal B: la distancia al borde del labial, a ambos lados, normalizada por `kLipLinerMaxDistanceUv` (~1,7 mm).
+- **Grosor:** la receta no lo trae; está en `engine_config.h` (`kLipLinerEdge`).
+
+**Shader:**
+- `lips.frag` dibuja un anillo con `1 − smoothstep(kLipLinerEdge, +aa, distancia)`, con un `aa` de `fwidth` que tiene piso y techo.
+- El anillo va encima del labial con el mismo sombreado relativo.
+- Es mate: tapa el brillo del labial que tiene debajo.
+- **Cobertura:** `1 − (1 − w)(1 − delineado)`. También pinta apenas por fuera del labial.
+
+**Resto del código:**
+- **API:** `nativeSetLipLiner`; `LipParams.liner` en Kotlin.
+- **Referencia:** `lip_shading.py`, en `liner_alpha` y en `shade(liner=…)`, con tests.
+- **Calibración:** la grilla de cara suma la columna de prueba "Rojo + delineado".
+- **Arnés:** ningún preset lo usa. `main_tracker.dart` suma la opción "Rojo + delineado" para probarlo en el E20.
+
+## 9. Limitaciones conocidas
 
 - **Lengua o dedos sobre la boca:** el tracker no sabe que el labio está tapado y se pinta encima. Es la oclusión de §5.6 (fase 2).
 - **Bigote sobre el labio superior:** se pinta como labio oscuro (el pelo baja `s`). Es lo que haría un labial real debajo del bigote, pero el contorno lo pone el tracker.

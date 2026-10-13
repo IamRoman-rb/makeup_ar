@@ -189,11 +189,14 @@ bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
   out.view = glGetUniformLocation(id, "uView");
   out.time = glGetUniformLocation(id, "uTime");
   out.sparkle = glGetUniformLocation(id, "uSparkle");
+  out.linerLab = glGetUniformLocation(id, "uLinerLab");
+  out.linerAmount = glGetUniformLocation(id, "uLinerAmount");
   // Constantes de la sesión: samplers y la transformación UV -> mapa.
   const float* rect = mesh::kLipsMapUvRect;
   glUseProgram(id);
   glUniform1i(glGetUniformLocation(id, "uCamera"), 0);
   glUniform1i(glGetUniformLocation(id, "uLipsMap"), kLipsMapTextureUnit);
+  glUniform1f(glGetUniformLocation(id, "uLinerEdge"), EngineConfig::kLipLinerEdge);
   glUniform4f(glGetUniformLocation(id, "uMapTransform"), 1.0f / rect[2], 1.0f / rect[3],
               -rect[0] / rect[2], -rect[1] / rect[3]);
   glUniform2f(glGetUniformLocation(id, "uFacingFade"), EngineConfig::kLipsFacingFadeStart,
@@ -469,6 +472,8 @@ void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToCl
   glUniform1f(program.lipLightness, lipLightness);
   glUniform1f(program.gloss, drawLips_.gloss);
   if (program.sparkle >= 0) glUniform1f(program.sparkle, drawLips_.sparkle);
+  glUniform3fv(program.linerLab, 1, drawLips_.linerLab);
+  glUniform1f(program.linerAmount, drawLips_.linerAmount * landmarks.alpha);
   glUniform1f(program.sharpness, drawLips_.sharpness);
   glUniform1f(program.light, light);
   glUniform2f(program.glossShift, shiftU / rect[2], shiftV / rect[3]);
@@ -564,6 +569,11 @@ void Renderer::setLips(const LipStyle& style) {
   pendingLips_ = uniforms;
 }
 
+void Renderer::setLipLiner(const ColorLayer& style) {
+  std::lock_guard<std::mutex> lock(configMutex_);
+  pendingLipLiner_ = style;
+}
+
 void Renderer::setCheeks(const CheekStyle& style) {
   std::lock_guard<std::mutex> lock(configMutex_);
   pendingCheek_ = style;
@@ -605,6 +615,8 @@ void Renderer::commitRecipe() {
   eyeUniforms_ = resolveEyes(pendingShadows_, pendingLiner_, pendingLashes_);
   LipEffects lipEffects;
   applyEffects(pendingEffects_, &faceUniforms_, &eyeUniforms_, &lipEffects);
+  // Delineado de labios (face_style: mismo recorte que las otras capas).
+  resolveColorLayer(pendingLipLiner_, lipUniforms_.linerLab, &lipUniforms_.linerAmount);
   // Glitter y sheen en los labios: solo si hay labial (si no, no hay capa).
   if (lipUniforms_.enabled) {
     if (lipEffects.sparkle > 0.0f) {

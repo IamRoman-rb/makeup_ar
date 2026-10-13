@@ -119,6 +119,9 @@ struct EyeUniforms {
   bool any() const;
 };
 
+// Color OKLab e intensidad recortada de una capa (0 si está apagada).
+void resolveColorLayer(const ColorLayer& layer, float lab[3], float* amount);
+
 // Lo que los efectos le agregan al labial (Renderer::commitRecipe).
 struct LipEffects {
   float sparkle = 0.0f;  // destellos (variante SHIMMER de lips.frag)

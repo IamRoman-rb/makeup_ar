@@ -63,15 +63,35 @@ class LipParams:
     light: float  # atenuación por luz de la escena, [0, 1]
 
 
+@dataclass(frozen=True)
+class LipLiner:
+    """Delineado de labios (uLinerLab, uLinerAmount, uLinerEdge)."""
+
+    target_lab: np.ndarray
+    amount: float  # opacidad [0, 1]; 0 = sin delineado
+    edge: float = 0.3  # engine_config.h: kLipLinerEdge
+
+
+def liner_alpha(distance: np.ndarray, liner: LipLiner, aa: np.ndarray | float) -> np.ndarray:
+    """Cobertura del delineado sobre el canal B del mapa (distancia al borde)."""
+    if liner.amount <= 0.0:
+        return np.zeros_like(distance)
+    aa = np.clip(aa, 1e-3, 0.5)
+    t = np.clip((distance - liner.edge) / aa, 0.0, 1.0)
+    return (1.0 - t * t * (3.0 - 2.0 * t)) * liner.amount
+
+
 def shade(camera_srgb: np.ndarray, mask: np.ndarray, gloss_map: np.ndarray, p: LipParams,
-          sparkle: np.ndarray | float = 0.0) -> np.ndarray:
+          sparkle: np.ndarray | float = 0.0, liner: np.ndarray | float = 0.0,
+          liner_lab: np.ndarray | None = None) -> np.ndarray:
     """Color sRGB de salida por píxel (lips.frag).
 
     camera_srgb (..., 3) en [0,1]; mask y gloss_map (...) en [0,1] (canales R
     y G del mapa de labios; gloss_map ya leído en la posición desplazada por
     la pose). sparkle (...) son los destellos ya multiplicados por uSparkle
     (el hash de celdas del shader no se reproduce). La orientación (vFacing
-    de lips.vert) no está: equivale a 1, el labio de frente.
+    de lips.vert) no está: equivale a 1, el labio de frente. liner (...) es la
+    cobertura del delineado (liner_alpha) con su color OKLab liner_lab.
     """
     w = np.clip(mask * p.opacity, 0.0, 1.0)
     lab = to_ok(srgb_to_lin(camera_srgb))
@@ -83,14 +103,19 @@ def shade(camera_srgb: np.ndarray, mask: np.ndarray, gloss_map: np.ndarray, p: L
     lit = p.target_lab * shading[..., None]
     lightness = np.clip(lab[..., 0] + (lit[..., 0] - lab[..., 0]) * w * p.luma_follow, 0.0, 1.0)
     ab = lab[..., 1:] + (lit[..., 1:] - lab[..., 1:]) * w[..., None]
+    liner = np.broadcast_to(np.asarray(liner, dtype=float), w.shape)
+    if liner_lab is not None:
+        liner_lit = liner_lab * shading[..., None]
+        lightness = np.clip(lightness + (liner_lit[..., 0] - lightness) * liner, 0.0, 1.0)
+        ab = ab + (liner_lit[..., 1:] - ab) * liner[..., None]
     out = oklab_to_linear_in_gamut(np.concatenate([lightness[..., None], ab], axis=-1))
     # El brillo necesita luz: no aparece en las sombras y pliegues del labio.
     lit_gate = _smoothstep(GLOSS_SHADING_LOW, GLOSS_SHADING_HIGH, shading)
     # Los destellos ya vienen con su brillo (uSparkle): no se multiplican por gloss.
-    spec = (np.power(gloss_map, p.sharpness) * p.gloss + sparkle) * p.light * w * lit_gate
+    spec = (np.power(gloss_map, p.sharpness) * p.gloss + sparkle) * p.light * w * (1.0 - liner) * lit_gate
     out = np.minimum(out + spec[..., None], 1.0)
-    # Fuera de la máscara el shader devuelve la cámara tal cual.
-    return np.where((w > 0.0)[..., None], lin_to_srgb(out), camera_srgb)
+    # Fuera de la máscara y del delineado el shader no toca el píxel.
+    return np.where(((w > 0.0) | (liner > 0.0))[..., None], lin_to_srgb(out), camera_srgb)
 
 
 def _smoothstep(edge0: float, edge1: float, x: np.ndarray) -> np.ndarray:

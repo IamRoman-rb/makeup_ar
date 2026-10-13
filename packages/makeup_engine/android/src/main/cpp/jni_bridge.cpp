@@ -126,6 +126,11 @@ E enumOr(jint value, E last) {
   return value >= 0 && value <= static_cast<jint>(last) ? static_cast<E>(value) : static_cast<E>(0);
 }
 
+void nativeSetLipLiner(JNIEnv*, jclass, jlong handle, jboolean enabled, jfloat r, jfloat g, jfloat b,
+                       jfloat opacity) {
+  fromHandle(handle)->renderer.setLipLiner(colorLayer(enabled, r, g, b, opacity));
+}
+
 void nativeSetCheeks(JNIEnv*, jclass, jlong handle, jboolean enabled, jfloat r, jfloat g, jfloat b,
                      jfloat opacity, jfloat spread, jint placement) {
   makeup::CheekStyle style;
@@ -275,6 +280,7 @@ const JNINativeMethod kMethods[] = {
     {"nativeSetRenderOptions", "(JZI)V", reinterpret_cast<void*>(nativeSetRenderOptions)},
     {"nativeSetTint", "(JFFFF)V", reinterpret_cast<void*>(nativeSetTint)},
     {"nativeSetLips", "(JZFFFFIFF)V", reinterpret_cast<void*>(nativeSetLips)},
+    {"nativeSetLipLiner", "(JZFFFF)V", reinterpret_cast<void*>(nativeSetLipLiner)},
     {"nativeSetCheeks", "(JZFFFFFI)V", reinterpret_cast<void*>(nativeSetCheeks)},
     {"nativeSetSkinLayer", "(JIZFFFF)V", reinterpret_cast<void*>(nativeSetSkinLayer)},
     {"nativeSetEyeShadow", "(JIZFFFFII)V", reinterpret_cast<void*>(nativeSetEyeShadow)},

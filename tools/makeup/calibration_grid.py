@@ -35,7 +35,8 @@ import gen_face_maps as fm  # noqa: E402
 import gen_lips_maps as lm  # noqa: E402
 from face_shading import (Layer, blend, compose, freckle_alpha, freckle_lab, glitter_sparkle,  # noqa: E402
                           lash_alpha, layer_over, sheen_gain)
-from lip_shading import LipParams, from_ok, hex_to_srgb, lin_to_srgb, shade, srgb_to_oklab, to_ok  # noqa: E402
+from lip_shading import (LipLiner, LipParams, from_ok, hex_to_srgb, lin_to_srgb, liner_alpha, shade,  # noqa: E402
+                         srgb_to_oklab, to_ok)
 
 PRESETS_DART = ROOT / "lib/features/ar/domain/recipe_presets.dart"
 ENGINE_CONFIG = ROOT / "packages/makeup_engine/android/src/main/cpp/engine_config.h"
@@ -119,7 +120,7 @@ class Maps:
         self.eye_c = sample(c8, eye_rect, self.mirrored, self.v)
         self.side = (self.u > 0.5).astype(float)
         lips = sample(lips_rg8, lips_rect, self.u, self.v)
-        self.lips_mask, self.lips_gloss = lips[..., 0], lips[..., 1]
+        self.lips_mask, self.lips_gloss, self.lips_liner = lips[..., 0], lips[..., 1], lips[..., 2]
 
         points = np.stack([self.mirrored.ravel(), self.v.ravel()], axis=1)
         shape = self.u.shape
@@ -272,8 +273,15 @@ def apply_recipe(camera: np.ndarray, maps: Maps, recipe: dict, k: dict[str, floa
                            luma_follow=lips.get("lumaFollow", 0.8), lip_lightness=lip_ref, gloss=gloss,
                            sharpness=sharpness, light=1.0)
         w = np.clip(maps.lips_mask * params.opacity, 0, 1)
-        result = shade(camera, maps.lips_mask, maps.lips_gloss, params)
-        out = blend(out, *layer_over(result, camera, w))
+        liner = np.zeros_like(w)
+        liner_lab = None
+        if lips.get("liner"):
+            spec = LipLiner(color(lips["liner"]["color"]), lips["liner"]["opacity"], k["kLipLinerEdge"])
+            gy, gx = np.gradient(maps.lips_liner)
+            liner = liner_alpha(maps.lips_liner, spec, np.abs(gx) + np.abs(gy))
+            liner_lab = spec.target_lab
+        result = shade(camera, maps.lips_mask, maps.lips_gloss, params, liner=liner, liner_lab=liner_lab)
+        out = blend(out, *layer_over(result, camera, 1.0 - (1.0 - w) * (1.0 - liner)))
     return np.clip(out, 0, 1)
 
 
@@ -285,6 +293,10 @@ def _smooth(edge0: float, edge1: float, x: np.ndarray) -> np.ndarray:
 def main() -> int:
     k = engine_constants()
     looks = presets()
+    # Columna de prueba: ningún preset usa el delineado de labios.
+    red = next(r for r in looks if r["name"] == "Rojo clásico")
+    looks.append({**red, "name": "Rojo + delineado (prueba)",
+                  "lips": {**red["lips"], "liner": {"color": "#6E0A1A", "opacity": 0.8}}})
     maps = Maps()
     columns = 1 + len(looks)
     width = columns * CELL_W + (columns + 1) * GAP

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:makeup_engine/makeup_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'features/ar/domain/makeup_recipe.dart';
+import 'features/ar/domain/recipe_presets.dart';
 import 'features/ar/presentation/test_filter_view.dart';
 
 /// Arnés de medición de P3 (tracker + compositor), separado de la app (sin
@@ -72,6 +74,30 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
     }
   }
 
+  /// Receta de prueba: ningún preset usa el delineado de labios (P6b). Rojo
+  /// clásico con un delineado bordó.
+  static TestFilterOption _lipLinerOption() {
+    final red = RecipePresets.all.firstWhere((p) => p.id == 'classic_red').recipe;
+    final lips = red.lips;
+    final recipe = MakeupRecipe(
+      name: 'Rojo + delineado',
+      lips: lips == null
+          ? null
+          : LipsSpec(
+              color: lips.color,
+              opacity: lips.opacity,
+              finish: lips.finish,
+              gloss: lips.gloss,
+              lumaFollow: lips.lumaFollow,
+              liner: const ColorLayer(color: RecipeColor(0x6E0A1A), opacity: 0.8),
+            ),
+      cheeks: red.cheeks,
+      eyes: red.eyes,
+      skin: red.skin,
+    );
+    return TestFilterOption(id: 'lip_liner_test', label: recipe.name, recipe: recipe);
+  }
+
   static String _f(double? value, [int digits = 1]) => value == null ? '-' : value.toStringAsFixed(digits);
 
   @override
@@ -80,8 +106,9 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: granted == true
-          ? const TestFilterView(
-              labels: TestFilterLabels(
+          ? TestFilterView(
+              extraOptions: [_lipLinerOption()],
+              labels: const TestFilterLabels(
                 noFilter: 'Sin filtro',
                 intensity: 'Intensidad',
                 note: 'Arnés P3-P5: tracker + maquillaje completo. Métricas en logcat (TRACK).',
