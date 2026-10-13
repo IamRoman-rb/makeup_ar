@@ -98,10 +98,29 @@ class RecipeParamsTest {
         assertEquals(NativeBridge.SHADOW_FINISH_MATTE, shadows[1].finish)
         assertEquals(NativeBridge.EYE_REGION_INNER_CORNER, shadows[2].region)
         assertFalse(shadows[3].color.enabled)
+        assertFalse(params.eyes.lashes.enabled)  // la receta de este test no trae pestañas
         val liner = params.eyes.liner
         assertNear(0x2A / 255f, liner.color.r)
         assertNear(0.4f, liner.thickness)
         assertNear(0.3f, liner.wing)
+    }
+
+    @Test
+    fun `pestañas con valores por defecto y recorte`() {
+        val lashes = LashParams.fromMap(mapOf("opacity" to 0.85, "length" to 0.6, "volume" to 1.7))
+        assertTrue(lashes.enabled)
+        assertNear(0.85f, lashes.opacity)
+        assertNear(0.6f, lashes.length)
+        assertNear(1f, lashes.volume)
+        val defaults = LashParams.fromMap(mapOf("opacity" to 0.5))
+        assertNear(0.5f, defaults.length)
+        assertNear(0.5f, defaults.volume)
+        assertFalse(LashParams.fromMap(mapOf("opacity" to 0)).enabled)
+        assertFalse(LashParams.fromMap(mapOf("length" to 0.5)).enabled)
+        assertFalse(LashParams.fromMap(null).enabled)
+        val eyes = RecipeParams.fromMap(mapOf("eyes" to mapOf("lashes" to mapOf("opacity" to 0.9, "volume" to 0.8)))).eyes
+        assertTrue(eyes.lashes.enabled)
+        assertNear(0.8f, eyes.lashes.volume)
     }
 
     @Test

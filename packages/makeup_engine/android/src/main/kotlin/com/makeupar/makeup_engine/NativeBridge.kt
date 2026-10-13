@@ -176,6 +176,9 @@ internal object NativeBridge {
         wing: Float,
     )
 
+    /** Pestañas: opacidad, largo y volumen [0,1]. */
+    @JvmStatic external fun nativeSetLashes(handle: Long, enabled: Boolean, opacity: Float, length: Float, volume: Float)
+
     @JvmStatic external fun nativeCommitRecipe(handle: Long)
 
     /** Devuelve bits FRAME_FLAG_*. */

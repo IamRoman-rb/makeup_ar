@@ -30,7 +30,7 @@ bool FaceUniforms::any() const {
 }
 
 bool EyeUniforms::any() const {
-  return linerAmount > 0.0f ||
+  return linerAmount > 0.0f || lashAmount > 0.0f ||
          std::any_of(std::begin(shadowAmount), std::end(shadowAmount), [](float a) { return a > 0.0f; });
 }
 
@@ -72,7 +72,8 @@ FaceUniforms resolveFace(const ColorLayer skin[kSkinLayerCount], const CheekStyl
   return out;
 }
 
-EyeUniforms resolveEyes(const EyeShadowStyle shadows[kMaxEyeShadows], const LinerStyle& liner) {
+EyeUniforms resolveEyes(const EyeShadowStyle shadows[kMaxEyeShadows], const LinerStyle& liner,
+                        const LashStyle& lashes) {
   EyeUniforms out;
   for (int i = 0; i < kMaxEyeShadows; ++i) {
     const EyeShadowStyle& shadow = shadows[i];
@@ -108,6 +109,23 @@ EyeUniforms resolveEyes(const EyeShadowStyle shadows[kMaxEyeShadows], const Line
   out.linerEdge[0] = threshold;
   out.linerEdge[1] = threshold + EngineConfig::kLinerFeather;
   out.wing = unit(liner.wing);
+
+  // Pestañas: color fijo de máscara (la receta no trae color); volumen = más
+  // hebras, más gruesas y raíz más oscura.
+  const float opacity = lashes.enabled ? unit(lashes.opacity) : 0.0f;
+  const Vec3 lash = srgbToOklab(EngineConfig::kLashColor[0], EngineConfig::kLashColor[1], EngineConfig::kLashColor[2]);
+  out.lashLab[0] = lash.x;
+  out.lashLab[1] = lash.y;
+  out.lashLab[2] = lash.z;
+  out.lashAmount = opacity;
+  out.lowerLashAmount = opacity * EngineConfig::kLowerLashOpacity;
+  const float volume = unit(lashes.volume);
+  const auto lerp = [](float a, float b, float t) { return a + (b - a) * t; };
+  out.lashParams[0] = lerp(EngineConfig::kLashCountMin, EngineConfig::kLashCountMax, volume);
+  out.lashParams[1] = lerp(EngineConfig::kLashLengthMin, EngineConfig::kLashLengthMax, unit(lashes.length));
+  out.lashParams[2] = lerp(EngineConfig::kLashWidthMin, EngineConfig::kLashWidthMax, volume);
+  out.lashParams[3] = EngineConfig::kLashCurl;
+  out.lashRoot = volume * EngineConfig::kLashRootMax;
   return out;
 }
 

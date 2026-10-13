@@ -101,7 +101,7 @@ TEST(estiloOjos_sombrasYRegiones) {
   shadows[2].color = layer(0.95f, 0.85f, 0.65f, 0.4f);
   shadows[2].region = EyeRegion::kBrowBone;
   shadows[2].finish = ShadowFinish::kShimmer;
-  const makeup::EyeUniforms eyes = makeup::resolveEyes(shadows, LinerStyle{});
+  const makeup::EyeUniforms eyes = makeup::resolveEyes(shadows, LinerStyle{}, makeup::LashStyle{});
   CHECK(eyes.any());
   CHECK(eyes.shimmer);
   CHECK_NEAR(eyes.shadowSelectA[0][0], 1.0, 0.0);
@@ -116,7 +116,7 @@ TEST(estiloOjos_sombrasYRegiones) {
   // Shimmer en un slot apagado no fuerza la variante.
   EyeShadowStyle off[makeup::kMaxEyeShadows];
   off[0].finish = ShadowFinish::kShimmer;
-  const makeup::EyeUniforms empty = makeup::resolveEyes(off, LinerStyle{});
+  const makeup::EyeUniforms empty = makeup::resolveEyes(off, LinerStyle{}, makeup::LashStyle{});
   CHECK(!empty.shimmer);
   CHECK(!empty.any());
 }
@@ -130,8 +130,8 @@ TEST(estiloOjos_delineado) {
   LinerStyle thick = thin;
   thick.thickness = 1.0f;
   thick.wing = 3.0f;  // se recorta
-  const makeup::EyeUniforms a = makeup::resolveEyes(shadows, thin);
-  const makeup::EyeUniforms b = makeup::resolveEyes(shadows, thick);
+  const makeup::EyeUniforms a = makeup::resolveEyes(shadows, thin, makeup::LashStyle{});
+  const makeup::EyeUniforms b = makeup::resolveEyes(shadows, thick, makeup::LashStyle{});
   CHECK(a.any());
   CHECK_NEAR(a.linerEdge[0], makeup::EngineConfig::kLinerThicknessMin, 1e-6);
   CHECK_NEAR(b.linerEdge[0], makeup::EngineConfig::kLinerThicknessMax, 1e-6);
@@ -140,4 +140,35 @@ TEST(estiloOjos_delineado) {
   CHECK_NEAR(a.wing, 0.4, 1e-6);
   CHECK_NEAR(b.wing, 1.0, 1e-6);
   CHECK(a.linerLab[0] < 0.3f);
+}
+
+TEST(estiloOjos_pestanas) {
+  EyeShadowStyle shadows[makeup::kMaxEyeShadows];
+  makeup::LashStyle off;
+  off.opacity = 0.9f;  // apagadas aunque tengan opacidad
+  const makeup::EyeUniforms none = makeup::resolveEyes(shadows, LinerStyle{}, off);
+  CHECK(!none.any());
+  CHECK_NEAR(none.lashAmount, 0.0, 0.0);
+
+  makeup::LashStyle thin;
+  thin.enabled = true;
+  thin.opacity = 0.8f;
+  thin.length = 0.0f;
+  thin.volume = 0.0f;
+  makeup::LashStyle full = thin;
+  full.length = 1.0f;
+  full.volume = 3.0f;  // se recorta
+  const makeup::EyeUniforms a = makeup::resolveEyes(shadows, LinerStyle{}, thin);
+  const makeup::EyeUniforms b = makeup::resolveEyes(shadows, LinerStyle{}, full);
+  CHECK(a.any());
+  CHECK_NEAR(a.lashAmount, 0.8, 1e-6);
+  CHECK_NEAR(a.lowerLashAmount, 0.8 * makeup::EngineConfig::kLowerLashOpacity, 1e-6);
+  CHECK_NEAR(a.lashParams[0], makeup::EngineConfig::kLashCountMin, 1e-6);
+  CHECK_NEAR(b.lashParams[0], makeup::EngineConfig::kLashCountMax, 1e-6);
+  CHECK_NEAR(a.lashParams[1], makeup::EngineConfig::kLashLengthMin, 1e-6);
+  CHECK_NEAR(b.lashParams[1], makeup::EngineConfig::kLashLengthMax, 1e-6);
+  CHECK(b.lashParams[1] < 0.98f);  // altura 1 del mapa = sin pestañas
+  CHECK(b.lashParams[2] > a.lashParams[2]);
+  CHECK_NEAR(b.lashRoot, makeup::EngineConfig::kLashRootMax, 1e-6);
+  CHECK(a.lashLab[0] < 0.3f);  // negro de máscara
 }

@@ -80,6 +80,7 @@ class Renderer {
   // [slot] en [0, kMaxEyeShadows): en el orden de la receta (se pintan en ese orden).
   void setEyeShadow(int slot, const EyeShadowStyle& style);
   void setLiner(const LinerStyle& style);
+  void setLashes(const LashStyle& style);
   void commitRecipe();
 
   // 16 floats column-major cada una (ver camera_quad.vert, uDisplayMatrix):
@@ -196,6 +197,7 @@ class Renderer {
   CheekStyle pendingCheek_;
   EyeShadowStyle pendingShadows_[kMaxEyeShadows];
   LinerStyle pendingLiner_;
+  LashStyle pendingLashes_;
   LipUniforms lipUniforms_;
   FaceUniforms faceUniforms_;
   EyeUniforms eyeUniforms_;

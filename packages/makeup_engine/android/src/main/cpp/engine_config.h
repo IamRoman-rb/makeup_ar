@@ -118,6 +118,26 @@ struct EngineConfig {
   static constexpr float kLinerThicknessMax = 0.6f;
   static constexpr float kLinerFeather = 0.08f;
 
+  // --- Pestañas (P6; eyes.frag: lashStrands) ---
+  // Color de máscara de pestañas (sRGB; la receta no trae color).
+  static constexpr float kLashColor[3] = {0.07f, 0.055f, 0.05f};
+  // Hebras por ojo y medio ancho en la base (fracción de su celda) con volume
+  // 0 y 1: en el E20 el ojo mide ~100-130 px, una hebra por cada 2-5 px.
+  static constexpr float kLashCountMin = 22.0f;
+  static constexpr float kLashCountMax = 38.0f;
+  static constexpr float kLashWidthMin = 0.2f;
+  static constexpr float kLashWidthMax = 0.32f;
+  // Largo (fracción de kLashMaxLengthUv, ~7 mm) con length 0 y 1. Tope < 0,98:
+  // la altura 1 del mapa significa "sin pestañas".
+  static constexpr float kLashLengthMin = 0.35f;
+  static constexpr float kLashLengthMax = 0.92f;
+  // Inclinación hacia afuera en la punta (unidades de posición a lo largo).
+  static constexpr float kLashCurl = 0.08f;
+  // Oscurecimiento máximo de la raíz (volume 1) y opacidad relativa de las
+  // pestañas inferiores.
+  static constexpr float kLashRootMax = 0.7f;
+  static constexpr float kLowerLashOpacity = 0.45f;
+
   // Tamaño de los puntos del overlay de depuración (px de salida).
   static constexpr float kLandmarkPointSizePx = 5.0f;
 };

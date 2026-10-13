@@ -585,11 +585,16 @@ void Renderer::setLiner(const LinerStyle& style) {
   pendingLiner_ = style;
 }
 
+void Renderer::setLashes(const LashStyle& style) {
+  std::lock_guard<std::mutex> lock(configMutex_);
+  pendingLashes_ = style;
+}
+
 void Renderer::commitRecipe() {
   std::lock_guard<std::mutex> lock(configMutex_);
   lipUniforms_ = pendingLips_;
   faceUniforms_ = resolveFace(pendingSkin_, pendingCheek_);
-  eyeUniforms_ = resolveEyes(pendingShadows_, pendingLiner_);
+  eyeUniforms_ = resolveEyes(pendingShadows_, pendingLiner_, pendingLashes_);
   recipeVersion_.fetch_add(1, std::memory_order_release);
 }
 

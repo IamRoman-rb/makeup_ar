@@ -106,3 +106,11 @@ vec4 layerOver(vec3 result, vec3 camera, float coverage) {
   highp float keep = min(1.0 - coverage, min(ratio.r, min(ratio.g, ratio.b)));
   return vec4(result - keep * camera, 1.0 - keep);
 }
+
+// Hash 2D -> [0,1) sin texturas (Dave Hoskins, "hash without sine").
+// highp: con fp16 el patrón se repite en bloques visibles.
+highp float hash12(highp vec2 p) {
+  highp vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}

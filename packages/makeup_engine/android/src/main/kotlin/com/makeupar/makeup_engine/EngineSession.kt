@@ -366,6 +366,8 @@ internal class EngineSession(
         val liner = params.eyes.liner
         val ink = liner.color
         NativeBridge.nativeSetLiner(handle, ink.enabled, ink.r, ink.g, ink.b, ink.amount, liner.thickness, liner.wing)
+        val lashes = params.eyes.lashes
+        NativeBridge.nativeSetLashes(handle, lashes.enabled, lashes.opacity, lashes.length, lashes.volume)
         NativeBridge.nativeCommitRecipe(handle)
     }
 

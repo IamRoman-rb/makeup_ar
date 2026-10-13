@@ -4,7 +4,7 @@ package com.makeupar.makeup_engine
  * Receta `makeup-recipe/2` (ya validada en Dart: RecipeValidator) llegada por
  * el canal como mapa, reducida a los parámetros que el motor dibuja: labios
  * (P4), rubor, piel (base, contorno, iluminador) y ojos (sombras, delineado)
- * (P5). Pestañas y efectos todavía no se dibujan.
+ * (P5), y pestañas (P6). Los efectos todavía no se dibujan.
  *
  * Es la segunda línea de defensa: cualquier valor ausente, mal tipado o fuera
  * de rango se recorta o apaga la región, nunca rompe el render.
@@ -187,8 +187,33 @@ internal data class LinerParams(val color: ColorParams, val thickness: Float, va
     }
 }
 
+/** Pestañas (P6): sin color en la receta (el motor usa un negro de máscara). */
+internal data class LashParams(val enabled: Boolean, val opacity: Float, val length: Float, val volume: Float) {
+    companion object {
+        private const val DEFAULT_LENGTH = 0.5f
+        private const val DEFAULT_VOLUME = 0.5f
+        val DISABLED = LashParams(false, 0f, DEFAULT_LENGTH, DEFAULT_VOLUME)
+
+        /** Sin opacidad numérica > 0: apagadas. */
+        fun fromMap(lashes: Map<*, *>?): LashParams {
+            val opacity = unit(lashes?.get("opacity")) ?: return DISABLED
+            if (opacity <= 0f || lashes == null) return DISABLED
+            return LashParams(
+                enabled = true,
+                opacity = opacity,
+                length = unit(lashes["length"]) ?: DEFAULT_LENGTH,
+                volume = unit(lashes["volume"]) ?: DEFAULT_VOLUME,
+            )
+        }
+    }
+}
+
 /** Siempre NativeBridge.MAX_EYE_SHADOWS sombras (las que faltan, apagadas), en el orden de la receta. */
-internal data class EyesParams(val shadows: List<ShadowParams>, val liner: LinerParams) {
+internal data class EyesParams(
+    val shadows: List<ShadowParams>,
+    val liner: LinerParams,
+    val lashes: LashParams = LashParams.DISABLED,
+) {
     companion object {
         val DISABLED = EyesParams(List(NativeBridge.MAX_EYE_SHADOWS) { ShadowParams.DISABLED }, LinerParams.DISABLED)
 
@@ -196,7 +221,11 @@ internal data class EyesParams(val shadows: List<ShadowParams>, val liner: Liner
             if (eyes == null) return DISABLED
             val list = (eyes["shadow"] as? List<*>).orEmpty()
             val shadows = List(NativeBridge.MAX_EYE_SHADOWS) { i -> ShadowParams.fromMap(list.getOrNull(i) as? Map<*, *>) }
-            return EyesParams(shadows, LinerParams.fromMap(eyes["liner"] as? Map<*, *>))
+            return EyesParams(
+                shadows,
+                LinerParams.fromMap(eyes["liner"] as? Map<*, *>),
+                LashParams.fromMap(eyes["lashes"] as? Map<*, *>),
+            )
         }
     }
 }

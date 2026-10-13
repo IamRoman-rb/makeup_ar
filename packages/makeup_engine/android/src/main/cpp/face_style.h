@@ -35,6 +35,13 @@ struct EyeShadowStyle {
   ShadowFinish finish = ShadowFinish::kMatte;
 };
 
+struct LashStyle {
+  bool enabled = false;
+  float opacity = 0.0f;  // [0,1]
+  float length = 0.5f;   // [0,1]
+  float volume = 0.5f;   // [0,1]: cantidad y grosor de hebras, raíz más oscura
+};
+
 struct LinerStyle {
   ColorLayer color;
   float thickness = 0.5f;  // [0,1]
@@ -77,6 +84,12 @@ struct EyeUniforms {
   // hasta linerEdge[0], transparente desde linerEdge[1].
   float linerEdge[2] = {0.0f, 0.0f};
   float wing = 0.0f;  // largo del wing [0,1]
+  // Pestañas (0 = sin pestañas).
+  float lashLab[3] = {0.0f, 0.0f, 0.0f};
+  float lashAmount = 0.0f;
+  float lowerLashAmount = 0.0f;
+  float lashParams[4] = {0.0f, 0.0f, 0.0f, 0.0f};  // hebras, largo, medio ancho, inclinación
+  float lashRoot = 0.0f;
   bool shimmer = false;  // algún slot con shimmer: variante SHIMMER
 
   bool any() const;
@@ -85,6 +98,7 @@ struct EyeUniforms {
 // Valores fuera de rango se recortan; región, placement o acabado inválidos
 // caen al primero de su enum (Kotlin ya los valida: segunda línea de defensa).
 FaceUniforms resolveFace(const ColorLayer skin[kSkinLayerCount], const CheekStyle& cheek);
-EyeUniforms resolveEyes(const EyeShadowStyle shadows[kMaxEyeShadows], const LinerStyle& liner);
+EyeUniforms resolveEyes(const EyeShadowStyle shadows[kMaxEyeShadows], const LinerStyle& liner,
+                        const LashStyle& lashes);
 
 }  // namespace makeup

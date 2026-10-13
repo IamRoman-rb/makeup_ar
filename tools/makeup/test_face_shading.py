@@ -13,7 +13,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lips"))
-from face_shading import Layer, blend, compose, hex_to_srgb, layer_over, srgb_to_oklab  # noqa: E402
+from face_shading import Layer, blend, compose, hash12, hex_to_srgb, lash_alpha, layer_over, srgb_to_oklab  # noqa: E402
 from lip_shading import LipParams, shade, to_ok  # noqa: E402
 
 
@@ -118,6 +118,49 @@ class ComposeTest(unittest.TestCase):
         result, coverage = compose(camera, layers, 0.6)
         self.assertTrue(np.all(result >= 0) and np.all(result <= 1))
         self.assertTrue(np.all(coverage >= 0) and np.all(coverage <= 1))
+
+
+class LashTest(unittest.TestCase):
+    params = (30.0, 0.8, 0.25, 0.08)
+
+    def strip(self, height: float, lower: bool = False) -> np.ndarray:
+        """Una fila a lo largo de la línea (s de 0 a 1) a una altura fija."""
+        s = np.linspace(0.0, 1.0, 3000)
+        none = np.ones_like(s)
+        if lower:
+            return np.stack([none * 0, none, s, np.full_like(s, height)], axis=-1)
+        return np.stack([s, np.full_like(s, height), none * 0, none], axis=-1)
+
+    def test_hash_en_rango_y_determinista(self):
+        p = np.random.default_rng(0).uniform(-500, 500, size=(1000, 2))
+        values = hash12(p)
+        self.assertTrue(np.all((values >= 0) & (values < 1)))
+        np.testing.assert_array_equal(values, hash12(p))
+
+    def test_hebras_separadas_a_media_altura(self):
+        row = lash_alpha(self.strip(0.3), 1.0, 0.5, self.params, 0.0, aa=(np.full(3000, 0.02), np.full(3000, 0.02)))
+        inked = row > 0.5
+        starts = np.count_nonzero(inked[1:] & ~inked[:-1])
+        self.assertGreater(starts, 15)       # la mayoría de las ~30 hebras
+        self.assertLess(inked.mean(), 0.6)   # con espacio entre hebras
+
+    def test_sin_pestanas_en_altura_1_ni_sobre_el_largo(self):
+        aa = (np.full(3000, 0.02), np.full(3000, 0.02))
+        self.assertEqual(float(lash_alpha(self.strip(1.0), 1.0, 0.5, self.params, 0.7, aa=aa).max()), 0.0)
+        short = (30.0, 0.3, 0.25, 0.08)
+        self.assertEqual(float(lash_alpha(self.strip(0.5), 1.0, 0.0, short, 0.0, aa=aa).max()), 0.0)
+
+    def test_raiz_oscura_con_volumen(self):
+        aa = (np.full(3000, 0.02), np.full(3000, 0.02))
+        root = lash_alpha(self.strip(0.0), 1.0, 0.0, self.params, 0.7, aa=aa)
+        self.assertGreater(float(np.median(root[300:2700])), 0.65)
+
+    def test_inferiores_mas_tenues(self):
+        aa = (np.full(3000, 0.02), np.full(3000, 0.02))
+        upper = lash_alpha(self.strip(0.2), 1.0, 0.45, self.params, 0.0, aa=aa)
+        lower = lash_alpha(self.strip(0.2, lower=True), 1.0, 0.45, self.params, 0.0, aa=aa)
+        self.assertLessEqual(float(lower.max()), 0.45 + 1e-9)
+        self.assertGreater(float(upper.max()), 0.9)
 
 
 if __name__ == "__main__":

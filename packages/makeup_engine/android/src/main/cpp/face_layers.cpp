@@ -18,6 +18,7 @@ constexpr char kShimmerDefines[] = "#define SHIMMER 1\n";
 constexpr int kFaceMapUnit = 2;
 constexpr int kEyeMapAUnit = 3;
 constexpr int kEyeMapBUnit = 4;
+constexpr int kEyeMapCUnit = 5;
 constexpr GLuint kPointAttribute = 0;
 constexpr GLuint kUvAttribute = 1;
 constexpr GLuint kNormalAttribute = 2;
@@ -27,6 +28,7 @@ static_assert(sizeof(mesh::kFaceMapRgba) == static_cast<size_t>(mesh::kFaceMapWi
 static_assert(sizeof(mesh::kEyeMapA) == static_cast<size_t>(mesh::kEyeMapWidth) * mesh::kEyeMapHeight * 4,
               "mapa de ojos A incompleto");
 static_assert(sizeof(mesh::kEyeMapB) == sizeof(mesh::kEyeMapA), "mapa de ojos B incompleto");
+static_assert(sizeof(mesh::kEyeMapC) == sizeof(mesh::kEyeMapA), "mapa de ojos C incompleto");
 
 // Textura 2D inmutable, lineal y CLAMP_TO_EDGE (los bordes de los mapas son
 // "sin maquillaje": máscaras en 0 y distancias en 1).
@@ -66,6 +68,7 @@ void FaceLayers::release() {
   faceMap_.reset();
   eyeMapA_.reset();
   eyeMapB_.reset();
+  eyeMapC_.reset();
 }
 
 bool FaceLayers::buildCommon(Common& out, const char* fragmentSource, const char* defines, const float* mapRect,
@@ -121,11 +124,17 @@ bool FaceLayers::buildEyesProgram(EyesProgram& out, const char* defines, std::st
   out.linerAmount = glGetUniformLocation(id, "uLinerAmount");
   out.linerEdge = glGetUniformLocation(id, "uLinerEdge");
   out.wing = glGetUniformLocation(id, "uWing");
+  out.lashLab = glGetUniformLocation(id, "uLashLab");
+  out.lashAmount = glGetUniformLocation(id, "uLashAmount");
+  out.lowerLashAmount = glGetUniformLocation(id, "uLowerLashAmount");
+  out.lashParams = glGetUniformLocation(id, "uLashParams");
+  out.lashRoot = glGetUniformLocation(id, "uLashRoot");
   out.time = glGetUniformLocation(id, "uTime");
   out.shadowSparkle = glGetUniformLocation(id, "uShadowSparkle");
   glUseProgram(id);
   glUniform1i(glGetUniformLocation(id, "uEyeMapA"), kEyeMapAUnit);
   glUniform1i(glGetUniformLocation(id, "uEyeMapB"), kEyeMapBUnit);
+  glUniform1i(glGetUniformLocation(id, "uEyeMapC"), kEyeMapCUnit);
   // Los ojos no tienen rubor: la gaussiana queda en 0 (uniform sin usar en el
   // fragment, pero el vertex shader lo calcula igual).
   const float zero[4] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -185,6 +194,7 @@ bool FaceLayers::buildTextures(std::string* error) {
   uploadTexture(faceMap_, GL_RGBA8, GL_RGBA, mesh::kFaceMapWidth, mesh::kFaceMapHeight, mesh::kFaceMapRgba);
   uploadTexture(eyeMapA_, GL_RGBA8, GL_RGBA, mesh::kEyeMapWidth, mesh::kEyeMapHeight, mesh::kEyeMapA);
   uploadTexture(eyeMapB_, GL_RGBA8, GL_RGBA, mesh::kEyeMapWidth, mesh::kEyeMapHeight, mesh::kEyeMapB);
+  uploadTexture(eyeMapC_, GL_RGBA8, GL_RGBA, mesh::kEyeMapWidth, mesh::kEyeMapHeight, mesh::kEyeMapC);
   if (glGetError() != GL_NO_ERROR) {
     *error = "no se pudieron crear los mapas de cara y ojos";
     return false;
@@ -237,6 +247,8 @@ void FaceLayers::drawEyes(const EyeUniforms& eyes, const LayerFrame& frame) {
   glBindTexture(GL_TEXTURE_2D, eyeMapA_.get());
   glActiveTexture(GL_TEXTURE0 + kEyeMapBUnit);
   glBindTexture(GL_TEXTURE_2D, eyeMapB_.get());
+  glActiveTexture(GL_TEXTURE0 + kEyeMapCUnit);
+  glBindTexture(GL_TEXTURE_2D, eyeMapC_.get());
   glActiveTexture(GL_TEXTURE0);
   const float a = frame.alpha;
   glUniform3fv(program.shadowLab, kMaxEyeShadows, &eyes.shadowLab[0][0]);
@@ -249,6 +261,11 @@ void FaceLayers::drawEyes(const EyeUniforms& eyes, const LayerFrame& frame) {
   glUniform1f(program.linerAmount, eyes.linerAmount * a);
   glUniform2fv(program.linerEdge, 1, eyes.linerEdge);
   glUniform1f(program.wing, eyes.wing);
+  glUniform3fv(program.lashLab, 1, eyes.lashLab);
+  glUniform1f(program.lashAmount, eyes.lashAmount * a);
+  glUniform1f(program.lowerLashAmount, eyes.lowerLashAmount * a);
+  glUniform4fv(program.lashParams, 1, eyes.lashParams);
+  glUniform1f(program.lashRoot, eyes.lashRoot);
   if (program.time >= 0) glUniform1f(program.time, frame.timeSeconds);
   if (program.shadowSparkle >= 0) glUniform4fv(program.shadowSparkle, 1, eyes.shadowSparkle);
 

@@ -95,3 +95,70 @@ def layer_over(result_srgb: np.ndarray, camera_srgb: np.ndarray, coverage: np.nd
 def blend(dst_srgb: np.ndarray, src_rgb: np.ndarray, src_alpha: np.ndarray) -> np.ndarray:
     """glBlendFuncSeparate(ONE, ONE_MINUS_SRC_ALPHA, ...) sobre el color."""
     return src_rgb + (1.0 - np.asarray(src_alpha, dtype=float))[..., None] * dst_srgb
+
+
+# --- Pestañas (eyes.frag: lashCoord, lashStrands) ---
+
+LASH_ROOT_HEIGHT = 0.07
+LASH_S_START = 0.03
+LASH_S_END = 0.96
+LOWER_LASH_COUNT = 0.6
+LOWER_LASH_WIDTH = 0.7
+LOWER_LASH_CURL = 0.4
+
+
+def hash12(p: np.ndarray) -> np.ndarray:
+    """color.glsl: hash12 (Dave Hoskins). p (..., 2) -> [0,1)."""
+    p3 = np.modf(np.stack([p[..., 0], p[..., 1], p[..., 0]], axis=-1) * 0.1031)[0]
+    p3 = np.where(p3 < 0, p3 + 1, p3)
+    p3 = p3 + (p3 * (p3[..., [1, 2, 0]] + 33.33)).sum(axis=-1, keepdims=True)
+    value = (p3[..., 0] + p3[..., 1]) * p3[..., 2]
+    return value - np.floor(value)
+
+
+def lash_coord(s, h, count, curl):
+    return (s + curl * h * h * (1.2 - 1.6 * s)) * count
+
+
+def lash_strands(x, s, h, length_max, half_width, aa, side):
+    cell = np.floor(x)
+    jitter = hash12(np.stack([cell, np.full_like(cell, side * 31.0 + 7.0)], axis=-1))
+    length = length_max * (0.6 + 0.4 * jitter) * (0.55 + 0.45 * _smoothstep(1.0, 0.6, s))
+    t = h / np.maximum(length, 1e-3)
+    w = half_width * np.power(np.maximum(1.0 - t, 0.0), 0.7)
+    f = np.abs(x - np.floor(x) - 0.5 - (jitter - 0.5) * 0.3)
+    strand = 1.0 - _smoothstep_any(w - aa, w + aa, f)
+    window = _smoothstep(LASH_S_START, LASH_S_START + 0.04, s) * (1.0 - _smoothstep(LASH_S_END - 0.03, LASH_S_END, s))
+    return strand * (t <= 0.98) * window
+
+
+def lash_alpha(map_c: np.ndarray, amount: float, lower_amount: float, params, root: float, side: float = 0.0,
+               aa: tuple[np.ndarray, np.ndarray] | None = None) -> np.ndarray:
+    """Cobertura de las pestañas (sin orientación). map_c (..., 4) en [0,1];
+    params = (hebras, largo, medio ancho, inclinación) como uLashParams. aa: el
+    fwidth de las coordenadas superior e inferior (por defecto, por gradiente
+    de la imagen, como en pantalla)."""
+    count, length, width, curl = params
+    upper_x = lash_coord(map_c[..., 0], map_c[..., 1], count, curl)
+    lower_x = lash_coord(map_c[..., 2], map_c[..., 3], count * LOWER_LASH_COUNT, curl * LOWER_LASH_CURL)
+    if aa is None:
+        aa = (_fwidth(upper_x), _fwidth(lower_x))
+    upper = lash_strands(upper_x, map_c[..., 0], map_c[..., 1], length, width, aa[0], side)
+    root_mask = (1.0 - _smoothstep(0.0, LASH_ROOT_HEIGHT, map_c[..., 1])) * root
+    root_mask = root_mask * _smoothstep(LASH_S_START, LASH_S_START + 0.08, map_c[..., 0]) * \
+        (1.0 - _smoothstep(LASH_S_END - 0.1, LASH_S_END, map_c[..., 0]))
+    lower = lash_strands(lower_x, map_c[..., 2], map_c[..., 3], length, width * LOWER_LASH_WIDTH, aa[1], side + 2.0)
+    return np.clip(np.maximum(upper, root_mask) * amount + lower * lower_amount, 0.0, 1.0)
+
+
+def _smoothstep_any(edge0, edge1, x):
+    """smoothstep de GLSL con bordes por píxel (edge0 < edge1)."""
+    t = np.clip((x - edge0) / np.maximum(edge1 - edge0, 1e-9), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _fwidth(x: np.ndarray) -> np.ndarray:
+    if x.ndim < 2:
+        return np.zeros_like(x)
+    gy, gx = np.gradient(x)
+    return np.abs(gx) + np.abs(gy)

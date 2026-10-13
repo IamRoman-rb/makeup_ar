@@ -69,13 +69,6 @@ uniform float uSparkle;
 #define SPARKLE_RATE 6.0
 #define TICK_PERIOD 256.0
 
-// Hash 2D -> [0,1) sin texturas (Dave Hoskins, "hash without sine").
-// highp: con fp16 el patrón se repite en bloques visibles.
-highp float hash12(highp vec2 p) {
-  highp vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-  p3 += dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
-}
 #endif
 
 // Rango de sombreado en el que aparece el brillo del labial (lip_shading.py;

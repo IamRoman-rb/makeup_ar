@@ -64,6 +64,11 @@ class FaceLayers {
     GLint linerAmount = -1;
     GLint linerEdge = -1;
     GLint wing = -1;
+    GLint lashLab = -1;
+    GLint lashAmount = -1;
+    GLint lowerLashAmount = -1;
+    GLint lashParams = -1;
+    GLint lashRoot = -1;
     GLint time = -1;           // solo SHIMMER
     GLint shadowSparkle = -1;  // solo SHIMMER
   };
@@ -86,6 +91,7 @@ class FaceLayers {
   GlTexture faceMap_;
   GlTexture eyeMapA_;
   GlTexture eyeMapB_;
+  GlTexture eyeMapC_;
 };
 
 }  // namespace makeup

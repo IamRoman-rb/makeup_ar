@@ -33,7 +33,7 @@ for sub in ("tools/makeup", "tools/lips", "tools/uv_masks"):
     sys.path.insert(0, str(ROOT / sub))
 import gen_face_maps as fm  # noqa: E402
 import gen_lips_maps as lm  # noqa: E402
-from face_shading import Layer, blend, compose, layer_over  # noqa: E402
+from face_shading import Layer, blend, compose, lash_alpha, layer_over  # noqa: E402
 from lip_shading import LipParams, from_ok, hex_to_srgb, lin_to_srgb, shade, srgb_to_oklab, to_ok  # noqa: E402
 
 PRESETS_DART = ROOT / "lib/features/ar/domain/recipe_presets.dart"
@@ -60,7 +60,10 @@ def lch(lightness: float, chroma: float, hue_deg: float) -> np.ndarray:
 
 def engine_constants() -> dict[str, float]:
     text = ENGINE_CONFIG.read_text(encoding="utf-8")
-    return {m.group(1): float(m.group(2)) for m in re.finditer(r"constexpr float (k\w+) = ([0-9.]+)f;", text)}
+    values = {m.group(1): float(m.group(2)) for m in re.finditer(r"constexpr float (k\w+) = ([0-9.]+)f;", text)}
+    lash = re.search(r"kLashColor\[3\] = \{([0-9.]+)f, ([0-9.]+)f, ([0-9.]+)f\}", text)
+    values["kLashColor"] = tuple(float(lash.group(i)) for i in (1, 2, 3))
+    return values
 
 
 def dart_literal_to_json(text: str):
@@ -98,7 +101,7 @@ class Maps:
         geo = fm.Geometry(json.loads(fm.PARAMS.read_text(encoding="utf-8")))
         face_params = json.loads(fm.PARAMS.read_text(encoding="utf-8"))
         rgb, face_rect, self.cheeks = fm.build_face(face_params, geo)
-        a8, b8, eye_rect, *_ = fm.build_eyes(face_params, geo)
+        a8, b8, eye_rect, *_, c8 = fm.build_eyes(face_params, geo)
         lips_rg8, lips_rect, *_ = lm.build(json.loads(lm.PARAMS.read_text(encoding="utf-8")))
 
         us = np.linspace(U_RANGE[0], U_RANGE[1], CELL_W)
@@ -109,6 +112,8 @@ class Maps:
         self.skin, self.contour, self.highlight = face[..., 0], face[..., 1], face[..., 2]
         self.eye_a = sample(a8, eye_rect, self.mirrored, self.v)
         self.eye_b = sample(b8, eye_rect, self.mirrored, self.v)
+        self.eye_c = sample(c8, eye_rect, self.mirrored, self.v)
+        self.side = (self.u > 0.5).astype(float)
         lips = sample(lips_rg8, lips_rect, self.u, self.v)
         self.lips_mask, self.lips_gloss = lips[..., 0], lips[..., 1]
 
@@ -196,6 +201,21 @@ def apply_recipe(camera: np.ndarray, maps: Maps, recipe: dict, k: dict[str, floa
         line = 1.0 - _smooth(edge0, edge1, maps.eye_b[..., 1])
         wing_mask = (1.0 - _smooth(edge0, edge1, maps.eye_b[..., 2])) * (1.0 - _smooth(wing - 0.05, wing, maps.eye_b[..., 3]))
         layers.append(Layer(color(liner["color"]), np.maximum(line, wing_mask) * liner["opacity"]))
+    lashes = eyes.get("lashes")
+    if lashes:
+        volume = lashes.get("volume", 0.5)
+        lerp = lambda a, b, t: a + (b - a) * t  # noqa: E731
+        params = (lerp(k["kLashCountMin"], k["kLashCountMax"], volume),
+                  lerp(k["kLashLengthMin"], k["kLashLengthMax"], lashes.get("length", 0.5)),
+                  lerp(k["kLashWidthMin"], k["kLashWidthMax"], volume), k["kLashCurl"])
+        opacity = lashes["opacity"]
+        # Las dos mitades por separado: el hash de las hebras depende del lado.
+        alpha = np.zeros(camera.shape[:2])
+        for side in (0.0, 1.0):
+            part = lash_alpha(maps.eye_c, opacity, opacity * k["kLowerLashOpacity"], params,
+                              volume * k["kLashRootMax"], side=side)
+            alpha = np.where(maps.side == side, part, alpha)
+        layers.append(Layer(srgb_to_oklab(np.array(k["kLashColor"])), alpha))
     if layers:
         result, coverage = compose(camera, layers, skin_ref)
         out = blend(out, *layer_over(result, camera, coverage))
