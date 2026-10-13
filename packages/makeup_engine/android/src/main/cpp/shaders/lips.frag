@@ -14,7 +14,9 @@
 //   color = OKLab -> lineal bajando croma si sale de gamut (color.glsl)
 //   + brillo: (mapa^nitidez · gloss [+ destellos]) · luz · w · iluminado(s),
 //           aditivo en lineal; no aparece en las sombras del labio.
-//   salida: layerOver(color, cámara, w) con blending premultiplicado
+//   delineado (lips.liner): anillo sobre el borde (canal .b del mapa), mezclado
+//           encima con color · min(s, 1); tapa el brillo (spec · (1 - delineado))
+//   salida: layerOver(color, cámara, 1 - (1 - w)(1 - delineado)) con blending premultiplicado
 //           (color.glsl): el labial va encima de la base sin pisarla
 //           alrededor de la boca.
 //
@@ -127,8 +129,9 @@ void main() {
   highp vec3 lit = uTargetLab * shading;
   highp float lightness = clamp(mix(lab.x, lit.x, w * uLumaFollow), 0.0, 1.0);
   highp vec2 ab = mix(lab.yz, lit.yz, w);
-  // El delineado encima del labial, con el mismo sombreado.
-  highp vec3 linerLit = uLinerLab * shading;
+  // El delineado encima del labial. Sombreado con tope 1: la mitad exterior
+  // del anillo cae sobre piel (más clara que el labio) y se aclaraba.
+  highp vec3 linerLit = uLinerLab * min(shading, 1.0);
   lightness = clamp(mix(lightness, linerLit.x, liner), 0.0, 1.0);
   ab = mix(ab, linerLit.yz, liner);
   vec3 outLinear = oklabToLinearInGamut(vec3(lightness, ab));

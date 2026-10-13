@@ -178,7 +178,7 @@ El campo `lips.liner` de la receta (color y opacidad) se dibuja en la misma pasa
 
 **Shader:**
 - `lips.frag` dibuja un anillo con `1 − smoothstep(kLipLinerEdge, +aa, distancia)`, con un `aa` de `fwidth` que tiene piso y techo.
-- El anillo va encima del labial con el mismo sombreado relativo.
+- El anillo va encima del labial, con el sombreado relativo topeado en 1. La mitad exterior del anillo cae sobre piel, más clara que el labio, y sin el tope se aclaraba (revisión de `shader-reviewer`, 2026-10-13).
 - Es mate: tapa el brillo del labial que tiene debajo.
 - **Cobertura:** `1 − (1 − w)(1 − delineado)`. También pinta apenas por fuera del labial.
 

@@ -69,7 +69,7 @@ class LipLiner:
 
     target_lab: np.ndarray
     amount: float  # opacidad [0, 1]; 0 = sin delineado
-    edge: float = 0.3  # engine_config.h: kLipLinerEdge
+    edge: float = 0.22  # tiene que coincidir con engine_config.h: kLipLinerEdge
 
 
 def liner_alpha(distance: np.ndarray, liner: LipLiner, aa: np.ndarray | float) -> np.ndarray:
@@ -105,7 +105,8 @@ def shade(camera_srgb: np.ndarray, mask: np.ndarray, gloss_map: np.ndarray, p: L
     ab = lab[..., 1:] + (lit[..., 1:] - lab[..., 1:]) * w[..., None]
     liner = np.broadcast_to(np.asarray(liner, dtype=float), w.shape)
     if liner_lab is not None:
-        liner_lit = liner_lab * shading[..., None]
+        # Tope 1: la mitad exterior del anillo cae sobre piel más clara (lips.frag).
+        liner_lit = liner_lab * np.minimum(shading, 1.0)[..., None]
         lightness = np.clip(lightness + (liner_lit[..., 0] - lightness) * liner, 0.0, 1.0)
         ab = ab + (liner_lit[..., 1:] - ab) * liner[..., None]
     out = oklab_to_linear_in_gamut(np.concatenate([lightness[..., None], ab], axis=-1))
