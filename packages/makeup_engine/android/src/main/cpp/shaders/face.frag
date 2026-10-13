@@ -81,7 +81,7 @@ in highp vec2 vTexCoord;
 in highp vec2 vMapUv;
 in highp vec2 vCheek;
 in float vFacing;
-in float vSide;
+flat in float vSide;
 out vec4 fragColor;
 
 // Mezcla una capa en OKLab, su brillo y acumula lo que queda sin cubrir.
@@ -104,7 +104,9 @@ void main() {
   // Pecas: un punto por celda (si toca), con centro y radio propios. fwidth
   // antes de cualquier rama.
   highp vec2 fc = vMapUv * FRECKLE_CELLS;
-  highp float faa = fwidth(fc.x);
+  // Piso: con aa 0 smoothstep tendría bordes iguales (indefinido); techo: de
+  // lejos el punto se vuelve un promedio gris en vez de desaparecer.
+  highp float faa = clamp(fwidth(fc.x), 1.0e-3, 0.5);
   // Rama por uniform: una receta sin pecas no paga los hash.
   if (uEffectAmount.x > 0.0) {
     highp vec2 fcell = floor(fc) + vec2(vSide * 613.0, 0.0);
@@ -134,12 +136,10 @@ void main() {
   // quedaba sin cobertura.
   highp float keep = 1.0;
   float shine = 0.0;
-#ifdef EFFECTS
-  // Color de las pecas: la piel de la cámara más oscura y más cálida.
-  highp vec3 freckleLab = lab * FRECKLE_SCALE;
-#endif
   mixLayer(lab, keep, shine, uLayerLab[0] * shading, a.x, uLayerLumaFollow.x, 0.0);
 #ifdef EFFECTS
+  // Color de las pecas: la piel (ya con la base) más oscura y más cálida.
+  highp vec3 freckleLab = lab * FRECKLE_SCALE;
   mixLayer(lab, keep, shine, freckleLab, freckle, 1.0, 0.0);
 #endif
   mixLayer(lab, keep, shine, uLayerLab[1] * shading, a.y, uLayerLumaFollow.y, 0.0);

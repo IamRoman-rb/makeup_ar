@@ -54,7 +54,7 @@
 //                          [0, 0,2] (unidades de posición a lo largo).
 //   uLashRoot       float  oscurecimiento de la raíz (volumen), [0,1].
 //   uWing           float  largo del wing, [0,1] del largo máximo (0 = sin wing).
-//                          Con uWing = 0 la máscara del wing es 0 (smoothstep(0, 0, x) = 1).
+//                          Con uWing = 0 no hay wing (rama por uniform).
 //   uEyeSheen       float  ganancia relativa del efecto sheen sobre párpado y
 //                          pliegue × fundido, [0, ~0,4]; 0 = apagado.
 //   uGlitter        float  (SHIMMER) brillo de los destellos del efecto glitter
@@ -123,7 +123,7 @@ float lashStrands(highp float x, float s, float h, float lengthMax, float halfWi
   highp float cell = floor(x);
   float jitter = hash12(vec2(cell, side * 31.0 + 7.0));
   // Más cortas hacia el lagrimal.
-  float len = lengthMax * (0.6 + 0.4 * jitter) * mix(0.55, 1.0, smoothstep(1.0, 0.6, s));
+  float len = lengthMax * (0.6 + 0.4 * jitter) * mix(0.55, 1.0, 1.0 - smoothstep(0.6, 1.0, s));
   float t = h / max(len, 1.0e-3);  // 0 base -> 1 punta
   float w = halfWidth * pow(max(1.0 - t, 0.0), 0.7);
   float f = abs(fract(x) - 0.5 - (jitter - 0.5) * 0.3);
@@ -133,7 +133,8 @@ float lashStrands(highp float x, float s, float h, float lengthMax, float halfWi
 }
 
 // Coordenada en hebras con la inclinación (crece con h²).
-highp float lashCoord(float s, float h, float count, float curl) {
+// highp: con fp16 x (hasta ~42) tendría pasos de 0,03 hebras.
+highp float lashCoord(highp float s, highp float h, highp float count, highp float curl) {
   return (s + curl * h * h * (1.2 - 1.6 * s)) * count;
 }
 
@@ -142,7 +143,7 @@ in highp vec2 vTexCoord;
 in highp vec2 vMapUv;
 in float vFacing;
 // 0/1 según el lado de la cara (face.vert): los destellos no se espejan.
-in float vSide;
+flat in float vSide;
 out vec4 fragColor;
 
 void mixLayer(inout highp vec3 lab, inout highp float keep, inout float shine, highp vec3 lit, float a,
@@ -165,8 +166,9 @@ void main() {
     highp float upperX = lashCoord(mapC.r, mapC.g, count, curl);
     highp float lowerX = lashCoord(mapC.b, mapC.a, count * LOWER_LASH_COUNT, curl * LOWER_LASH_CURL);
     // fwidth antes de las ramas de abajo (las derivadas necesitan flujo uniforme).
-    highp float upperAa = fwidth(upperX);
-    highp float lowerAa = fwidth(lowerX);
+    // Piso y techo como en face.frag (pecas).
+    highp float upperAa = clamp(fwidth(upperX), 1.0e-3, 0.5);
+    highp float lowerAa = clamp(fwidth(lowerX), 1.0e-3, 0.5);
     float upper = 0.0;
     float root = 0.0;
     float lower = 0.0;
@@ -197,9 +199,10 @@ void main() {
   float line = 1.0 - smoothstep(uLinerEdge.x, lineEdge, mapB.g);
   // El final del wing se difumina en WING_END_FEATHER, o en la mitad de su
   // largo si es más corto (así un wing corto arranca opaco).
+  // Sin wing, rama por uniform: smoothstep(0, 0, x) no está definido.
   float wingEnd = max(uWing - WING_END_FEATHER, 0.5 * uWing);
-  float wing = (1.0 - smoothstep(uLinerEdge.x, wingEdge, mapB.b)) *
-               (1.0 - smoothstep(wingEnd, uWing, mapB.a));
+  float wingTail = uWing > 0.0 ? 1.0 - smoothstep(wingEnd, uWing, mapB.a) : 0.0;
+  float wing = (1.0 - smoothstep(uLinerEdge.x, wingEdge, mapB.b)) * wingTail;
   float liner = clamp(max(line, wing) * uLinerAmount * vFacing, 0.0, 1.0);
   // Zona de los efectos de ojos: párpado + pliegue.
   float effectZone = clamp(mapA.r + mapA.g, 0.0, 1.0) * vFacing;

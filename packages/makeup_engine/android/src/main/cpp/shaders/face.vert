@@ -23,8 +23,10 @@
 //   vMapUv         vec2   coordenada en el mapa de la pasada [0,1].
 //   vCheek         vec2   coordenadas de la gaussiana del rubor.
 //   vFacing        float  [0,1]: 0 donde la superficie queda de espaldas.
-//   vSide          float  0 en la mitad u < 0,5 de la malla, 1 en la otra
-//                         (constante por triángulo: ninguno cruza la línea media).
+//   vSide          float  0 en la mitad u < 0,5 de la malla, 1 en la otra. flat:
+//                         los vértices de la línea media tienen u ~0,4999 o
+//                         ~0,5001 y, interpolado, un triángulo que los toca
+//                         daba valores intermedios (semillas de hash no enteras).
 //
 // Espejo: los mapas guardan media cara (u <= 0,5). Ningún triángulo cruza la
 // línea media (tools/uv_masks/gen_face_maps.py), así que u' = min(u, 1 - u)
@@ -51,7 +53,7 @@ out vec2 vTexCoord;
 out vec2 vMapUv;
 out vec2 vCheek;
 out mediump float vFacing;
-out mediump float vSide;
+flat out mediump float vSide;
 
 void main() {
   vec2 clip = aPoint * uImageToClip.xy + uImageToClip.zw;

@@ -188,8 +188,9 @@ def freckle_alpha(map_uv: np.ndarray, density: float, side: float = 0.0, aa: np.
 
 
 def freckle_lab(camera_lab: np.ndarray) -> np.ndarray:
-    """Color de las pecas: la piel del píxel más oscura y más cálida
-    (proporcional, para que valga en todos los tonos)."""
+    """Color de las pecas: la piel del píxel (ya con la base, como en
+    face.frag) más oscura y más cálida (proporcional, para que valga en todos
+    los tonos)."""
     return camera_lab * FRECKLE_SCALE
 
 

@@ -259,6 +259,34 @@ Altura 1 significa "sin pestañas": dentro del ojo o lejos de la línea.
   - Un sheen aditivo dejaba un velo gris en piel oscura. Por eso es relativo.
   - Las pecas con un corrimiento de croma fijo salían naranjas en piel oscura. Por eso el color es proporcional a la piel.
 
+### Revisiones de cierre de P6 (`perf-auditor` y `shader-reviewer`, 2026-10-13)
+
+No hubo hallazgos críticos.
+
+**Rendimiento, sin cambio visual:**
+- **Pecas y glitter:** se calculan solo si están activos (ramas por uniform).
+- **Hebras:** solo donde hay pestañas (la mayor parte de la zona de ojos no tiene).
+- **Pestañas inferiores:** solo si tienen opacidad.
+- **Estimación sin medir:** pestañas 1–1,5 ms de GPU en el E20 y efectos de cara 2–3 ms.
+
+**Corrección:**
+- **Lado de la cara `flat`:** los vértices de la línea media tienen u ~0,4999 o ~0,5001. Interpolado, el lado de un triángulo que los toca daba valores intermedios: semillas de hash no enteras, con pecas y destellos fantasma que parpadean en nariz, frente y mentón.
+- **`smoothstep` siempre con bordes ordenados y distintos:**
+  - la falta de wing pasa por una rama por uniform (`smoothstep(0, 0, x)` no está definido);
+  - el largo de las hebras usa `1 − smoothstep(0,6, 1, s)`.
+- **Coordenadas de las hebras en highp:** en fp16 tenían pasos de 0,03 hebras.
+- **Antialiasado:** `fwidth` de hebras y pecas con piso (1e-3) y techo (0,5).
+- **Pecas sobre la base:** toman el color de la piel ya maquillada.
+
+**Queda para medir en el E20 antes de tocar:**
+- **Pecas casi subpíxel:** con la cara a ~350 px, cada punto mide ~1 px. Si centellean, se bajan las `FRECKLE_CELLS`.
+- **Costo de una pasada solo con efectos:** lee la cámara en toda su zona aunque el destello de la celda sea 0.
+- **Palancas en orden:**
+  1. reemplazar el `pow` de las hebras por un polinomio;
+  2. `mediump` en el final de `lashStrands`;
+  3. menos hebras como máximo;
+  4. hornear las hebras en una textura.
+
 ## 10. Limitaciones conocidas
 
 - **Delineado de labios:** no se dibuja (§1).
