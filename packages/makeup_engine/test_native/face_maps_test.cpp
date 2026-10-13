@@ -155,6 +155,13 @@ TEST(ojosMapas_delineadoYWing) {
   CHECK(eyeB(cu - 0.004f, cv - 0.004f, 1) > 0.95f);
   CHECK(eyeB(cu - 0.004f, cv - 0.004f, 2) > 0.95f);
   CHECK(eyeB(cu - 0.008f, cv, 1) > 0.95f);
+  // Junto al ángulo, el grosor de la línea tampoco baja de la prolongación del
+  // párpado inferior (en el E20 se veía un piquito hacia abajo en el wing).
+  CHECK(eyeB(cu + 0.001f, cv - 0.003f, 1) > 0.9f);
+  CHECK(eyeB(cu + 0.002f, cv - 0.002f, 1) > 0.6f);
+  // Más gruesa cerca del ángulo externo (antes de que empiece el afinamiento
+  // hacia el lagrimal), a la misma distancia.
+  CHECK(eyeB(vertexU(246), vertexV(246) + d, 1) < eyeB(vertexU(161), vertexV(161) + d, 1));
 }
 
 TEST(caraMapas_triangulosDeZona) {

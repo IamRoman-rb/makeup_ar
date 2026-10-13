@@ -36,8 +36,8 @@ Salidas (versionadas: el build de Android no necesita Python):
   docs/ar_engine/img/face_maps.png, docs/ar_engine/img/eye_maps.png: vistas previas.
 
 Delineado: la línea de pestañas superior termina en el ángulo externo; el
-wing sigue la prolongación del párpado inferior levantada liftDeg y nunca
-pinta debajo de ella.
+wing sigue la prolongación del párpado inferior levantada liftDeg y ni el wing
+ni la línea (dentro de cornerClipRadius del ángulo) pintan debajo de ella.
 
 Coordenadas del ojo (para párpado, pliegue, etc.): s va de 0 en el ángulo
 externo a 1 en el lagrimal; t va de 0 en la línea de pestañas superior a 1 en
@@ -261,6 +261,9 @@ def build_eyes(params: dict, geo: Geometry):
     max_distance = p["maxDistance"]
     lash = catmull_rom_open(geo.eye_upper, steps)
     taper = 1.0 + (p["innerTaper"] - 1.0) * smoothstep(p["taperStart"], 1.0, s)
+    # Más gruesa en el tercio externo, como un delineado real: la parte de
+    # arriba se junta con la base del wing y no queda una V en el ángulo.
+    taper = taper * (1.0 + p["outerBoost"] * (1.0 - smoothstep(0.0, p["outerBoostEnd"], s)))
     liner = np.clip(polyline_distance(points, lash) / (max_distance * taper), 0.0, 1.0)
     # La línea termina en el ángulo externo (sin tapa redonda): más allá sigue
     # el wing. En el E20 la tapa, estirada por la malla alrededor del ángulo,
@@ -285,11 +288,20 @@ def build_eyes(params: dict, geo: Geometry):
     along = rel @ direction / p["length"]
     perpendicular = np.abs(rel[:, 0] * direction[1] - rel[:, 1] * direction[0])
     wing_taper = 1.0 - p["tipTaper"] * np.clip(along, 0.0, 1.0)
+    # Base más ancha: llena el ángulo entre la línea y el wing (de abajo lo
+    # recorta la prolongación del párpado, así que solo crece hacia arriba).
+    wing_taper = wing_taper * (1.0 + p["baseBoost"] * (1.0 - smoothstep(0.0, p["baseBoostEnd"], along)))
     wing_distance = np.where((along >= 0.0) & (along <= 1.0),
                              np.clip(perpendicular / (max_distance * wing_taper), 0.0, 1.0), 1.0)
     # Del lado de abajo de la prolongación del párpado inferior: sin wing.
     below = lower[0] * rel[:, 1] - lower[1] * rel[:, 0]
     wing_distance = np.maximum(wing_distance, smoothstep(0.0, p["lowerEdgeFeather"], below))
+    # La línea tampoco pinta debajo de esa prolongación cerca del ángulo: su
+    # grosor caía ahí debajo y en el E20 se veía un piquito hacia abajo en el
+    # extremo del wing. Sin wing, la línea termina en punta.
+    clip_radius = em["liner"]["cornerClipRadius"]
+    near_corner = 1.0 - smoothstep(0.6 * clip_radius, clip_radius, np.linalg.norm(rel, axis=1))
+    liner = np.maximum(liner, smoothstep(0.0, p["lowerEdgeFeather"], below) * near_corner)
 
     # Pestañas: posición a lo largo de cada línea y altura del lado de afuera
     # del ojo (arriba de la superior, abajo de la inferior). Altura 1 = sin

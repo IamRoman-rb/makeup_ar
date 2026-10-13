@@ -105,6 +105,7 @@ LASH_S_END = 0.96
 LOWER_LASH_COUNT = 0.6
 LOWER_LASH_WIDTH = 0.7
 LOWER_LASH_CURL = 0.4
+LASH_LEAN = 0.25
 
 
 def hash12(p: np.ndarray) -> np.ndarray:
@@ -123,10 +124,13 @@ def lash_coord(s, h, count, curl):
 def lash_strands(x, s, h, length_max, half_width, aa, side):
     cell = np.floor(x)
     jitter = hash12(np.stack([cell, np.full_like(cell, side * 31.0 + 7.0)], axis=-1))
-    length = length_max * (0.6 + 0.4 * jitter) * (0.55 + 0.45 * _smoothstep(1.0, 0.6, s))
+    length_jitter = hash12(np.stack([cell, np.full_like(cell, side * 31.0 + 19.0)], axis=-1))
+    lean = hash12(np.stack([cell, np.full_like(cell, side * 31.0 + 23.0)], axis=-1)) - 0.5
+    length = length_max * (0.45 + 0.55 * length_jitter) * (0.55 + 0.45 * (1.0 - _smoothstep(0.6, 1.0, s)))
     t = h / np.maximum(length, 1e-3)
     w = half_width * np.power(np.maximum(1.0 - t, 0.0), 0.7)
-    f = np.abs(x - np.floor(x) - 0.5 - (jitter - 0.5) * 0.3)
+    offset = (jitter - 0.5) * 0.3 + lean * 2.0 * LASH_LEAN * t * t
+    f = np.abs(x - np.floor(x) - 0.5 - offset)
     strand = 1.0 - _smoothstep_any(w - aa, w + aa, f)
     window = _smoothstep(LASH_S_START, LASH_S_START + 0.04, s) * (1.0 - _smoothstep(LASH_S_END - 0.03, LASH_S_END, s))
     return strand * (t <= 0.98) * window

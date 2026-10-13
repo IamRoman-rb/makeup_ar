@@ -62,6 +62,10 @@ Los genera `tools/uv_masks/gen_face_maps.py` con los parámetros de `tools/uv_ma
 **Delineado por distancia:**
 - **Grosor:** el canal guarda la distancia a la línea de pestañas, normalizada por `kLinerMaxDistanceUv` (0,012 UV, unos 3 mm) y afinada hacia el lagrimal. El shader corta en `mix(kLinerThicknessMin, kLinerThicknessMax, thickness)` con un borde de `kLinerFeather`. El `thickness` de la receta es continuo sin regenerar nada.
 - **Wing:** la línea de pestañas termina en el ángulo externo, sin tapa redonda. El wing sale de ahí en la prolongación del párpado inferior, levantada 10° (`liftDeg`). Nunca pinta debajo de esa prolongación, se afina hacia la punta y se ve hasta `wing × kWingLengthUv`. Así sigue la forma real del ojo, que la malla transfiere, en vez de un ángulo fijo: con el ángulo fijo de 22° y la tapa redonda, en el E20 se veía como un gancho hacia abajo (§7).
+- **Ángulo externo (P7):** en el E20 todavía quedaba un piquito hacia abajo en el ángulo: el grosor de la línea caía debajo de la prolongación del párpado inferior, y la línea fina y el wing formaban una V. Ahora:
+  - la línea tampoco pinta debajo de la prolongación dentro de `cornerClipRadius` del ángulo; sin wing, termina en punta;
+  - es más gruesa en el tercio externo (`outerBoost`), como un delineado real;
+  - la base del wing es más ancha (`baseBoost`) y llena el ángulo entre la línea y el wing. Como la prolongación la recorta de abajo, solo crece hacia arriba.
 
 **Rubor analítico:**
 - No usa textura: es una gaussiana elíptica en la UV espejada, `exp(−½·|M·uv' + o|²)`. `M` y `o` salen de `kCheekPlacements` (apple, high, low).
@@ -176,6 +180,7 @@ flutter run --profile -t lib/main_tracker.dart -d <id-del-E20>
 |---|---|---|---|
 | 2026-10-12 | 29 (emulador, sin cara) | — | Los programas de cara y ojos compilan y enlazan en el driver del emulador, también después de los arreglos de §8. El filtro de prueba nuevo y el respaldo (`AR_RENDERER=painter`) funcionan. **Falta medir en el E20 con cara.** |
 | 2026-10-12 | 28 | 14 (19–20 ms) | **E20 con cara**, look completo con cada preset: el render no bajó respecto de solo labios. Sombras, delineado y labios caen en su lugar y no pintan el ojo, tampoco con un ojo cerrado. Base, rubor, contorno e iluminador se ven sutiles con las opacidades de los presets. **Problemas** (capturas ampliadas): el wing salía como un gancho hacia abajo y las sombras tenían el borde superior duro. Corregido: wing sobre la prolongación del párpado inferior, sin tapa en el ángulo (§3); borde del párpado más difuminado (`tFeather` 0,1 → 0,3); rubor "high" más alto, hacia el pómulo. **Falta confirmar en el E20.** |
+| 2026-10-13 | 28 | 14 (19–20 ms) | **E20 con cara, P6 y P6b** (todos los presets y "Rojo + delineado"): el render no bajó con pestañas y efectos. El wing ya sale hacia afuera y arriba, pero queda un **piquito hacia abajo en el ángulo**, más grande de perfil. Las **pestañas parecen un peine**. El **delineado de labios** sigue el borde, también de perfil. **Con la mano sobre la boca, el labial se pinta encima de los dedos.** Corregido en P7: el ángulo del wing (§3) y las pestañas irregulares (§9). La oclusión está en `LIPS.md`. **Falta confirmar en el E20.** |
 
 ## 8. Revisiones de cierre (`perf-auditor` y `shader-reviewer`, 2026-10-12)
 
@@ -228,9 +233,11 @@ Altura 1 significa "sin pestañas": dentro del ojo o lejos de la línea.
 **Hebras procedurales:**
 - En coordenadas de la línea, `x = (s + curl·h²·(1,2 − 1,6·s)) · N`; cada celda de `x` es una hebra.
 - Cada hebra:
-  - tiene un largo propio, `length × (0,6 + 0,4 · hash)`, más corto hacia el lagrimal;
+  - tiene un largo propio, `length × (0,45 + 0,55 · hash)`, más corto hacia el lagrimal;
   - se afina hacia la punta, con el borde antialiasado con `fwidth`;
-  - se inclina hacia afuera en el ángulo externo y un poco hacia adentro en el lagrimal.
+  - se inclina hacia afuera en el ángulo externo y un poco hacia adentro en el lagrimal;
+  - además se inclina hacia un lado propio, más cerca de la punta (`LASH_LEAN`). Las vecinas se juntan o se separan como mechones: en el E20 (P6) se veían como un peine, todas paralelas y equidistantes.
+- Posición, largo e inclinación usan tres hash independientes; si compartieran uno, las más largas serían siempre las corridas hacia el mismo lado.
 - **Raíz:** se oscurece según `volume`.
 - **Inferiores:** menos hebras, más finas, menos inclinadas y con `kLowerLashOpacity` de opacidad.
 - **Color:** fijo, `kLashColor`, un negro de máscara de pestañas: la receta no trae color.
@@ -290,7 +297,7 @@ No hubo hallazgos críticos.
 
 - **Delineado de labios:** ningún preset lo usa. Para verlo en el teléfono, el arnés (`main_tracker.dart`) suma la opción "Rojo + delineado", que es una receta de prueba (P6b, `LIPS.md`).
 - **Pestañas en 2D:** se pintan sobre la piel del párpado. De perfil o mirando muy abajo no se ven como hebras que salen de la cara: eso necesita geometría propia (fase 2).
-- **Hebras irregulares:** la posición a lo largo de la línea está cuantizada a 8 bits en el mapa. Con ~30 hebras eso las hace un poco irregulares, y no molesta porque las pestañas reales también lo son.
+- **Cuantización:** la posición a lo largo de la línea está cuantizada a 8 bits en el mapa. Con ~30 hebras suma un poco de irregularidad, que no molesta: las hebras ya son irregulares a propósito (§9).
 - **Oclusión:** igual que en los labios, una mano sobre la cara se pinta encima. Es la oclusión de §5.6 (fase 2).
 - **Referencia de L:** la L de referencia es la de las mejillas. En los párpados, que suelen estar más oscuros, la sombra queda un poco más oscura que la muestra. Es lo que pasa con una sombra real.
 - **Formas fijas:** las regiones son las mismas para todas las caras, salvo lo que deforma la malla. Ajustar formas por persona (párpado encapotado, por ejemplo) queda para la fase de calidad.

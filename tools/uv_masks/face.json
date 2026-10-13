@@ -57,8 +57,8 @@
     "outerV": {"s": 0.02, "t": 0.22, "sigmaS": 0.17, "sigmaT": 0.32, "sMax": 0.5},
     "innerCorner": {"du": 0.006, "dv": 0.0, "sigma": 0.008},
     "browBone": {"tStart": 0.62, "tEnd": 0.95, "tFeather": 0.1, "sStart": 0.05, "sEnd": 1.1, "sFeather": 0.2},
-    "liner": {"maxDistance": 0.012, "innerTaper": 0.35, "taperStart": 0.3, "cornerFeather": 0.0015},
+    "liner": {"maxDistance": 0.012, "innerTaper": 0.35, "taperStart": 0.3, "cornerFeather": 0.0015, "cornerClipRadius": 0.02, "outerBoost": 0.8, "outerBoostEnd": 0.35},
     "lashes": {"maxLength": 0.03, "lowerMaxLength": 0.012},
-    "wing": {"liftDeg": 10.0, "length": 0.035, "tipTaper": 0.85, "lowerEdgeFeather": 0.0012}
+    "wing": {"liftDeg": 10.0, "length": 0.035, "tipTaper": 0.85, "lowerEdgeFeather": 0.0012, "baseBoost": 1.6, "baseBoostEnd": 0.5}
   }
 }

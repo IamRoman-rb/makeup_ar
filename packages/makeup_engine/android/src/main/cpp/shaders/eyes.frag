@@ -111,22 +111,32 @@ uniform float uGlitter;
 #define LOWER_LASH_COUNT 0.6
 #define LOWER_LASH_WIDTH 0.7
 #define LOWER_LASH_CURL 0.4
+// Irregularidad de las hebras (en fracción de celda): cada una se inclina
+// hacia un lado propio, más cerca de la punta, así las vecinas se juntan o se
+// separan como mechones. Con el corrimiento de la base (±0,15) y el ancho
+// máximo de la raíz no sale de su celda (< 0,5).
+#define LASH_LEAN 0.25
 
 // Hebras de pestañas en coordenadas de la línea: s a lo largo (0 ángulo
 // externo -> 1 lagrimal), h altura normalizada (1 = sin pestañas). Cada celda
-// de s es una hebra con largo y posición propios (hash), que se afina hacia la
-// punta y se inclina hacia afuera (hacia el lagrimal, un poco hacia adentro).
+// de s es una hebra con posición, largo e inclinación propios (tres hash
+// independientes: si compartieran uno, las largas serían siempre las corridas
+// para el mismo lado), que se afina hacia la punta y se inclina hacia afuera
+// (hacia el lagrimal, un poco hacia adentro).
 // x es la coordenada en hebras (calculada afuera) y aa su fwidth: el
 // antialiasado necesita derivadas, que solo valen fuera de ramas divergentes.
 float lashStrands(highp float x, float s, float h, float lengthMax, float halfWidth, highp float aa,
                   float side) {
   highp float cell = floor(x);
   float jitter = hash12(vec2(cell, side * 31.0 + 7.0));
+  float lengthJitter = hash12(vec2(cell, side * 31.0 + 19.0));
+  float lean = hash12(vec2(cell, side * 31.0 + 23.0)) - 0.5;
   // Más cortas hacia el lagrimal.
-  float len = lengthMax * (0.6 + 0.4 * jitter) * mix(0.55, 1.0, 1.0 - smoothstep(0.6, 1.0, s));
+  float len = lengthMax * (0.45 + 0.55 * lengthJitter) * mix(0.55, 1.0, 1.0 - smoothstep(0.6, 1.0, s));
   float t = h / max(len, 1.0e-3);  // 0 base -> 1 punta
   float w = halfWidth * pow(max(1.0 - t, 0.0), 0.7);
-  float f = abs(fract(x) - 0.5 - (jitter - 0.5) * 0.3);
+  float offset = (jitter - 0.5) * 0.3 + lean * 2.0 * LASH_LEAN * t * t;
+  float f = abs(fract(x) - 0.5 - offset);
   float strand = 1.0 - smoothstep(w - aa, w + aa, f);
   return strand * step(t, 0.98) * smoothstep(LASH_S_START, LASH_S_START + 0.04, s) *
          (1.0 - smoothstep(LASH_S_END - 0.03, LASH_S_END, s));
