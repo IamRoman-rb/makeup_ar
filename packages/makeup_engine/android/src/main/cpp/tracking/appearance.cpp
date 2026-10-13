@@ -21,14 +21,19 @@ constexpr int kLipPairCount = mesh::kLipsOuterCount - 2;
 static_assert(kLipPairCount * kLipDepthCount == kLipLightnessSamples, "ajustar kLipLightnessSamples");
 static_assert(mesh::kLipsOuterCount == mesh::kLipsInnerCount, "los contornos se recorren en pares");
 
-// Mejillas de FaceMesh (mitad izquierda y derecha de la imagen).
-constexpr int kCheekLandmarks[kSkinLightnessSamples] = {50, 280, 205, 425, 117, 346, 101, 330, 187, 411};
+// Mejillas de FaceMesh (mitad izquierda y derecha de la imagen). Las
+// kSkinChromaSamples primeras son las altas (pómulo, bajo el ojo).
+constexpr int kCheekLandmarks[kSkinLightnessSamples] = {50, 280, 117, 346, 101, 330, 205, 425, 187, 411};
+static_assert(kSkinChromaSamples <= kSkinLightnessSamples, "las muestras de color son de piel");
 
-// L OKLab del promedio 2×2 alrededor de (x, y); NaN fuera del recorte.
-float sampleLightness(const uint8_t* rgba, int size, float x, float y) {
+// Por debajo de esta L, (a, b) / L amplifica el ruido de la cámara.
+constexpr float kChromaMinLightness = 0.15f;
+
+// OKLab del promedio 2×2 alrededor de (x, y); L = NaN fuera del recorte.
+Vec3 sampleOklab(const uint8_t* rgba, int size, float x, float y) {
   const int x0 = static_cast<int>(std::floor(x - 0.5f));
   const int y0 = static_cast<int>(std::floor(y - 0.5f));
-  if (x0 < 0 || y0 < 0 || x0 + 1 >= size || y0 + 1 >= size) return NAN;
+  if (x0 < 0 || y0 < 0 || x0 + 1 >= size || y0 + 1 >= size) return Vec3{NAN, 0.0f, 0.0f};
   int r = 0;
   int g = 0;
   int b = 0;
@@ -40,8 +45,7 @@ float sampleLightness(const uint8_t* rgba, int size, float x, float y) {
   }
   constexpr float kNorm = 1.0f / (4.0f * 255.0f);
   return srgbToOklab(static_cast<float>(r) * kNorm, static_cast<float>(g) * kNorm,
-                     static_cast<float>(b) * kNorm)
-      .x;
+                     static_cast<float>(b) * kNorm);
 }
 
 template <size_t N>
@@ -54,30 +58,60 @@ float median(std::array<float, N>& values, int count) {
 
 }  // namespace
 
-float measureLipLightness(const uint8_t* rgba, int size, const float* landmarks) {
-  std::array<float, kLipLightnessSamples> samples{};
-  int count = 0;
+void measureFace(const uint8_t* rgba, int size, const float* landmarks, FaceSamples* out) {
+  *out = FaceSamples{};
+  std::array<float, kLipLightnessSamples> lipL{};
+  int lipCount = 0;
   for (int k = 0; k < mesh::kLipsOuterCount; ++k) {
     if (k == 0 || k == mesh::kLipsOuterCount / 2) continue;  // comisuras
     const float* outer = landmarks + mesh::kLipsOuter[k] * 3;
     const float* inner = landmarks + mesh::kLipsInner[k] * 3;
     for (float depth : kLipDepths) {
-      const float lightness = sampleLightness(rgba, size, outer[0] + (inner[0] - outer[0]) * depth,
-                                              outer[1] + (inner[1] - outer[1]) * depth);
-      if (!std::isnan(lightness)) samples[count++] = lightness;
+      const Vec3 lab = sampleOklab(rgba, size, outer[0] + (inner[0] - outer[0]) * depth,
+                                   outer[1] + (inner[1] - outer[1]) * depth);
+      if (std::isnan(lab.x)) continue;
+      lipL[lipCount++] = lab.x;
+      if (lab.x >= kChromaMinLightness) {
+        out->lipChroma[out->lipChromaCount++] = Chroma{lab.y / lab.x, lab.z / lab.x};
+      }
     }
   }
-  return median(samples, count);
+  out->lipLightness = median(lipL, lipCount);
+
+  std::array<float, kSkinLightnessSamples> skinL{};
+  std::array<float, kSkinChromaSamples> skinA{};
+  std::array<float, kSkinChromaSamples> skinB{};
+  int skinCount = 0;
+  int chromaCount = 0;
+  for (int n = 0; n < kSkinLightnessSamples; ++n) {
+    const int index = kCheekLandmarks[n];
+    const Vec3 lab = sampleOklab(rgba, size, landmarks[index * 3], landmarks[index * 3 + 1]);
+    if (std::isnan(lab.x)) continue;
+    skinL[skinCount++] = lab.x;
+    if (n < kSkinChromaSamples && lab.x >= kChromaMinLightness) {
+      skinA[chromaCount] = lab.y / lab.x;
+      skinB[chromaCount] = lab.z / lab.x;
+      ++chromaCount;
+    }
+  }
+  out->skinLightness = median(skinL, skinCount);
+  // Al menos la mitad de las muestras altas: con menos, la mediana es un punto suelto.
+  if (chromaCount * 2 >= kSkinChromaSamples) {
+    out->skinChroma = Chroma{median(skinA, chromaCount), median(skinB, chromaCount)};
+    out->skinChromaValid = true;
+  }
+}
+
+float measureLipLightness(const uint8_t* rgba, int size, const float* landmarks) {
+  FaceSamples samples;
+  measureFace(rgba, size, landmarks, &samples);
+  return samples.lipLightness;
 }
 
 float measureSkinLightness(const uint8_t* rgba, int size, const float* landmarks) {
-  std::array<float, kSkinLightnessSamples> samples{};
-  int count = 0;
-  for (int index : kCheekLandmarks) {
-    const float lightness = sampleLightness(rgba, size, landmarks[index * 3], landmarks[index * 3 + 1]);
-    if (!std::isnan(lightness)) samples[count++] = lightness;
-  }
-  return median(samples, count);
+  FaceSamples samples;
+  measureFace(rgba, size, landmarks, &samples);
+  return samples.skinLightness;
 }
 
 }  // namespace makeup

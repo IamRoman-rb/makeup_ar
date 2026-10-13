@@ -164,6 +164,7 @@ void TrackingState::submitLandmarks(const float* landmarks, int floatCount, floa
   if (!continuous) {
     resetFilters();
     appearance_ = FaceAppearance{};  // otra cara u otra luz: medir desde cero
+    occlusion_.reset();
   }
   // El recorte sigue siendo del tracker (kReady) hasta finishSubmit().
   updateAppearance(landmarks, inFlight_.size);
@@ -256,8 +257,9 @@ void TrackingState::resetFilters() {
 }
 
 void TrackingState::updateAppearance(const float* tensorLandmarks, int size) {
-  const float lip = measureLipLightness(cropPixels_.data(), size, tensorLandmarks);
-  const float skin = measureSkinLightness(cropPixels_.data(), size, tensorLandmarks);
+  measureFace(cropPixels_.data(), size, tensorLandmarks, &faceSamples_);
+  const float lip = faceSamples_.lipLightness;
+  const float skin = faceSamples_.skinLightness;
   // EMA: una sola inferencia con un reflejo o un parpadeo de la luz no mueve
   // el color del labial de golpe.
   const auto smooth = [](float previous, float value) {
@@ -267,6 +269,12 @@ void TrackingState::updateAppearance(const float* tensorLandmarks, int size) {
   };
   appearance_.lipLightness = smooth(appearance_.lipLightness, lip);
   appearance_.skinLightness = smooth(appearance_.skinLightness, skin);
+  const LipOcclusion occlusion = occlusion_.update(faceSamples_);
+  appearance_.occlusionGate = occlusion.gate;
+  appearance_.skinChromaA = occlusion.skin.a;
+  appearance_.skinChromaB = occlusion.skin.b;
+  appearance_.occlusionAxisA = occlusion.axis.a;
+  appearance_.occlusionAxisB = occlusion.axis.b;
 }
 
 bool TrackingState::updatePose(const float* points, float view[3]) {

@@ -188,8 +188,35 @@ El campo `lips.liner` de la receta (color y opacidad) se dibuja en la misma pasa
 - **Calibración:** la grilla de cara suma la columna de prueba "Rojo + delineado".
 - **Arnés:** ningún preset lo usa. `main_tracker.dart` suma la opción "Rojo + delineado" para probarlo en el E20.
 
-## 9. Limitaciones conocidas
+## 9. Oclusión: mano o dedos sobre la boca (P7)
 
-- **Lengua o dedos sobre la boca:** el tracker no sabe que el labio está tapado y se pinta encima. Es la oclusión de §5.6 (fase 2).
+En el E20 (2026-10-13), con la mano sobre la boca el labial y su delineado se pintaban encima de los dedos: el tracker sigue poniendo la boca donde estaba. No se agrega ningún modelo; se usa lo que el tracker ya mide sobre el recorte.
+
+**CPU** (`tracking/lip_occlusion.{h,cpp}`, hilo del tracker, en cada inferencia):
+- `measureFace` toma las 36 muestras del labio y las 6 de mejillas altas en OKLab completo, y usa la cromaticidad `(a, b) / L`. Con el modelo de sombreado del motor, la luz escala L, a y b juntos, así que la cromaticidad no cambia con la sombra.
+- **Eje:** del color de la piel al del labio de referencia. Cada muestra se proyecta, `p = dot(c − piel, eje) / |eje|²`: 0 es piel, 1 es labio.
+- **Compuerta:** la fracción de muestras con `p < 0,4` pasa por `smoothstep(0,08, 0,3)`. Sube en ~2 inferencias y baja en ~4. Un reflejo o un pliegue (2 de 36 muestras) no la prende; un dedo sobre un tercio del labio la prende entera.
+- **Labio de referencia:** se aprende solo mientras se ve entero, así no aprende la mano. Sube rápido cuando el labio se aleja de la piel, por ejemplo si el tracking arrancó con la boca tapada.
+- **Sin contraste** (`|eje| < 0,03`, un labio casi del color de la piel): no hay oclusión, porque no se puede distinguir una mano del labio.
+- Las mejillas bajas no se usan para el color: en caras con barba caen sobre la barba.
+
+**GPU** (`lips.frag`):
+- Con la compuerta prendida, `w` y el delineado se multiplican por `mix(1, smoothstep(0,3, 0,6, p_píxel), compuerta)`. El borde sigue al dedo píxel a píxel.
+- Sin mano, la compuerta vale 0 exacto y una rama por uniform saltea todo: el labial queda idéntico al de antes, sin agujeros.
+- **Costo:** unas 10 operaciones, sin lecturas nuevas (la cámara y OKLab ya estaban calculados).
+
+**Referencia y tests:**
+- Python: `occlusion_visibility` y `shade(occlusion=…)` en `lip_shading.py`.
+- Host: `lip_occlusion_test.cpp`, que cubre sin mano, un reflejo, la mano tapando y saliendo, labio pálido, arranque con la boca tapada y pérdida de la cara.
+- Constantes en `engine_config.h` (`kOcclusion*`).
+
+**Limitaciones:**
+- **Lengua:** su color se parece al del labio y no se detecta.
+- **Mano sobre mejillas u ojos:** tiene el mismo color que la piel y no se distingue. Eso necesita un modelo de segmentación (§5.6 del informe), que requiere aprobar el modelo.
+- **Mano muy roja o labio muy pálido:** la compuerta puede no prenderse. **Falta calibrar los umbrales en el E20.**
+
+## 10. Limitaciones conocidas
+
+- **Lengua sobre la boca:** se pinta encima (§9).
 - **Bigote sobre el labio superior:** se pinta como labio oscuro (el pelo baja `s`). Es lo que haría un labial real debajo del bigote, pero el contorno lo pone el tracker.
 - **Tracker a 14 Hz:** con movimientos rápidos, el labial va detrás de la boca hasta que la extrapolación lo alcanza. Las palancas están en `TRACKER.md` §6.

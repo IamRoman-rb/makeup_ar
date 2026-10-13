@@ -191,6 +191,8 @@ bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
   out.sparkle = glGetUniformLocation(id, "uSparkle");
   out.linerLab = glGetUniformLocation(id, "uLinerLab");
   out.linerAmount = glGetUniformLocation(id, "uLinerAmount");
+  out.occlusionGate = glGetUniformLocation(id, "uOcclusionGate");
+  out.occlusion = glGetUniformLocation(id, "uOcclusion");
   // Constantes de la sesión: samplers y la transformación UV -> mapa.
   const float* rect = mesh::kLipsMapUvRect;
   glUseProgram(id);
@@ -474,6 +476,8 @@ void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToCl
   if (program.sparkle >= 0) glUniform1f(program.sparkle, drawLips_.sparkle);
   glUniform3fv(program.linerLab, 1, drawLips_.linerLab);
   glUniform1f(program.linerAmount, drawLips_.linerAmount * landmarks.alpha);
+  glUniform1f(program.occlusionGate, look.occlusionGate);
+  glUniform4f(program.occlusion, look.skinChromaA, look.skinChromaB, look.occlusionAxisA, look.occlusionAxisB);
   glUniform1f(program.sharpness, drawLips_.sharpness);
   glUniform1f(program.light, light);
   glUniform2f(program.glossShift, shiftU / rect[2], shiftV / rect[3]);

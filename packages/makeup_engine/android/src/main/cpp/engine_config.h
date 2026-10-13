@@ -66,6 +66,31 @@ struct EngineConfig {
   // grosor. 0,22 ≈ un trazo de ~0,8 mm centrado en el borde del labial.
   static constexpr float kLipLinerEdge = 0.22f;
 
+  // Oclusión del labial (P7, tracking/lip_occlusion.h). Cromaticidad en
+  // (a, b) / L de OKLab: una piel clara ronda (0,05, 0,07) y un labio
+  // (0,15, 0,07), ~0,1 de distancia; un labio pálido, ~0,035.
+  // Muestras de labio con cromaticidad necesarias para decidir (de 36).
+  static constexpr int kOcclusionMinSamples = 12;
+  // Contraste piel-labio mínimo: con menos no se distingue una mano del labio.
+  static constexpr float kOcclusionMinContrast = 0.03f;
+  // Una muestra con p (0 piel, 1 labio) debajo de esto se cuenta tapada.
+  static constexpr float kOcclusionSampleThreshold = 0.4f;
+  // Fracción de muestras tapadas en que la compuerta empieza y termina de
+  // prenderse: 2 de 36 (un reflejo, un pliegue) no la prenden; un dedo sobre
+  // un tercio del labio la prende entera.
+  static constexpr float kOcclusionGateLow = 0.08f;
+  static constexpr float kOcclusionGateHigh = 0.3f;
+  // Suavizado por inferencia (14 Hz): sube en ~2 inferencias, baja en ~4.
+  static constexpr float kOcclusionGateAttack = 0.6f;
+  static constexpr float kOcclusionGateRelease = 0.3f;
+  // Compuerta por debajo de esto: 0 (el shader no hace nada).
+  static constexpr float kOcclusionGateFloor = 0.02f;
+  // El labio de referencia se aprende solo con a lo sumo esta fracción tapada;
+  // sube rápido (labio más lejos de la piel) y baja lento.
+  static constexpr float kOcclusionLearnMaxFraction = 0.05f;
+  static constexpr float kOcclusionLearnRise = 0.5f;
+  static constexpr float kOcclusionLearnFall = 0.05f;
+
   // L OKLab del labio si todavía no se midió (valor del informe §5.5).
   static constexpr float kLipsFallbackLightness = 0.55f;
   // Piso de la L medida: el shader divide por ella (sombreado relativo).

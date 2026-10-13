@@ -16,6 +16,9 @@
 //           aditivo en lineal; no aparece en las sombras del labio.
 //   delineado (lips.liner): anillo sobre el borde (canal .b del mapa), mezclado
 //           encima con color · min(s, 1); tapa el brillo (spec · (1 - delineado))
+//   oclusión (mano, dedos; tracking/lip_occlusion.h): con la compuerta prendida,
+//           w y el delineado se multiplican por mix(1, parecido al labio, compuerta),
+//           donde parecido = smoothstep sobre p = dot((a,b)/L − piel, eje).
 //   salida: layerOver(color, cámara, 1 - (1 - w)(1 - delineado)) con blending premultiplicado
 //           (color.glsl): el labial va encima de la base sin pisarla
 //           alrededor de la boca.
@@ -47,6 +50,9 @@
 //   uLinerAmount   float  opacidad del delineado × fundido, [0,1]; 0 = sin delineado.
 //   uLinerEdge     float  distancia normalizada en que el delineado empieza a
 //                         desvanecerse, (0, 1) (engine_config.h: kLipLinerEdge).
+//   uOcclusionGate float  compuerta de oclusión [0,1]; 0 = sin oclusión (no se calcula).
+//   uOcclusion     vec4   xy = cromaticidad (a,b)/L de la piel; zw = eje
+//                         piel->labio / |eje|² (p = 0 piel, 1 labio).
 //   uTime          float  (SHIMMER) segundos, módulo 1000.
 //   uSparkle       float  (SHIMMER) brillo de cada destello, [0,1] (acabado shimmer:
 //                         kLipsSparkle · gloss; efecto glitter en labios: su
@@ -69,6 +75,8 @@ uniform float uLight;
 uniform highp vec3 uLinerLab;
 uniform float uLinerAmount;
 uniform float uLinerEdge;
+uniform float uOcclusionGate;
+uniform highp vec4 uOcclusion;
 #ifdef SHIMMER
 uniform highp float uTime;
 uniform float uSparkle;
@@ -88,6 +96,12 @@ uniform float uSparkle;
 // SHADING_MAX está en color.glsl).
 #define GLOSS_SHADING_LOW 0.75
 #define GLOSS_SHADING_HIGH 1.05
+// Oclusión: p (0 piel, 1 labio) en que el píxel empieza y termina de contar
+// como labio. Piso de L para la cromaticidad (en lo muy oscuro amplifica el
+// ruido de la cámara).
+#define OCCLUSION_LOW 0.3
+#define OCCLUSION_HIGH 0.6
+#define OCCLUSION_MIN_LIGHTNESS 0.05
 
 // highp: coordenadas de textura (ver camera_quad.vert).
 in highp vec2 vTexCoord;
@@ -124,6 +138,16 @@ void main() {
   // highp: entrada de oklabToLinearInGamut (ver color.glsl). La cámara llega
   // en mediump (srgbToLinear/linearToOklab): ~1e-3 de ruido, invisible.
   highp vec3 lab = linearToOklab(srgbToLinear(camera));
+  // Oclusión: con la compuerta prendida (la CPU vio muestras del labio con
+  // color de piel), el píxel que se parece a la piel pierde el labial y el
+  // delineado; el borde sigue al dedo. Rama por uniform: sin oclusión, nada.
+  if (uOcclusionGate > 0.0) {
+    highp vec2 chroma = lab.yz / max(lab.x, OCCLUSION_MIN_LIGHTNESS);
+    float lipLike = smoothstep(OCCLUSION_LOW, OCCLUSION_HIGH, dot(chroma - uOcclusion.xy, uOcclusion.zw));
+    float visible = mix(1.0, lipLike, uOcclusionGate);
+    w *= visible;
+    liner *= visible;
+  }
   // max: la CPU ya la limita a >= 0,1; esto cubre un uniform sin cargar (0).
   highp float shading = clamp(lab.x / max(uLipLightness, 0.1), 0.0, SHADING_MAX);
   highp vec3 lit = uTargetLab * shading;

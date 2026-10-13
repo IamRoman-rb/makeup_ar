@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lip_shading import LipLiner, LipParams, from_ok, liner_alpha, hex_to_srgb, oklab_to_linear_in_gamut, shade, srgb_to_oklab, to_ok  # noqa: E402
+from lip_shading import LipLiner, LipOcclusion, LipParams, from_ok, liner_alpha, hex_to_srgb, oklab_to_linear_in_gamut, occlusion_visibility, shade, srgb_to_oklab, to_ok  # noqa: E402
 
 
 def hue(lab: np.ndarray) -> float:
@@ -140,6 +140,33 @@ class ShadeTest(unittest.TestCase):
         bright = shade(camera, np.ones(2), np.ones(2), p)
         lined = shade(camera, np.ones(2), np.ones(2), p, liner=np.full(2, 0.8), liner_lab=liner.target_lab)
         self.assertLess(float(lined[1].mean()), float(bright[1].mean()))
+
+    def test_oclusion_saca_el_labial_de_la_mano(self):
+        skin_rgb = np.array([0.82, 0.64, 0.56])
+        lip_rgb = np.array([0.72, 0.42, 0.42])
+
+        def chroma(rgb):
+            lab = srgb_to_oklab(rgb)
+            return lab[1:] / lab[0]
+
+        skin, lip = chroma(skin_rgb), chroma(lip_rgb)
+        axis = (lip - skin) / np.sum((lip - skin) ** 2)
+        camera = np.stack([skin_rgb, lip_rgb, skin_rgb * 0.6])  # mano, labio, mano en sombra
+        on = LipOcclusion(gate=1.0, skin=skin, axis=axis)
+        visible = occlusion_visibility(camera, on)
+        np.testing.assert_allclose(visible, [0.0, 1.0, 0.0], atol=1e-6)
+        # Con la compuerta a medias, la mano queda con medio labial.
+        half = occlusion_visibility(camera, LipOcclusion(gate=0.5, skin=skin, axis=axis))
+        self.assertAlmostEqual(float(half[0]), 0.5)
+        # Sin compuerta, nada cambia.
+        np.testing.assert_array_equal(occlusion_visibility(camera, LipOcclusion(0.0, skin, axis)), 1.0)
+        p = self.params(gloss=0.8)
+        liner_lab = srgb_to_oklab(hex_to_srgb("#5A0A16"))
+        out = shade(camera, np.ones(3), np.ones(3), p, liner=np.full(3, 0.8), liner_lab=liner_lab, occlusion=on)
+        np.testing.assert_allclose(out[0], camera[0], atol=1e-9)  # la mano queda como está
+        np.testing.assert_allclose(out[2], camera[2], atol=1e-9)
+        free = shade(camera, np.ones(3), np.ones(3), p, liner=np.full(3, 0.8), liner_lab=liner_lab)
+        np.testing.assert_allclose(out[1], free[1], atol=1e-9)  # el labio, igual que sin mano
 
     def test_salida_siempre_en_rango(self):
         rng = np.random.default_rng(3)

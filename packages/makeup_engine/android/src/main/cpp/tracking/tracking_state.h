@@ -24,6 +24,7 @@
 #include "engine_config.h"
 #include "stat_window.h"
 #include "tracking/blazeface_decoder.h"
+#include "tracking/lip_occlusion.h"
 #include "tracking/one_euro.h"
 #include "tracking/roi.h"
 #include "tracking/triple_buffer.h"
@@ -72,6 +73,13 @@ struct FaceAppearance {
   float viewX = 0.0f;
   float viewY = 0.0f;
   float viewZ = 1.0f;
+  // Oclusión del labial (tracking/lip_occlusion.h): compuerta [0, 1] y, para
+  // el shader, cromaticidad de la piel y eje piel->labio / |eje|².
+  float occlusionGate = 0.0f;
+  float skinChromaA = 0.0f;
+  float skinChromaB = 0.0f;
+  float occlusionAxisA = 0.0f;
+  float occlusionAxisB = 0.0f;
 };
 
 struct RenderLandmarks {
@@ -172,6 +180,8 @@ class TrackingState {
   std::array<float, 80> stableBefore_{};  // x, y de los puntos de Procrustes (33)
   bool hasFace_ = false;
   FaceAppearance appearance_;
+  LipOcclusionEstimator occlusion_;
+  FaceSamples faceSamples_;  // scratch de updateAppearance
   int64_t lastLandmarkNs_ = 0;
   TripleBuffer<LandmarkFrame> frames_;
 

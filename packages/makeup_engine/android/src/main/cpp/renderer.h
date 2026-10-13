@@ -135,6 +135,8 @@ class Renderer {
     GLint sparkle = -1;  // solo SHIMMER
     GLint linerLab = -1;
     GLint linerAmount = -1;
+    GLint occlusionGate = -1;
+    GLint occlusion = -1;
     uint32_t uploadedDisplayVersion = 0;
   };
 
