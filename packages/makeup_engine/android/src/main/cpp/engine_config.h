@@ -144,8 +144,10 @@ struct EngineConfig {
   static constexpr float kGlitterSparkle = 0.9f;
   static constexpr float kGlitterDensityMin = 0.03f;
   static constexpr float kGlitterDensityMax = 0.12f;
-  // Sheen: brillo aditivo suave (lineal) con intensity 1, solo donde hay luz.
-  static constexpr float kSheenShine = 0.14f;
+  // Sheen: aclarado relativo (la luz lineal × (1 + gain)) con intensity 1,
+  // solo en las zonas más iluminadas que la piel media. Relativo y no aditivo:
+  // un brillo sumado dejaba un velo gris sobre la piel oscura (grilla).
+  static constexpr float kSheenGain = 0.35f;
   // En los labios el sheen suma brillo al mapa de brillo del labial.
   static constexpr float kLipSheenGloss = 0.35f;
   // Pecas: opacidad con intensity 1, probabilidad por celda con intensity 0 y

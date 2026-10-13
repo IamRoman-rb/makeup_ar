@@ -195,7 +195,7 @@ TEST(estiloEfectos_repartoPorPasada) {
   CHECK(face.effects());
   CHECK(face.any());  // solo efectos alcanza para dibujar la pasada
   CHECK_NEAR(face.effectAmount[static_cast<int>(makeup::EffectType::kSheen)],
-             0.25 * makeup::EngineConfig::kSheenShine, 1e-6);
+             0.25 * makeup::EngineConfig::kSheenGain, 1e-6);
   CHECK_NEAR(face.effectOnSkin[static_cast<int>(makeup::EffectType::kSheen)], 0.0, 0.0);
   CHECK_NEAR(face.effectAmount[static_cast<int>(makeup::EffectType::kFreckles)],
              makeup::EngineConfig::kFreckleOpacity, 1e-6);

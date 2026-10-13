@@ -157,7 +157,7 @@ void applyEffects(const EffectStyle effects[kMaxEffects], FaceUniforms* face, Ey
                 face->glitterDensity, lerp(EngineConfig::kGlitterDensityMin, EngineConfig::kGlitterDensityMax, k));
             break;
           case EffectType::kSheen:
-            value = k * EngineConfig::kSheenShine;
+            value = k * EngineConfig::kSheenGain;
             break;
         }
         face->effectAmount[type] = std::max(face->effectAmount[type], value);
@@ -169,7 +169,7 @@ void applyEffects(const EffectStyle effects[kMaxEffects], FaceUniforms* face, Ey
           eyes->glitter = std::max(eyes->glitter, k * EngineConfig::kGlitterSparkle);
           eyes->shimmer = true;
         } else if (effect.type == EffectType::kSheen) {
-          eyes->sheen = std::max(eyes->sheen, k * EngineConfig::kSheenShine);
+          eyes->sheen = std::max(eyes->sheen, k * EngineConfig::kSheenGain);
         }
         break;
       case EffectRegion::kLips:

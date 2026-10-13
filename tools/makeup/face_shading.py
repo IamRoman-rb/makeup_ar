@@ -168,8 +168,9 @@ def _fwidth(x: np.ndarray) -> np.ndarray:
 
 FRECKLE_CELLS = np.array([80.0, 140.0])
 GLITTER_CELLS = np.array([120.0, 210.0])
-FRECKLE_DARKEN = 0.74
-FRECKLE_WARM = np.array([0.018, 0.03])
+FRECKLE_SCALE = np.array([0.74, 1.2, 1.35])  # face.frag: FRECKLE_SCALE
+SHEEN_SHADING_LOW = 0.95  # color.glsl
+SHEEN_SHADING_HIGH = 1.2
 
 
 def freckle_alpha(map_uv: np.ndarray, density: float, side: float = 0.0, aa: np.ndarray | float | None = None):
@@ -187,8 +188,14 @@ def freckle_alpha(map_uv: np.ndarray, density: float, side: float = 0.0, aa: np.
 
 
 def freckle_lab(camera_lab: np.ndarray) -> np.ndarray:
-    """Color de las pecas: la piel del píxel más oscura y más cálida."""
-    return np.concatenate([camera_lab[..., :1] * FRECKLE_DARKEN, camera_lab[..., 1:] + FRECKLE_WARM], axis=-1)
+    """Color de las pecas: la piel del píxel más oscura y más cálida
+    (proporcional, para que valga en todos los tonos)."""
+    return camera_lab * FRECKLE_SCALE
+
+
+def sheen_gain(shading: np.ndarray, gain: float) -> np.ndarray:
+    """Factor sobre la luz lineal: solo aclara lo más iluminado que la piel media."""
+    return 1.0 + gain * _smoothstep(SHEEN_SHADING_LOW, SHEEN_SHADING_HIGH, shading)
 
 
 def glitter_sparkle(map_uv: np.ndarray, density: float, tick: float = 0.0, side: float = 0.0) -> np.ndarray:

@@ -55,8 +55,8 @@
 //   uLashRoot       float  oscurecimiento de la raíz (volumen), [0,1].
 //   uWing           float  largo del wing, [0,1] del largo máximo (0 = sin wing).
 //                          Con uWing = 0 la máscara del wing es 0 (smoothstep(0, 0, x) = 1).
-//   uEyeSheen       float  brillo del efecto sheen sobre párpado y pliegue × fundido,
-//                          [0, ~0,2] (lineal); 0 = apagado.
+//   uEyeSheen       float  ganancia relativa del efecto sheen sobre párpado y
+//                          pliegue × fundido, [0, ~0,4]; 0 = apagado.
 //   uGlitter        float  (SHIMMER) brillo de los destellos del efecto glitter
 //                          sobre párpado y pliegue × fundido, [0,1].
 //   uTime           float  (SHIMMER) segundos, módulo 1000.
@@ -233,7 +233,9 @@ void main() {
   vec3 outLinear = oklabToLinearInGamut(lab);
 
   // Efectos encima de todo: el delineado y las pestañas los tapan.
-  shine += (glitter + effectZone * uEyeSheen) * (1.0 - liner) * (1.0 - lash);
+  float uncovered = (1.0 - liner) * (1.0 - lash);
+  shine += glitter * uncovered;
+  outLinear *= 1.0 + effectZone * uEyeSheen * uncovered * smoothstep(SHEEN_SHADING_LOW, SHEEN_SHADING_HIGH, shading);
   shine *= smoothstep(SHINE_SHADING_LOW, SHINE_SHADING_HIGH, shading);
   outLinear = min(outLinear + vec3(shine), vec3(1.0));
   fragColor = layerOver(linearToSrgb(outLinear), camera, 1.0 - keep);

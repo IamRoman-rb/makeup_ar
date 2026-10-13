@@ -33,7 +33,8 @@ for sub in ("tools/makeup", "tools/lips", "tools/uv_masks"):
     sys.path.insert(0, str(ROOT / sub))
 import gen_face_maps as fm  # noqa: E402
 import gen_lips_maps as lm  # noqa: E402
-from face_shading import Layer, blend, compose, lash_alpha, layer_over  # noqa: E402
+from face_shading import (Layer, blend, compose, freckle_alpha, freckle_lab, glitter_sparkle,  # noqa: E402
+                          lash_alpha, layer_over, sheen_gain)
 from lip_shading import LipParams, from_ok, hex_to_srgb, lin_to_srgb, shade, srgb_to_oklab, to_ok  # noqa: E402
 
 PRESETS_DART = ROOT / "lib/features/ar/domain/recipe_presets.dart"
@@ -109,7 +110,10 @@ class Maps:
         self.u, self.v = np.meshgrid(us, vs)
         self.mirrored = np.minimum(self.u, 1.0 - self.u)
         face = sample(rgb, face_rect, self.mirrored, self.v)
-        self.skin, self.contour, self.highlight = face[..., 0], face[..., 1], face[..., 2]
+        self.skin, self.contour, self.highlight, self.cheeks_nose = (face[..., i] for i in range(4))
+        # Coordenadas del mapa de media cara (las de los efectos de face.frag).
+        self.face_map_uv = np.stack([(self.mirrored - face_rect[0]) / face_rect[2],
+                                     (self.v - face_rect[1]) / face_rect[3]], axis=-1)
         self.eye_a = sample(a8, eye_rect, self.mirrored, self.v)
         self.eye_b = sample(b8, eye_rect, self.mirrored, self.v)
         self.eye_c = sample(c8, eye_rect, self.mirrored, self.v)
@@ -180,8 +184,40 @@ def apply_recipe(camera: np.ndarray, maps: Maps, recipe: dict, k: dict[str, floa
     if "highlight" in skin:
         layers.append(Layer(color(skin["highlight"]["color"]), maps.highlight * skin["highlight"]["opacity"],
                             luma_follow=k["kHighlightLumaFollow"], shine=k["kHighlightShine"]))
-    if layers:
+    # Efectos de cara (variante EFFECTS): pecas como capa (después de la base),
+    # sheen y glitter como brillo. Los de ojos y labios no se simulan acá.
+    shine_extra = np.zeros(camera.shape[:2])
+    gain = np.ones(camera.shape[:2])
+    camera_lab = to_ok(np.power(camera, 2.2))
+    shading = np.clip(camera_lab[..., 0] / max(skin_ref, 0.1), 0.0, 1.6)
+    for effect in recipe.get("effects", []):
+        kind = effect["type"]
+        region = effect.get("region", "eyes" if kind == "glitter" else "cheeks_nose")
+        if region not in ("cheeks_nose", "full_face"):
+            continue
+        mask = maps.skin if region == "full_face" else maps.cheeks_nose
+        k_int = effect["intensity"]
+        if kind == "freckles":
+            density = k["kFreckleDensityMin"] + (k["kFreckleDensityMax"] - k["kFreckleDensityMin"]) * k_int
+            alpha = np.zeros(camera.shape[:2])
+            for side in (0.0, 1.0):
+                part = freckle_alpha(maps.face_map_uv, density, side=side)
+                alpha = np.where(maps.side == side, part, alpha)
+            # Capa con el color de la piel media (compose lo multiplica por el
+            # sombreado de cada píxel, como el shader con la piel del píxel).
+            skin_lab = np.median(camera_lab[maps.skin > 0.9], axis=0)
+            layers.insert(1 if layers else 0,
+                          Layer(freckle_lab(skin_lab), alpha * mask * k_int * k["kFreckleOpacity"]))
+        elif kind == "sheen":
+            gain = gain * sheen_gain(shading, mask * k_int * k["kSheenGain"])
+        elif kind == "glitter":
+            density = k["kGlitterDensityMin"] + (k["kGlitterDensityMax"] - k["kGlitterDensityMin"]) * k_int
+            shine_extra += glitter_sparkle(maps.face_map_uv, density) * mask * k_int * k["kGlitterSparkle"]
+    if layers or shine_extra.any() or (gain != 1).any():
         result, coverage = compose(camera, layers, skin_ref)
+        linear = np.power(result, 2.2) * gain[..., None] + shine_extra[..., None]
+        result = lin_to_srgb(np.minimum(linear, 1.0))
+        coverage = np.where((shine_extra > 0) | (gain != 1), np.maximum(coverage, 1e-6), coverage)
         out = blend(out, *layer_over(result, camera, coverage))
 
     # Pasada de ojos: sombras en el orden de la receta y el delineado encima.

@@ -33,7 +33,8 @@
 //   uHighlightShine float brillo aditivo máximo del iluminador, [0, ~0,3]
 //                         (lineal).
 //   uEffectAmount  vec3   (EFFECTS) pecas (opacidad [0,1]), glitter (brillo de
-//                         cada destello [0,1]) y sheen (brillo [0, ~0,2]),
+//                         cada destello [0,1]) y sheen (ganancia relativa de la
+//                         luz [0, ~0,4]),
 //                         × fundido; 0 = apagado.
 //   uEffectOnSkin  vec3   (EFFECTS) por efecto: 1 = región full_face (canal de
 //                         piel), 0 = cheeks_nose (canal A).
@@ -42,9 +43,10 @@
 //
 // Variante EFFECTS (Renderer la usa si la receta tiene efectos de cara):
 //   pecas    puntos por celda (hash: presencia, centro, radio), color = la piel
-//            del píxel más oscura y cálida; capa después de la base.
+//            del píxel más oscura y cálida (proporcional: vale en todo tono);
+//            capa después de la base.
 //   glitter  destellos por celda que cambian con el tiempo, aditivos.
-//   sheen    brillo aditivo suave.
+//   sheen    aclarado relativo donde la piel ya está más iluminada.
 
 precision mediump float;
 
@@ -69,8 +71,8 @@ uniform highp float uTime;
 #define GLITTER_CELLS vec2(120.0, 210.0)
 #define GLITTER_RATE 5.0
 #define TICK_PERIOD 256.0
-#define FRECKLE_DARKEN 0.74
-#define FRECKLE_WARM vec2(0.018, 0.03)
+// Pecas: L × 0,74 y croma × 1,2 / 1,35 (más oscuras y más cálidas que la piel).
+#define FRECKLE_SCALE vec3(0.74, 1.2, 1.35)
 #endif
 
 
@@ -131,7 +133,7 @@ void main() {
   float shine = 0.0;
 #ifdef EFFECTS
   // Color de las pecas: la piel de la cámara más oscura y más cálida.
-  highp vec3 freckleLab = vec3(lab.x * FRECKLE_DARKEN, lab.yz + FRECKLE_WARM);
+  highp vec3 freckleLab = lab * FRECKLE_SCALE;
 #endif
   mixLayer(lab, keep, shine, uLayerLab[0] * shading, a.x, uLayerLumaFollow.x, 0.0);
 #ifdef EFFECTS
@@ -146,7 +148,8 @@ void main() {
   highp vec2 gcell = floor(vMapUv * GLITTER_CELLS) + vec2(vSide * 997.0, 0.0);
   highp float tick = mod(floor(uTime * GLITTER_RATE), TICK_PERIOD);
   float sparkle = step(1.0 - uEffectDensity.x, hash12(gcell + vec2(tick * 17.0, tick * 31.0)));
-  shine += sparkle * effect.y + effect.z;
+  shine += sparkle * effect.y;
+  outLinear *= 1.0 + effect.z * smoothstep(SHEEN_SHADING_LOW, SHEEN_SHADING_HIGH, shading);
 #endif
   shine *= smoothstep(SHINE_SHADING_LOW, SHINE_SHADING_HIGH, shading);
   outLinear = min(outLinear + vec3(shine), vec3(1.0));
