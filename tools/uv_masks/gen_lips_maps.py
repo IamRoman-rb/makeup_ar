@@ -2,9 +2,13 @@
 
 Salidas (versionadas: el build de Android no necesita Python):
   packages/makeup_engine/android/src/main/cpp/mesh/lips_maps.h
-      kLipsMapRg: textura RG8 que cubre solo el rectángulo UV de los labios.
+      kLipsMapRgba: textura RGBA8 que cubre solo el rectángulo UV de los labios.
         R = máscara de labial (1 dentro, 0 en la boca y fuera; borde difuminado).
         G = mapa de brillo (gaussianas sobre el labio inferior y el arco superior).
+        B = distancia al borde del labial (el contorno externo corrido
+            outerExpand), a ambos lados, normalizada por liner.maxDistance:
+            el delineado de labios es 1 - smoothstep sobre este canal.
+        A = sin uso (RGBA8: Mali maneja mal los texels de 3 bytes).
       kLipsMapUvRect: rectángulo UV canónico que cubre el mapa.
       kLipsRegionTriangles: triángulos de la malla a dibujar para la capa de
         labios (tocan el rectángulo; sin los que cruzan la boca).
@@ -22,6 +26,7 @@ canónicas; el labio mide ~0,236 de ancho):
   mask.contourSubdivision  puntos por tramo del suavizado de los contornos
                      (Catmull-Rom por los landmarks); 1 = polígono crudo.
   gloss[]            gaussianas: centro (u, v), sigmaU/sigmaV y amount [0, 1].
+  liner.maxDistance  distancia UV que corresponde a 1,0 en el canal B.
 
 Fuente de la geometría: third_party/mediapipe_face_geometry (Apache 2.0), vía
 las funciones de tools/mesh/gen_canonical_mesh.py.
@@ -138,7 +143,8 @@ def build(params: dict):
         du = (points[:, 0] - g["u"]) / g["sigmaU"]
         dv = (points[:, 1] - g["v"]) / g["sigmaV"]
         gloss = np.maximum(gloss, g["amount"] * np.exp(-0.5 * (du * du + dv * dv)))
-    rg = np.stack([mask, gloss], axis=1).reshape(height, width, 2)
+    liner = np.clip(np.abs(signed_outer - edge) / params["liner"]["maxDistance"], 0.0, 1.0)
+    rg = np.stack([mask, gloss, liner, np.zeros_like(mask)], axis=1).reshape(height, width, 4)
     rg8 = np.clip(np.rint(rg * 255.0), 0, 255).astype(np.uint8)
     # El brillo solo existe donde hay labio (el shader igual multiplica por la
     # máscara); se compara ya cuantizado para que no quede brillo con máscara 0.
@@ -167,9 +173,10 @@ def header_text(params: dict, rg8: np.ndarray, rect, region) -> str:
         "// Generado por tools/uv_masks/gen_lips_maps.py desde tools/uv_masks/lips.json.",
         "// No editar a mano: cambiar los parámetros y regenerar.",
         "//",
-        "// Mapa UV de labios: textura RG8 que cubre kLipsMapUvRect del UV canónico",
+        "// Mapa UV de labios: textura RGBA8 que cubre kLipsMapUvRect del UV canónico",
         "// (u0, v0, ancho, alto; v hacia arriba). Fila 0 = v0. R = máscara de labial",
-        "// con el borde difuminado; G = mapa de brillo.",
+        "// con el borde difuminado; G = mapa de brillo; B = distancia al borde del",
+        "// labial / kLipLinerMaxDistanceUv (delineado de labios); A = sin uso.",
         "#pragma once",
         "",
         "#include <cstdint>",
@@ -183,7 +190,9 @@ def header_text(params: dict, rg8: np.ndarray, rect, region) -> str:
         f"inline constexpr int kLipsRegionTriangleCount = {len(region)};",
         "",
         mesh.c_array("kLipsRegionTriangles", "uint16_t", [i for t in region for i in t], 15, str),
-        mesh.c_array("kLipsMapRg", "uint8_t", rg8.ravel().tolist(), 32, str),
+        f"inline constexpr float kLipLinerMaxDistanceUv = {fmt(params['liner']['maxDistance'])};",
+        "",
+        mesh.c_array("kLipsMapRgba", "uint8_t", rg8.ravel().tolist(), 32, str),
         "}  // namespace makeup::mesh",
         "",
     ])

@@ -38,9 +38,9 @@ constexpr float kMaxFrameDtSeconds = 0.1f;
 // uTime del shimmer: módulo para que el float no pierda precisión.
 constexpr double kTimeWrapSeconds = 1000.0;
 
-static_assert(sizeof(mesh::kLipsMapRg) ==
-                  static_cast<size_t>(mesh::kLipsMapWidth) * mesh::kLipsMapHeight * 2,
-              "mapa de labios RG8 incompleto");
+static_assert(sizeof(mesh::kLipsMapRgba) ==
+                  static_cast<size_t>(mesh::kLipsMapWidth) * mesh::kLipsMapHeight * 4,
+              "mapa de labios RGBA8 incompleto");
 
 int64_t monotonicNowNs() {
   timespec ts{};
@@ -259,7 +259,7 @@ bool Renderer::buildMeshGeometry() {
   return true;
 }
 
-// Mapa de labios RG8 (mesh/lips_maps.h): se sube una vez. Lineal para que la
+// Mapa de labios RGBA8 (mesh/lips_maps.h): se sube una vez. Lineal para que la
 // máscara y el brillo se amplíen suaves; CLAMP_TO_EDGE con borde vacío (0)
 // para que el brillo desplazado fuera del mapa no aparezca.
 bool Renderer::buildLipsMap() {
@@ -271,11 +271,11 @@ bool Renderer::buildLipsMap() {
   glGenTextures(1, &texture);
   lipsMap_.reset(texture);
   glBindTexture(GL_TEXTURE_2D, texture);
-  glTexStorage2D(GL_TEXTURE_2D, 1, GL_RG8, mesh::kLipsMapWidth, mesh::kLipsMapHeight);
+  glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, mesh::kLipsMapWidth, mesh::kLipsMapHeight);
   // Filas de 256 × 2 bytes: múltiplo de 4, pero se fija por si el mapa cambia.
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, mesh::kLipsMapWidth, mesh::kLipsMapHeight, GL_RG,
-                  GL_UNSIGNED_BYTE, mesh::kLipsMapRg);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, mesh::kLipsMapWidth, mesh::kLipsMapHeight, GL_RGBA,
+                  GL_UNSIGNED_BYTE, mesh::kLipsMapRgba);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

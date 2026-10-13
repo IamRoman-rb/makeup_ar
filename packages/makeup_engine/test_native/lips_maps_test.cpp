@@ -17,7 +17,7 @@ int sampleMap(float u, float v, int channel) {
   int y = static_cast<int>((v - rect[1]) / rect[3] * mesh::kLipsMapHeight);
   x = x < 0 ? 0 : (x >= mesh::kLipsMapWidth ? mesh::kLipsMapWidth - 1 : x);
   y = y < 0 ? 0 : (y >= mesh::kLipsMapHeight ? mesh::kLipsMapHeight - 1 : y);
-  return mesh::kLipsMapRg[(y * mesh::kLipsMapWidth + x) * 2 + channel];
+  return mesh::kLipsMapRgba[(y * mesh::kLipsMapWidth + x) * 4 + channel];
 }
 
 float vertexU(int vertex) { return mesh::kUvs[vertex * 2]; }
@@ -28,7 +28,7 @@ using Triangle = std::tuple<int, int, int>;
 }  // namespace
 
 TEST(labiosMapa_tamanos) {
-  CHECK(sizeof(mesh::kLipsMapRg) == static_cast<size_t>(mesh::kLipsMapWidth) * mesh::kLipsMapHeight * 2);
+  CHECK(sizeof(mesh::kLipsMapRgba) == static_cast<size_t>(mesh::kLipsMapWidth) * mesh::kLipsMapHeight * 4);
   CHECK(sizeof(mesh::kLipsRegionTriangles) / sizeof(uint16_t) ==
         static_cast<size_t>(mesh::kLipsRegionTriangleCount) * 3);
   for (uint16_t index : mesh::kLipsRegionTriangles) CHECK(index < mesh::kVertexCount);
@@ -66,7 +66,7 @@ TEST(labiosMapa_brilloSobreElLabioInferior) {
   CHECK(sampleMap(0.5f, lowerV, 1) > 200);
   // Sin brillo fuera de la máscara.
   for (int i = 0; i < mesh::kLipsMapWidth * mesh::kLipsMapHeight; ++i) {
-    if (mesh::kLipsMapRg[i * 2] == 0) CHECK(mesh::kLipsMapRg[i * 2 + 1] == 0);
+    if (mesh::kLipsMapRgba[i * 4] == 0) CHECK(mesh::kLipsMapRgba[i * 4 + 1] == 0);
   }
 }
 
@@ -89,4 +89,16 @@ TEST(labiosMapa_triangulosDeZona) {
     // Un triángulo con los 3 vértices en el contorno interno cubre la boca.
     CHECK(onInner < 3);
   }
+}
+
+// Canal B: distancia al borde del labial (delineado de labios). ~0 sobre el
+// contorno externo, 1 en el centro del labio y lejos afuera.
+TEST(labiosMapa_distanciaAlBorde) {
+  for (int i = 0; i < mesh::kLipsOuterCount; ++i) {
+    const int v = mesh::kLipsOuter[i];
+    CHECK(sampleMap(vertexU(v), vertexV(v), 2) < 80);  // < ~0,3 · kLipLinerMaxDistanceUv
+  }
+  CHECK(sampleMap(0.5f, 0.5f * (vertexV(0) + vertexV(13)), 2) == 255);  // centro del labio superior
+  CHECK(sampleMap(0.5f, vertexV(0) + 0.011f, 2) == 255);                // arriba, lejos del borde
+  CHECK(mesh::kLipLinerMaxDistanceUv > 0.0f);
 }

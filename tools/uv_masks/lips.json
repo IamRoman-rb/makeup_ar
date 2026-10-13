@@ -11,6 +11,7 @@
     "innerFeather": 0.0035,
     "contourSubdivision": 8
   },
+  "liner": {"maxDistance": 0.008},
   "gloss": [
     {"u": 0.5, "v": 0.2825, "sigmaU": 0.032, "sigmaV": 0.0065, "amount": 1.0},
     {"u": 0.468, "v": 0.3335, "sigmaU": 0.011, "sigmaV": 0.0038, "amount": 0.55},
