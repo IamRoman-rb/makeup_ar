@@ -16,10 +16,10 @@ void main() {
     final glam = preset('golden_glam');
     final lips = adjustRecipe(glam, zone: MakeupZone.lips);
     expect(lips.lips, isNotNull);
-    expect([lips.cheeks, lips.eyes, lips.skin, lips.effects], everyElement(isNull));
+    expect([lips.cheeks, lips.eyes, lips.skin], everyElement(isNull));
     final eyes = adjustRecipe(glam, zone: MakeupZone.eyes);
     expect(eyes.eyes?.shadow?.length, 3);
-    expect([eyes.lips, eyes.cheeks, eyes.skin, eyes.effects], everyElement(isNull));
+    expect([eyes.lips, eyes.cheeks, eyes.skin], everyElement(isNull));
     final cheeks = adjustRecipe(glam, zone: MakeupZone.cheeks);
     expect(cheeks.cheeks?.placement, CheekPlacement.high);
     expect([cheeks.lips, cheeks.eyes, cheeks.skin], everyElement(isNull));
@@ -28,6 +28,9 @@ void main() {
     expect([skin.lips, skin.eyes, skin.cheeks], everyElement(isNull));
     expect(adjustRecipe(glam).effects, isNotNull);
     expect(skin.name, glam.name);
+    // El glitter de Glam dorado es de los ojos: sale con "Ojos", no con "Labios".
+    expect(eyes.effects?.single.type, EffectType.glitter);
+    expect(lips.effects, isEmpty);
   });
 
   test('la intensidad escala todas las opacidades y se recorta a 1', () {
@@ -47,6 +50,20 @@ void main() {
 
     final gothic = preset('gothic');
     expect(adjustRecipe(gothic, intensity: 0.5).skin?.contour?.opacity, closeTo(0.15, 1e-9));
+  });
+
+  test('zona de cada efecto según su región o su tipo', () {
+    expect(effectZone(const MakeupEffect(type: EffectType.sheen, intensity: 0.2, region: EffectRegion.cheeksNose)),
+        MakeupZone.cheeks);
+    expect(effectZone(const MakeupEffect(type: EffectType.glitter, intensity: 0.2, region: EffectRegion.lips)),
+        MakeupZone.lips);
+    expect(effectZone(const MakeupEffect(type: EffectType.freckles, intensity: 0.2, region: EffectRegion.fullFace)),
+        MakeupZone.skin);
+    expect(effectZone(const MakeupEffect(type: EffectType.glitter, intensity: 0.2)), MakeupZone.eyes);
+    expect(effectZone(const MakeupEffect(type: EffectType.freckles, intensity: 0.2)), MakeupZone.cheeks);
+    final pink = preset('fresh_pink');
+    expect(adjustRecipe(pink, zone: MakeupZone.cheeks).effects?.single.type, EffectType.sheen);
+    expect(adjustRecipe(pink, zone: MakeupZone.eyes).effects, isEmpty);
   });
 
   test('cambia el acabado del labial', () {

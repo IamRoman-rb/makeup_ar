@@ -54,15 +54,29 @@ MakeupRecipe adjustRecipe(
             contour: _scaleLayer(skin.contour, scale),
             highlight: _scaleLayer(skin.highlight, scale),
           ),
-    // Los efectos no son de una zona: solo con la cara completa.
-    effects: effects == null || zone != MakeupZone.all
+    // Cada efecto va con la zona de su región (sin región, la que usa el motor
+    // según el tipo); full_face solo con "Todo" o "Piel".
+    effects: effects == null
         ? null
         : [
             for (final effect in effects)
-              MakeupEffect(type: effect.type, intensity: scale(effect.intensity), region: effect.region),
+              if (shows(effectZone(effect)))
+                MakeupEffect(type: effect.type, intensity: scale(effect.intensity), region: effect.region),
           ],
   );
 }
+
+/// Zona a la que pertenece un efecto. Sin región, la que usa el motor según
+/// el tipo (RecipeParams.kt): glitter en los ojos; sheen y pecas en mejillas
+/// y nariz.
+MakeupZone effectZone(MakeupEffect effect) => switch (effect.region ?? _defaultRegion(effect.type)) {
+      EffectRegion.eyes => MakeupZone.eyes,
+      EffectRegion.lips => MakeupZone.lips,
+      EffectRegion.cheeksNose => MakeupZone.cheeks,
+      EffectRegion.fullFace => MakeupZone.skin,
+    };
+
+EffectRegion _defaultRegion(EffectType type) => type == EffectType.glitter ? EffectRegion.eyes : EffectRegion.cheeksNose;
 
 ColorLayer? _scaleLayer(ColorLayer? layer, double Function(double) scale) =>
     layer == null ? null : ColorLayer(color: layer.color, opacity: scale(layer.opacity));
