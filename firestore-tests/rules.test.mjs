@@ -145,3 +145,13 @@ test('looks: lectura pública, escritura solo admin', async () => {
   assert.equal(await set('looks/look2', 'admin', { name: 'Nuevo' }), OK);
   assert.equal(await remove('looks/look1', 'admin'), OK);
 });
+
+// --- Cuota de generateRecipe (F2): solo la escribe la función ----------------
+
+test('usage: ni el dueño ni un admin lo leen o escriben desde el cliente', async () => {
+  await set('users/alice/usage/20261013', 'owner', { count: 3 });
+  assert.equal(await read('users/alice/usage/20261013', 'alice'), DENIED);
+  assert.equal(await set('users/alice/usage/20261013', 'alice', { count: 0 }), DENIED);
+  assert.equal(await remove('users/alice/usage/20261013', 'alice'), DENIED);
+  assert.equal(await set('users/admin/usage/20261013', 'admin', { count: 0 }), DENIED);
+});

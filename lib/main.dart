@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'features/studio/data/app_check_setup.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'splash_screen.dart';
@@ -10,6 +11,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Antes de cualquier Cloud Function (generateRecipe exige App Check).
+  await activateAppCheck();
   await VipService.configure();
   runApp(const ARMakeupApp());
 }

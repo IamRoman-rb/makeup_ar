@@ -40,6 +40,8 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Tests del plugin: `flutter test` dentro de `packages/makeup_engine` (Dart) y `android/gradlew.bat :makeup_engine:testDebugUnitTest` (JVM; necesita `JAVA_HOME` apuntando al JBR de Android Studio).
 - Tests de host del C++ del motor (matemática del tracker, sin GL; necesita Visual Studio con C++): `packages\makeup_engine\test_native\run_host_tests.cmd [filtro]`.
 - Reglas de Firestore (emulador, sin dependencias npm; necesita `JAVA_HOME` al JBR de Android Studio): `firebase emulators:exec --only firestore --project demo-armakeup "node --test --test-reporter=tap firestore-tests/rules.test.mjs"`.
+- Cloud Functions (`functions/`, Node 22 + TypeScript): `npm install` y `npm test` dentro de `functions/` (con la cuota contra el emulador: `npm run test:emulator`, necesita `JAVA_HOME` y java en el PATH). Deploy (lo corre el usuario): `firebase deploy --only functions --project armakeupapp`. Diseño y pasos en `docs/ar_engine/F2_PLAN.md`.
+- App Check: `--dart-define=APP_CHECK=debug|playIntegrity` (por defecto debug fuera de release). Callables contra el emulador: `--dart-define=FUNCTIONS_EMULATOR=127.0.0.1:5001` + `adb reverse tcp:5001 tcp:5001`.
 - Paridad del esquema de recetas: `python tools/studio/validate_recipe_cases.py` (requiere `jsonschema`). Si tocás el esquema o `test/fixtures/recipe_v2_cases.json`, corré esto y `flutter test test/features`.
 
 ## Reglas de código (Dart)

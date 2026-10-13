@@ -1,4 +1,44 @@
-# F2: plan de la Cloud Function `generateRecipe` (para aprobar)
+# F2: Cloud Function `generateRecipe`
+
+## Estado (2026-10-13): implementada, falta desplegar
+
+**Decisiones tomadas:**
+
+| # | Decisión | Elegido |
+|---|---|---|
+| 1 | Plan Blaze | Lo activás vos, con una alerta de presupuesto de USD 5 por mes. |
+| 2 | Proveedor de LLM | **Gemini en Vertex AI**, modelo `gemini-3.5-flash`, estable hasta mayo de 2027 como mínimo. No hay API key: la función usa la cuenta de servicio del proyecto (ADC) y no necesita Secret Manager. El modelo y la ubicación se cambian con los parámetros `GEMINI_MODEL` y `GEMINI_LOCATION`. |
+| 3 | Dependencias del servidor | `firebase-functions`, `firebase-admin`, `ajv` y `@google/genai` (todas Apache 2.0 o MIT). En desarrollo: `typescript` y `@types/node`. |
+| 4 | Dependencias de la app | `cloud_functions` y `firebase_app_check`. |
+| 5 | Cuota | 20 por día y por admin (`ADMIN_DAILY_QUOTA`). |
+| 6 | Quién genera | Solo admins, con `users/{uid}.is_admin` leído con el Admin SDK. |
+
+**Código:**
+- **Función:** `functions/src/` (`generateRecipe.ts`, `quota.ts`, `recipeSchema.ts`, `prompt.ts`, `llm/`).
+  - El esquema se copia de `docs/ar_engine/recipe_v2.schema.json` al compilar.
+  - El system prompt incluye el esquema completo.
+- **App:**
+  - `lib/features/studio/data/cloud_recipe_generator.dart`: vuelve a validar cada variante y, si no queda ninguna, usa un preset;
+  - `app_check_setup.dart`: `--dart-define=APP_CHECK=debug|playIntegrity`; por defecto, debug fuera de release.
+
+**Tests:**
+- `npm test` en `functions/`: 57 tests, entre ellos la paridad con los 44 casos, la cuota, el LLM caído o que devuelve basura, remix y que no haya keys en el repo.
+- `npm run test:emulator` corre además la cuota con transacciones reales.
+- `flutter test test/features/studio`.
+- Reglas: `usage` sin acceso del cliente.
+
+**Para desplegar (lo hacés vos, una vez):**
+1. Activar el plan Blaze y crear la alerta de presupuesto en Google Cloud Billing.
+2. Habilitar la **Vertex AI API** en el proyecto `armakeupapp`. La cuenta de servicio de las functions necesita el rol "Vertex AI User".
+3. App Check:
+   - registrar la app Android con **Play Integrity**;
+   - para probar en el E20 con un build de profile, registrar el **token de debug**. Aparece en logcat como `DebugAppCheckProvider` al abrir la app.
+4. Desde `functions/`, correr `npm install`. Después, desde la raíz: `firebase deploy --only functions,firestore:rules --project armakeupapp`.
+
+---
+
+## Plan original (aprobado con cambios: ver arriba)
+
 
 El prompt F2 del informe pide **"plan primero y mostrame el plan antes de editar"**. Esto es el plan; no se escribió código. Contrato: `motor_ar_propio.md` §10.4 y §10.9.
 
