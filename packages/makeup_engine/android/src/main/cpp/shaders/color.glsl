@@ -91,9 +91,6 @@ highp vec3 oklabToLinearInGamut(highp vec3 lab) {
 // El sheen solo aclara lo que ya está más iluminado que la piel media.
 #define SHEEN_SHADING_LOW 0.95
 #define SHEEN_SHADING_HIGH 1.2
-// El sheen solo aclara lo que ya está más iluminado que la piel media.
-#define SHEEN_SHADING_LOW 0.95
-#define SHEEN_SHADING_HIGH 1.2
 
 // Salida de una capa de maquillaje (cara, ojos, labios) con blending
 // premultiplicado: glBlendFuncSeparate(ONE, ONE_MINUS_SRC_ALPHA, ZERO, ONE).

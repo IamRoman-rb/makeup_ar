@@ -1,6 +1,10 @@
-# P5: cara, ojos y API final
+# P5–P6: cara, ojos, pestañas, efectos y API final
 
-Este documento describe el resto de las regiones de la receta (informe §5.4–5.8), tal como quedaron implementadas: rubor, base, contorno, iluminador, sombras y delineado. También cubre la API Dart que queda estable, cómo regenerar los datos y cómo probarlo en el E20. Los labios están en `LIPS.md`.
+Este documento describe el resto de las regiones de la receta (informe §5.4–5.8 y §10.8), tal como quedaron implementadas:
+- **P5:** rubor, base, contorno, iluminador, sombras y delineado;
+- **P6:** pestañas y efectos procedurales (pecas, glitter, sheen).
+
+También cubre la API Dart que queda estable, cómo regenerar los datos y cómo probarlo en el E20. Los labios están en `LIPS.md`. Con P6 el motor dibuja la receta `makeup-recipe/2` completa, salvo el delineado de labios.
 
 ## 1. Qué hace
 
@@ -13,8 +17,8 @@ En Espejo → **Filtro de prueba**, cada look se aplica completo.
 - **Mantené para comparar** y **Ver puntos**: igual que en P4.
 
 **Qué no se dibuja todavía:**
-- **Pestañas y efectos** (pecas, glitter, sheen): quedan para la fase 2, según lo acordado.
 - **Delineado de labios** (`lips.liner`).
+- **Pestañas en 3D:** las pestañas de P6 se pintan sobre la piel. De perfil no salen del contorno de la cara (§10).
 
 ## 2. Flujo por frame
 
@@ -106,7 +110,7 @@ salida: layerOver(color, cámara, 1 − Π(1 − a_i))
 | Pasada | Lecturas | Cubre |
 |---|---|---|
 | Cara | 2 (mapa de cara y, solo donde hay alguna capa, cámara) | toda la cara, ~25–35 % de la pantalla |
-| Ojos | 3 (mapas A y B y, solo donde hay alguna capa, cámara) | zona de ojos |
+| Ojos | 4 (mapas A, B y C y, solo donde hay alguna capa, cámara) | zona de ojos |
 | Labios | 3 (P4) | ~2 % |
 
 ## 5. Calibración
@@ -163,6 +167,8 @@ flutter run --profile -t lib/main_tracker.dart -d <id-del-E20>
 | Mejillas | Natural (apple) y Glam dorado (high). | El rubor queda en el lugar del placement. |
 | Piel | Gótico (contorno) y Glam dorado (iluminador). | El contorno queda bajo el pómulo; el iluminador, arriba del pómulo y en el puente de la nariz; no tapan cejas, ojos ni labios. |
 | Perfil | Girar la cabeza ~60°. | Nada se pinta fuera de la cara. |
+| Pestañas | Ojos abiertos, cerrados y mirando hacia arriba, con cada preset. | Salen de la línea de pestañas sin flotar ni pintar el ojo. |
+| Efectos | Glam dorado (glitter en párpados) y Rosado fresco (sheen en mejillas y nariz); zona "Ojos" y "Mejillas". | El glitter titila en el párpado; el sheen aclara apenas pómulos y nariz. |
 | Respaldo | `--dart-define=AR_RENDERER=painter` | El Espejo muestra la cámara normal con el aviso. |
 
 ### Resultados
@@ -210,9 +216,54 @@ No hubo hallazgos críticos:
 
 Estimación sin medir del `perf-auditor`: la pasada de cara cuesta unos 3–6 ms de GPU en el E20, los ojos 0,5–1 ms y los labios 0,2–0,4 ms.
 
-## 9. Limitaciones conocidas
+## 9. Pestañas y efectos (P6)
 
-- **Pestañas, efectos y delineado de labios:** no se dibujan (§1).
+### Pestañas (`eyes.frag`, última capa de los ojos)
+
+**Mapa `kEyeMapC`** (RGBA8 del rectángulo del ojo). Para cada línea de pestañas, superior e inferior, guarda:
+- la posición a lo largo de la línea, de 0 en el ángulo externo a 1 en el lagrimal;
+- la altura hacia afuera del ojo, normalizada por `kLashMaxLengthUv` (~7 mm) o por `kLowerLashMaxLengthUv`.
+
+Altura 1 significa "sin pestañas": dentro del ojo o lejos de la línea.
+
+**Hebras procedurales:**
+- En coordenadas de la línea, `x = (s + curl·h²·(1,2 − 1,6·s)) · N`; cada celda de `x` es una hebra.
+- Cada hebra:
+  - tiene un largo propio, `length × (0,6 + 0,4 · hash)`, más corto hacia el lagrimal;
+  - se afina hacia la punta, con el borde antialiasado con `fwidth`;
+  - se inclina hacia afuera en el ángulo externo y un poco hacia adentro en el lagrimal.
+- **Raíz:** se oscurece según `volume`.
+- **Inferiores:** menos hebras, más finas, menos inclinadas y con `kLowerLashOpacity` de opacidad.
+- **Color:** fijo, `kLashColor`, un negro de máscara de pestañas: la receta no trae color.
+- **Parámetros:**
+  - `volume` → cantidad de hebras (`kLashCount*`), ancho (`kLashWidth*`) y raíz;
+  - `length` → `kLashLength*`.
+- **Costo:** con `uLashAmount = 0` no se calcula nada (rama uniforme).
+
+### Efectos (lista cerrada, informe §10.8)
+
+| Efecto | `cheeks_nose` / `full_face` | `eyes` | `lips` |
+|---|---|---|---|
+| Pecas | Pasada de cara, variante `EFFECTS`: un punto por celda (presencia, centro y radio por hash), color = piel del píxel × (0,74, 1,2, 1,35) en OKLab, capa después de la base | — | — |
+| Glitter | Destellos por celda que cambian con el tiempo (`kGlitterDensity*`, `kGlitterSparkle`) | Destellos sobre párpado y pliegue (variante `SHIMMER`) | Destellos del labial (variante `SHIMMER`) |
+| Sheen | Aclarado relativo de la luz (`× (1 + kSheenGain)`) solo donde la piel ya está más iluminada que la media | Ídem sobre párpado y pliegue | Más brillo del labial (`kLipSheenGloss`) |
+
+- **Máscaras de región:**
+  - `cheeks_nose`: canal A del mapa de cara (ahora RGBA8): mejillas altas y puente de la nariz.
+  - `full_face`: la piel.
+  - `eyes`: párpado y pliegue.
+  - `lips`: la máscara del labio.
+- **Región por defecto:** sin región, Kotlin (`EffectParams`) y Dart (`effectZone`) usan la misma regla: glitter en los ojos; sheen y pecas en mejillas y nariz.
+- **Zonas del filtro de prueba:** cada efecto se muestra con la zona de su región.
+- **Calibración:** dos problemas vistos en la grilla.
+  - Un sheen aditivo dejaba un velo gris en piel oscura. Por eso es relativo.
+  - Las pecas con un corrimiento de croma fijo salían naranjas en piel oscura. Por eso el color es proporcional a la piel.
+
+## 10. Limitaciones conocidas
+
+- **Delineado de labios:** no se dibuja (§1).
+- **Pestañas en 2D:** se pintan sobre la piel del párpado. De perfil o mirando muy abajo no se ven como hebras que salen de la cara: eso necesita geometría propia (fase 2).
+- **Hebras irregulares:** la posición a lo largo de la línea está cuantizada a 8 bits en el mapa. Con ~30 hebras eso las hace un poco irregulares, y no molesta porque las pestañas reales también lo son.
 - **Oclusión:** igual que en los labios, una mano sobre la cara se pinta encima. Es la oclusión de §5.6 (fase 2).
 - **Referencia de L:** la L de referencia es la de las mejillas. En los párpados, que suelen estar más oscuros, la sombra queda un poco más oscura que la muestra. Es lo que pasa con una sombra real.
 - **Formas fijas:** las regiones son las mismas para todas las caras, salvo lo que deforma la malla. Ajustar formas por persona (párpado encapotado, por ejemplo) queda para la fase de calidad.

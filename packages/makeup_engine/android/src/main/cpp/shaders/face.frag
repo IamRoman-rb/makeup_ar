@@ -104,12 +104,15 @@ void main() {
   // Pecas: un punto por celda (si toca), con centro y radio propios. fwidth
   // antes de cualquier rama.
   highp vec2 fc = vMapUv * FRECKLE_CELLS;
-  highp vec2 fcell = floor(fc) + vec2(vSide * 613.0, 0.0);
   highp float faa = fwidth(fc.x);
-  vec2 center = vec2(hash12(fcell + 17.0), hash12(fcell + 41.0)) * 0.6 + 0.2;
-  float radius = mix(0.1, 0.26, hash12(fcell + 73.0));
-  float present = step(hash12(fcell), uEffectDensity.y);
-  freckle = present * (1.0 - smoothstep(radius - faa, radius + faa, length(fract(fc) - center))) * effect.x;
+  // Rama por uniform: una receta sin pecas no paga los hash.
+  if (uEffectAmount.x > 0.0) {
+    highp vec2 fcell = floor(fc) + vec2(vSide * 613.0, 0.0);
+    vec2 center = vec2(hash12(fcell + 17.0), hash12(fcell + 41.0)) * 0.6 + 0.2;
+    float radius = mix(0.1, 0.26, hash12(fcell + 73.0));
+    float present = step(hash12(fcell), uEffectDensity.y);
+    freckle = present * (1.0 - smoothstep(radius - faa, radius + faa, length(fract(fc) - center))) * effect.x;
+  }
 #endif
   // Sin ninguna capa en el píxel (fuera de la piel o receta sin cara): no
   // cambia nada. Coherente por zonas grandes.
@@ -145,10 +148,12 @@ void main() {
   vec3 outLinear = oklabToLinearInGamut(lab);
 
 #ifdef EFFECTS
-  highp vec2 gcell = floor(vMapUv * GLITTER_CELLS) + vec2(vSide * 997.0, 0.0);
-  highp float tick = mod(floor(uTime * GLITTER_RATE), TICK_PERIOD);
-  float sparkle = step(1.0 - uEffectDensity.x, hash12(gcell + vec2(tick * 17.0, tick * 31.0)));
-  shine += sparkle * effect.y;
+  if (uEffectAmount.y > 0.0) {
+    highp vec2 gcell = floor(vMapUv * GLITTER_CELLS) + vec2(vSide * 997.0, 0.0);
+    highp float tick = mod(floor(uTime * GLITTER_RATE), TICK_PERIOD);
+    float sparkle = step(1.0 - uEffectDensity.x, hash12(gcell + vec2(tick * 17.0, tick * 31.0)));
+    shine += sparkle * effect.y;
+  }
   outLinear *= 1.0 + effect.z * smoothstep(SHEEN_SHADING_LOW, SHEEN_SHADING_HIGH, shading);
 #endif
   shine *= smoothstep(SHINE_SHADING_LOW, SHINE_SHADING_HIGH, shading);

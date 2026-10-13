@@ -164,14 +164,24 @@ void main() {
     float curl = uLashParams.w;
     highp float upperX = lashCoord(mapC.r, mapC.g, count, curl);
     highp float lowerX = lashCoord(mapC.b, mapC.a, count * LOWER_LASH_COUNT, curl * LOWER_LASH_CURL);
+    // fwidth antes de las ramas de abajo (las derivadas necesitan flujo uniforme).
     highp float upperAa = fwidth(upperX);
     highp float lowerAa = fwidth(lowerX);
-    float upper = lashStrands(upperX, mapC.r, mapC.g, uLashParams.y, uLashParams.z, upperAa, vSide);
-    float root = (1.0 - smoothstep(0.0, LASH_ROOT_HEIGHT, mapC.g)) * uLashRoot *
-                 smoothstep(LASH_S_START, LASH_S_START + 0.08, mapC.r) *
-                 (1.0 - smoothstep(LASH_S_END - 0.1, LASH_S_END, mapC.r));
-    float lower = lashStrands(lowerX, mapC.b, mapC.a, uLashParams.y, uLashParams.z * LOWER_LASH_WIDTH, lowerAa,
-                              vSide + 2.0);
+    float upper = 0.0;
+    float root = 0.0;
+    float lower = 0.0;
+    // La mayor parte de la zona de ojos (sombras, hueso de la ceja) no tiene
+    // pestañas (altura 1): ahí no se calculan hebras. Diverge por zonas grandes.
+    if (mapC.g < 1.0) {
+      upper = lashStrands(upperX, mapC.r, mapC.g, uLashParams.y, uLashParams.z, upperAa, vSide);
+      root = (1.0 - smoothstep(0.0, LASH_ROOT_HEIGHT, mapC.g)) * uLashRoot *
+             smoothstep(LASH_S_START, LASH_S_START + 0.08, mapC.r) *
+             (1.0 - smoothstep(LASH_S_END - 0.1, LASH_S_END, mapC.r));
+    }
+    if (uLowerLashAmount > 0.0 && mapC.a < 1.0) {
+      lower = lashStrands(lowerX, mapC.b, mapC.a, uLashParams.y, uLashParams.z * LOWER_LASH_WIDTH, lowerAa,
+                          vSide + 2.0);
+    }
     lash = clamp((max(upper, root) * uLashAmount + lower * uLowerLashAmount) * vFacing, 0.0, 1.0);
   }
 

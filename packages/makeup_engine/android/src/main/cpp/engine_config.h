@@ -150,12 +150,12 @@ struct EngineConfig {
   static constexpr float kSheenGain = 0.35f;
   // En los labios el sheen suma brillo al mapa de brillo del labial.
   static constexpr float kLipSheenGloss = 0.35f;
-  // Pecas: opacidad con intensity 1, probabilidad por celda con intensity 0 y
-  // 1, y cuánto oscurecen la piel (factor de L OKLab).
+  // Pecas: opacidad con intensity 1 y probabilidad por celda con intensity 0
+  // y 1. El color (piel × FRECKLE_SCALE) y el tamaño de las celdas son de
+  // aspecto y están en face.frag.
   static constexpr float kFreckleOpacity = 0.75f;
   static constexpr float kFreckleDensityMin = 0.12f;
   static constexpr float kFreckleDensityMax = 0.42f;
-  static constexpr float kFreckleDarken = 0.74f;
 
   // Tamaño de los puntos del overlay de depuración (px de salida).
   static constexpr float kLandmarkPointSizePx = 5.0f;
