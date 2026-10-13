@@ -382,11 +382,12 @@ internal class EngineSession(
 
     /**
      * Hilo de plataforma. [region]: NativeBridge.REGION_*. El tracker se prende
-     * si alguna opción lo necesita.
+     * si alguna opción lo necesita. [lightAdaptation]: adaptar los colores de la
+     * receta al color de la luz de la escena (apagada solo para comparar).
      */
-    fun setRenderOptions(showLandmarks: Boolean, region: Int) {
+    fun setRenderOptions(showLandmarks: Boolean, region: Int, lightAdaptation: Boolean = true) {
         if (released) return
-        NativeBridge.nativeSetRenderOptions(nativeHandle, showLandmarks, region)
+        NativeBridge.nativeSetRenderOptions(nativeHandle, showLandmarks, region, lightAdaptation)
         setTrackingEnabled(showLandmarks || region == NativeBridge.REGION_MAKEUP)
     }
 

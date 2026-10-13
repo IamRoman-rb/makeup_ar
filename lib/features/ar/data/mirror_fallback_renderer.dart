@@ -19,6 +19,9 @@ final class MirrorFallbackRenderer implements IMakeupRenderer {
   Future<void> setShowLandmarks(bool show) async {}
 
   @override
+  Future<void> setLightAdaptation(bool enabled) async {}
+
+  @override
   Future<MakeupRendererStats> stats() async => MakeupRendererStats.empty;
 
   @override

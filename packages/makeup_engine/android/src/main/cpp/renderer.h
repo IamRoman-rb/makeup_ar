@@ -17,6 +17,8 @@
 #include <string>
 
 #include "crop_pass.h"
+#include "scene_light.h"
+#include "scene_pass.h"
 #include "face_layers.h"
 #include "face_style.h"
 #include "frame_stats.h"
@@ -92,7 +94,9 @@ class Renderer {
   // recortes. [mirrored]: la pantalla está espejada respecto de la imagen.
   void setDisplayMatrices(const float* display, const float* tracker, bool mirrored);
 
-  void setRenderOptions(bool showLandmarks, TintRegion region);
+  // [lightAdaptation]: adaptar los colores de la receta al color de la luz de
+  // la escena (scene_light.h); apagada, salen tal cual (comparación A/B).
+  void setRenderOptions(bool showLandmarks, TintRegion region, bool lightAdaptation);
 
   FrameStats& stats() { return stats_; }
 
@@ -162,6 +166,8 @@ class Renderer {
   void runCropPass(const float* texMatrix, int width, int height, int64_t cameraTimestampNs,
                    int64_t nowNs, int* flags);
   void uploadMesh(const float* points);
+  void adaptRecipeColors(bool enabled);
+  static bool faceRect(const float* points, int width, int height, float out[4]);
   void drawFaceLayers(const RenderLandmarks& landmarks, const float* imageToClip, const float* texMatrix,
                       int64_t frameStartNs);
   void drawLips(const RenderLandmarks& landmarks, const float* imageToClip, const float* texMatrix,
@@ -178,6 +184,8 @@ class Renderer {
   LipsProgram lipsShimmer_;
   FaceLayers faceLayers_;
   CropPass crop_;
+  ScenePass scene_;
+  SceneLightEstimator sceneLight_;
   GlVertexArray quadVao_;
   GlBuffer quadVbo_;
   GlTexture cameraTexture_;
@@ -228,6 +236,13 @@ class Renderer {
   FaceUniforms drawFace_;
   EyeUniforms drawEyes_;
   uint32_t drawRecipeVersion_ = 0;
+  // Colores de la receta sin adaptar (draw*_ son las copias adaptadas a la
+  // luz de la escena; scene_light.h). Solo hilo de render.
+  LipUniforms baseLips_;
+  FaceUniforms baseFace_;
+  EyeUniforms baseEyes_;
+  bool drawLightAdapted_ = false;
+  std::atomic<bool> lightAdaptation_{true};
   std::array<float, EngineConfig::kLandmarkCount * 2> meshPoints_{};
   int64_t lastFrameStartNs_ = 0;
   std::string glInfo_;

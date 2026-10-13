@@ -56,6 +56,7 @@ final class TestFilterLabels {
     required this.zoneCheeks,
     required this.zoneSkin,
     required this.unavailable,
+    this.lightAdaptation,
   });
 
   final String noFilter;
@@ -77,6 +78,10 @@ final class TestFilterLabels {
 
   /// El maquillaje en vivo no está disponible en este equipo.
   final String unavailable;
+
+  /// Chip para prender y apagar la adaptación a la luz (comparación A/B en
+  /// el arnés); null = sin chip.
+  final String? lightAdaptation;
 
   String finish(LipFinish finish) => switch (finish) {
         LipFinish.matte => matte,
@@ -155,6 +160,7 @@ class _TestFilterViewState extends State<TestFilterView> {
   /// Acabado de labial elegido en los chips; null = el del preset.
   LipFinish? _finish;
   bool _showPoints = false;
+  bool _lightAdaptation = true;
   bool _comparing = false;
 
   @override
@@ -241,6 +247,11 @@ class _TestFilterViewState extends State<TestFilterView> {
   void _setShowPoints(bool value) {
     setState(() => _showPoints = value);
     unawaited(_renderer.setShowLandmarks(value));
+  }
+
+  void _setLightAdaptation(bool value) {
+    setState(() => _lightAdaptation = value);
+    unawaited(_renderer.setLightAdaptation(value));
   }
 
   void _setFinish(LipFinish finish) {
@@ -344,6 +355,15 @@ class _TestFilterViewState extends State<TestFilterView> {
                     ),
                   ),
                 FilterChip(label: Text(labels.showPoints), selected: _showPoints, onSelected: _setShowPoints),
+                if (labels.lightAdaptation case final light?)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: FilterChip(
+                      label: Text(light),
+                      selected: _lightAdaptation,
+                      onSelected: _setLightAdaptation,
+                    ),
+                  ),
               ],
             ),
           ),

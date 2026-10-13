@@ -99,14 +99,14 @@ void main() {
   });
 
   test('setRenderOptions manda puntos y región', () async {
-    await MakeupEngine().setRenderOptions(showLandmarks: true, region: TintRegion.makeup);
+    await MakeupEngine().setRenderOptions(showLandmarks: true, region: TintRegion.makeup, lightAdaptation: false);
     expect(calls.single.method, 'setRenderOptions');
-    expect(calls.single.arguments, {'showLandmarks': true, 'region': 1});
+    expect(calls.single.arguments, {'showLandmarks': true, 'region': 1, 'lightAdaptation': false});
   });
 
   test('setRenderOptions por defecto: sin puntos y pantalla completa', () async {
     await MakeupEngine().setRenderOptions();
-    expect(calls.single.arguments, {'showLandmarks': false, 'region': 0});
+    expect(calls.single.arguments, {'showLandmarks': false, 'region': 0, 'lightAdaptation': true});
   });
 
   test('getStats parsea las métricas del tracker', () async {

@@ -3,6 +3,8 @@
 // para no duplicarlas.
 #pragma once
 
+#include <cstdint>
+
 namespace makeup {
 
 struct EngineConfig {
@@ -90,6 +92,30 @@ struct EngineConfig {
   static constexpr float kOcclusionLearnMaxFraction = 0.05f;
   static constexpr float kOcclusionLearnRise = 0.5f;
   static constexpr float kOcclusionLearnFall = 0.05f;
+
+  // Adaptación al color de la luz (P7, scene_light.h / scene_pass.h).
+  // Miniatura de la cámara: lado en px y cada cuánto se lee (1 KB por lectura).
+  static constexpr int kScenePassSize = 16;
+  static constexpr int64_t kScenePassIntervalNs = 500000000;  // 0,5 s
+  // Píxeles que no cuentan para el gray-world: un canal >= este valor sRGB
+  // (quemado) o luminancia lineal menor que el mínimo (casi negro). Con menos
+  // de kLightAdaptMinFraction de píxeles útiles no se actualiza.
+  static constexpr int kLightAdaptClippedValue = 250;
+  static constexpr float kLightAdaptMinLuminance = 0.01f;
+  static constexpr float kLightAdaptMinFraction = 0.25f;
+  // Margen alrededor del rectángulo de la cara que tampoco cuenta (pelo,
+  // cuello), en fracción de su lado.
+  static constexpr float kLightAdaptFaceMargin = 0.15f;
+  // Grado de adaptación: 0 = maquillaje neutro, 1 = toma todo el tinte
+  // medio de la escena (gray-world se equivoca con escenas de un solo color:
+  // un sillón azul). Tope de la ganancia por canal.
+  static constexpr float kLightAdaptDegree = 0.5f;
+  static constexpr float kLightAdaptGainMin = 0.85f;
+  static constexpr float kLightAdaptGainMax = 1.18f;
+  // Suavizado por lectura (2 por segundo: ~1 s) y cambio mínimo de ganancia
+  // para volver a adaptar los colores de la receta.
+  static constexpr float kLightAdaptSmoothing = 0.4f;
+  static constexpr float kLightAdaptEpsilon = 0.004f;
 
   // L OKLab del labio si todavía no se midió (valor del informe §5.5).
   static constexpr float kLipsFallbackLightness = 0.55f;

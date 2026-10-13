@@ -13,6 +13,7 @@ final class FakeRenderer implements IMakeupRenderer {
   final bool available;
   final List<MakeupRecipe?> recipes = [];
   final List<bool> landmarks = [];
+  final List<bool> lightAdaptation = [];
   int starts = 0;
   int stops = 0;
 
@@ -30,6 +31,9 @@ final class FakeRenderer implements IMakeupRenderer {
 
   @override
   Future<void> setShowLandmarks(bool show) async => landmarks.add(show);
+
+  @override
+  Future<void> setLightAdaptation(bool enabled) async => lightAdaptation.add(enabled);
 
   @override
   Future<MakeupRendererStats> stats() async =>
@@ -171,6 +175,44 @@ void main() {
     await tester.tap(find.text('Prueba'));
     await tester.pumpAndSettle();
     expect(renderer.recipes.last?.name, 'Prueba');
+  });
+
+  testWidgets('el chip de luz adaptada solo aparece con su etiqueta y la apaga', (tester) async {
+    final renderer = FakeRenderer();
+    await tester.pumpWidget(app(renderer));
+    await tester.pumpAndSettle();
+    expect(find.text('Luz adaptada'), findsNothing);
+
+    const withLight = TestFilterLabels(
+      noFilter: 'Sin filtro',
+      intensity: 'Intensidad',
+      note: 'nota',
+      showPoints: 'Ver puntos',
+      compare: 'Comparar',
+      matte: 'Mate',
+      satin: 'Satinado',
+      gloss: 'Brillo',
+      shimmer: 'Shimmer',
+      zoneAll: 'Todo',
+      zoneLips: 'Labios',
+      zoneEyes: 'Ojos',
+      zoneCheeks: 'Mejillas',
+      zoneSkin: 'Piel',
+      unavailable: 'No disponible',
+      lightAdaptation: 'Luz adaptada',
+    );
+    final other = FakeRenderer();
+    // Otra key: si no, Flutter reusa el State anterior (y su renderer).
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: TestFilterView(key: const ValueKey('luz'), labels: withLight, renderer: other)),
+    ));
+    await tester.pumpAndSettle();
+    // La fila de chips se desplaza: se trae el chip a la vista antes de tocarlo.
+    await tester.ensureVisible(find.text('Luz adaptada'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Luz adaptada'));
+    await tester.pumpAndSettle();
+    expect(other.lightAdaptation, [false]);
   });
 
   test('etiqueta del tracker según su estado', () {

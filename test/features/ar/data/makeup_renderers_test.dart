@@ -45,7 +45,7 @@ void main() {
     expect(surface?.textureId, 7);
     expect(surface?.width, 720);
     final options = calls.firstWhere((c) => c.method == 'setRenderOptions').arguments as Map<Object?, Object?>;
-    expect(options, {'showLandmarks': false, 'region': TintRegion.makeup.index});
+    expect(options, {'showLandmarks': false, 'region': TintRegion.makeup.index, 'lightAdaptation': true});
 
     final glam = RecipePresets.all.firstWhere((p) => p.id == 'golden_glam').recipe;
     await renderer.applyRecipe(glam);
@@ -58,7 +58,10 @@ void main() {
     expect(none.containsKey('eyes'), isFalse);
 
     await renderer.setShowLandmarks(true);
-    expect(calls.last.arguments, {'showLandmarks': true, 'region': TintRegion.makeup.index});
+    expect(calls.last.arguments, {'showLandmarks': true, 'region': TintRegion.makeup.index, 'lightAdaptation': true});
+    // Apagar la luz adaptada conserva los puntos.
+    await renderer.setLightAdaptation(false);
+    expect(calls.last.arguments, {'showLandmarks': true, 'region': TintRegion.makeup.index, 'lightAdaptation': false});
   });
 
   test('nativo: si el motor no inicia, start devuelve null con el motivo', () async {

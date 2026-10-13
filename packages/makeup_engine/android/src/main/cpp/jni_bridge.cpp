@@ -81,11 +81,13 @@ void nativeSetGeometry(JNIEnv* env, jclass, jlong handle, jfloatArray display, j
   engine->tracking.setImageSize(width, height);
 }
 
-void nativeSetRenderOptions(JNIEnv*, jclass, jlong handle, jboolean showLandmarks, jint region) {
+void nativeSetRenderOptions(JNIEnv*, jclass, jlong handle, jboolean showLandmarks, jint region,
+                            jboolean lightAdaptation) {
   const auto tintRegion = region == static_cast<jint>(makeup::TintRegion::kMakeup)
                               ? makeup::TintRegion::kMakeup
                               : makeup::TintRegion::kFull;
-  fromHandle(handle)->renderer.setRenderOptions(showLandmarks == JNI_TRUE, tintRegion);
+  fromHandle(handle)->renderer.setRenderOptions(showLandmarks == JNI_TRUE, tintRegion,
+                                                lightAdaptation == JNI_TRUE);
 }
 
 void nativeSetTint(JNIEnv*, jclass, jlong handle, jfloat r, jfloat g, jfloat b, jfloat amount) {
@@ -277,7 +279,7 @@ const JNINativeMethod kMethods[] = {
     {"nativeGetGlInfo", "(J)Ljava/lang/String;", reinterpret_cast<void*>(nativeGetGlInfo)},
     {"nativeGetLastError", "(J)Ljava/lang/String;", reinterpret_cast<void*>(nativeGetLastError)},
     {"nativeSetGeometry", "(J[F[FIIZ)V", reinterpret_cast<void*>(nativeSetGeometry)},
-    {"nativeSetRenderOptions", "(JZI)V", reinterpret_cast<void*>(nativeSetRenderOptions)},
+    {"nativeSetRenderOptions", "(JZIZ)V", reinterpret_cast<void*>(nativeSetRenderOptions)},
     {"nativeSetTint", "(JFFFF)V", reinterpret_cast<void*>(nativeSetTint)},
     {"nativeSetLips", "(JZFFFFIFF)V", reinterpret_cast<void*>(nativeSetLips)},
     {"nativeSetLipLiner", "(JZFFFF)V", reinterpret_cast<void*>(nativeSetLipLiner)},

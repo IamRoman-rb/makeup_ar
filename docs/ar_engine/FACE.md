@@ -301,3 +301,35 @@ No hubo hallazgos críticos.
 - **Oclusión:** igual que en los labios, una mano sobre la cara se pinta encima. Es la oclusión de §5.6 (fase 2).
 - **Referencia de L:** la L de referencia es la de las mejillas. En los párpados, que suelen estar más oscuros, la sombra queda un poco más oscura que la muestra. Es lo que pasa con una sombra real.
 - **Formas fijas:** las regiones son las mismas para todas las caras, salvo lo que deforma la malla. Ajustar formas por persona (párpado encapotado, por ejemplo) queda para la fase de calidad.
+
+## 11. Adaptación al color de la luz (P7)
+
+El motor ya adaptaba la luminosidad: el sombreado es relativo a la L medida del labio y de la piel. Lo que no adaptaba era el color de la luz. En el E20, con una imagen cálida, el rojo clásico salía coral y el maquillaje quedaba "neutro" encima de una escena tibia, como pegado.
+
+**Medición** (`scene_pass.{h,cpp}`, hilo de render):
+- Cada ~0,5 s se dibuja el frame entero en un FBO de 16×16, con los shaders del recorte del tracker y 4×4 lecturas por píxel (4096 muestras).
+- La lectura es asíncrona, con PBO y fence como `CropPass`, y no bloquea el render.
+- Todo se crea en `init()`.
+
+**Ganancia** (`scene_light.{h,cpp}`, sin GL, tests de host):
+- **Gray-world:** media en RGB lineal.
+- **Píxeles que no cuentan:**
+  - quemados o casi negros;
+  - el rectángulo de la cara más un 15 %, porque la piel es cálida y, con la cara cerca, el gray-world la tomaba por el color de la luz;
+  - si queda menos del 25 % del cuadro, no se actualiza.
+- **Fórmula:** `ganancia = (media / gris)^0,5`, recortada por canal a [0,85, 1,18] y normalizada a luminancia 1, porque la L ya la adapta el sombreado. Se suaviza con un EMA de ~1 s.
+
+**Aplicación** (`Renderer::adaptRecipeColors`):
+- Cada color de la receta se convierte de OKLab a lineal, se multiplica por la ganancia y se vuelve a OKLab: labial, delineado de labios, capas de cara, sombras, delineado y pestañas.
+- Se recalcula solo cuando cambia la ganancia (más de 0,004), la receta o la opción.
+- Los shaders no cambian.
+
+**Comparación A/B:** `setRenderOptions(lightAdaptation:)` e `IMakeupRenderer.setLightAdaptation`. En el arnés está el chip "Luz adaptada", prendido por defecto.
+
+**Referencia y calibración:**
+- `scene_gain` y `adapt_oklab` en `face_shading.py`.
+- La grilla suma dos filas, piel media con luz cálida y con luz fría, con el maquillaje adaptado.
+
+**Limitaciones:**
+- Gray-world se equivoca con escenas dominadas por un color, como una pared o un sillón de un solo color. Por eso el grado es 0,5 y la ganancia tiene tope.
+- **Falta comparar en el E20** con el chip prendido y apagado, con luz cálida y fría.

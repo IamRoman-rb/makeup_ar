@@ -191,5 +191,34 @@ class EffectsTest(unittest.TestCase):
         self.assertGreater(float(np.abs(a - b).mean()), 0.05)
 
 
+class SceneLightTest(unittest.TestCase):
+    """Misma matemática que scene_light.cpp (tests de host: scene_light_test.cpp)."""
+
+    def test_gris_neutro_y_calido_calienta(self):
+        from face_shading import adapt_oklab, scene_gain
+        gray = np.full((16, 16, 3), 128 / 255)
+        np.testing.assert_allclose(scene_gain(gray, 0.5, 0.85, 1.18), 1.0, atol=1e-6)
+        warm = np.broadcast_to(np.array([200, 160, 120]) / 255, (16, 16, 3))
+        gain = scene_gain(warm, 0.5, 0.85, 1.18)
+        self.assertGreater(gain[0], 1.0)
+        self.assertLess(gain[2], 1.0)
+        self.assertAlmostEqual(float(gain @ np.array([0.2126, 0.7152, 0.0722])), 1.0, places=6)
+        red = srgb_to_oklab(np.array([0.70, 0.07, 0.18]))
+        self.assertGreater(adapt_oklab(red, gain)[2], red[2] + 0.01)
+
+    def test_sin_la_cara_y_sin_escena_suficiente(self):
+        from face_shading import scene_gain
+        scene = np.full((16, 16, 3), 128 / 255)
+        scene[4:12, 4:12] = np.array([220, 160, 130]) / 255
+        face = np.zeros((16, 16), dtype=bool)
+        face[4:12, 4:12] = True
+        self.assertGreater(scene_gain(scene, 0.5, 0.85, 1.18)[0], 1.02)
+        np.testing.assert_allclose(scene_gain(scene, 0.5, 0.85, 1.18, include=~face), 1.0, atol=1e-3)
+        # La cara tapa todo menos una fila: no alcanza para medir.
+        one_row = np.zeros((16, 16), dtype=bool)
+        one_row[15] = True
+        self.assertIsNone(scene_gain(scene, 0.5, 0.85, 1.18, include=one_row))
+
+
 if __name__ == "__main__":
     unittest.main()

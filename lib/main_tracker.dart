@@ -124,6 +124,7 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
                 zoneCheeks: 'Mejillas',
                 zoneSkin: 'Piel',
                 unavailable: 'Maquillaje en vivo no disponible (AR_RENDERER=painter o el motor no pudo iniciar).',
+                lightAdaptation: 'Luz adaptada',
               ),
             )
           : Center(

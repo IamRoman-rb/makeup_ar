@@ -328,8 +328,8 @@ final class MakeupEngine {
 
   /// Receta `makeup-recipe/2` ya validada (RecipeValidator en la app; p. ej.
   /// `recipe.toJson()`). Con [TintRegion.makeup] el motor dibuja labios,
-  /// rubor, piel (base, contorno, iluminador) y ojos (sombras, delineado);
-  /// pestañas y efectos todavía no. Del lado nativo los valores se vuelven a
+  /// rubor, piel (base, contorno, iluminador), ojos (sombras, delineado,
+  /// pestañas) y efectos. Del lado nativo los valores se vuelven a
   /// recortar a rango y cada región inválida o ausente se apaga. La receta se
   /// aplica entera en el mismo frame.
   Future<void> setRecipe(Map<String, Object?> recipe) =>
@@ -338,10 +338,17 @@ final class MakeupEngine {
   /// [showLandmarks] dibuja los puntos del tracker (depuración); [region]
   /// elige qué se pinta. El tracker se prende si alguno lo necesita: la primera
   /// vez carga los modelos (segundos) y mientras tanto no hay cara.
-  Future<void> setRenderOptions({bool showLandmarks = false, TintRegion region = TintRegion.full}) =>
+  /// [lightAdaptation] adapta los colores de la receta al color de la luz de
+  /// la escena (docs/ar_engine/FACE.md §11); apagada, solo para comparar.
+  Future<void> setRenderOptions({
+    bool showLandmarks = false,
+    TintRegion region = TintRegion.full,
+    bool lightAdaptation = true,
+  }) =>
       _channel.invokeMethod<void>('setRenderOptions', {
         'showLandmarks': showLandmarks,
         'region': region.index,
+        'lightAdaptation': lightAdaptation,
       });
 
   /// Leer a ~2 Hz como máximo: es para el overlay y el arnés, no por frame.

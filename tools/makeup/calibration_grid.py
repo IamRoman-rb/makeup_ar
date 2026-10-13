@@ -15,6 +15,8 @@ valores por defecto en los 5 tonos. Los destellos del shimmer no se simulan.
 Salida: docs/ar_engine/img/face_calibration.png
   fila 0      muestra del color de labios de cada preset (columna 0: sin maquillaje)
   filas 1..5  piel muy clara -> profunda
+  filas 6, 7  piel media con luz cálida y fría: el maquillaje, adaptado a la
+              luz con la ganancia gray-world del fondo (scene_light.cpp)
 
 Uso:  python tools/makeup/calibration_grid.py
 """
@@ -33,8 +35,8 @@ for sub in ("tools/makeup", "tools/lips", "tools/uv_masks"):
     sys.path.insert(0, str(ROOT / sub))
 import gen_face_maps as fm  # noqa: E402
 import gen_lips_maps as lm  # noqa: E402
-from face_shading import (Layer, blend, compose, freckle_alpha, freckle_lab, glitter_sparkle,  # noqa: E402
-                          lash_alpha, layer_over, sheen_gain)
+from face_shading import (Layer, adapt_oklab, blend, compose, freckle_alpha, freckle_lab,  # noqa: E402
+                          glitter_sparkle, lash_alpha, layer_over, scene_gain, sheen_gain)
 from lip_shading import (LipLiner, LipParams, from_ok, hex_to_srgb, lin_to_srgb, liner_alpha, shade,  # noqa: E402
                          srgb_to_oklab, to_ok)
 
@@ -50,6 +52,9 @@ GAP = 4
 
 # Mismos tonos que tools/lips/calibration_grid.py: (L, croma, tono°) OKLab.
 SKIN_TONES = [(0.86, 0.045, 65.0), (0.78, 0.060, 60.0), (0.68, 0.070, 58.0), (0.55, 0.070, 55.0), (0.40, 0.050, 50.0)]
+# Filas extra: piel media bajo luz cálida (incandescente) y fría (sombra de
+# día), como ganancia lineal por canal sobre la cámara sintética.
+LIGHT_ROWS = [(SKIN_TONES[2], np.array([1.15, 1.0, 0.78])), (SKIN_TONES[2], np.array([0.88, 1.0, 1.18]))]
 CHEEK_PLACEMENTS = {"apple": 0, "high": 1, "low": 2}
 EYE_REGION_CHANNEL = {"lid": ("A", 0), "crease": ("A", 1), "outer_v": ("A", 2), "inner_corner": ("A", 3),
                       "brow_bone": ("B", 0)}
@@ -162,14 +167,19 @@ def bare_face(maps: Maps, skin_lch) -> np.ndarray:
     return lin_to_srgb(rgb)
 
 
-def apply_recipe(camera: np.ndarray, maps: Maps, recipe: dict, k: dict[str, float]) -> np.ndarray:
+def apply_recipe(camera: np.ndarray, maps: Maps, recipe: dict, k: dict[str, float],
+                 light_gain: np.ndarray | None = None) -> np.ndarray:
+    """light_gain: ganancia de la luz de la escena (scene_gain); None = sin adaptar."""
     lab = to_ok(np.power(camera, 2.2))
     skin_ref = float(np.median(lab[(maps.skin > 0.9) & (maps.cheek(0, 0.5, k) > 0.5), 0]))
     lip_ref = float(np.median(lab[maps.lips_mask > 0.9, 0]))
     out = camera.copy()
 
     def color(hex_value: str) -> np.ndarray:
-        return srgb_to_oklab(hex_to_srgb(hex_value))
+        return adapt(srgb_to_oklab(hex_to_srgb(hex_value)))
+
+    def adapt(value: np.ndarray) -> np.ndarray:
+        return value if light_gain is None else adapt_oklab(value, light_gain)
 
     # Pasada de cara: base, contorno, rubor, iluminador.
     layers = []
@@ -252,7 +262,7 @@ def apply_recipe(camera: np.ndarray, maps: Maps, recipe: dict, k: dict[str, floa
             part = lash_alpha(maps.eye_c, opacity, opacity * k["kLowerLashOpacity"], params,
                               volume * k["kLashRootMax"], side=side)
             alpha = np.where(maps.side == side, part, alpha)
-        layers.append(Layer(srgb_to_oklab(np.array(k["kLashColor"])), alpha))
+        layers.append(Layer(adapt(srgb_to_oklab(np.array(k["kLashColor"]))), alpha))
     if layers:
         result, coverage = compose(camera, layers, skin_ref)
         out = blend(out, *layer_over(result, camera, coverage))
@@ -300,20 +310,28 @@ def main() -> int:
     maps = Maps()
     columns = 1 + len(looks)
     width = columns * CELL_W + (columns + 1) * GAP
-    height = SWATCH_H + len(SKIN_TONES) * CELL_H + (len(SKIN_TONES) + 2) * GAP
+    rows = len(SKIN_TONES) + len(LIGHT_ROWS)
+    height = SWATCH_H + rows * CELL_H + (rows + 2) * GAP
     canvas = np.full((height, width, 3), 0.12)
     for col, recipe in enumerate(looks, start=1):
         x0 = GAP + col * (CELL_W + GAP)
         lips = recipe.get("lips")
         if lips:
             canvas[GAP:GAP + SWATCH_H, x0:x0 + CELL_W] = hex_to_srgb(lips["color"])
-    for row, tone in enumerate(SKIN_TONES):
-        camera = bare_face(maps, tone)
+    scenes = [(bare_face(maps, tone), None) for tone in SKIN_TONES]
+    for tone, tint in LIGHT_ROWS:
+        tint = tint / (tint @ np.array([0.2126, 0.7152, 0.0722]))
+        camera = lin_to_srgb(np.clip(np.power(bare_face(maps, tone), 2.2) * tint, 0.0, 1.0))
+        # Como el motor: gray-world sin la cara (acá, el fondo).
+        gain = scene_gain(camera, k["kLightAdaptDegree"], k["kLightAdaptGainMin"], k["kLightAdaptGainMax"],
+                          include=~maps.oval)
+        scenes.append((camera, gain))
+    for row, (camera, gain) in enumerate(scenes):
         y0 = 2 * GAP + SWATCH_H + row * (CELL_H + GAP)
         canvas[y0:y0 + CELL_H, GAP:GAP + CELL_W] = camera
         for col, recipe in enumerate(looks, start=1):
             x0 = GAP + col * (CELL_W + GAP)
-            canvas[y0:y0 + CELL_H, x0:x0 + CELL_W] = apply_recipe(camera, maps, recipe, k)
+            canvas[y0:y0 + CELL_H, x0:x0 + CELL_W] = apply_recipe(camera, maps, recipe, k, gain)
     pixels = (np.clip(canvas, 0, 1) * 255 + 0.5).astype(np.uint8)
     OUTPUT.write_bytes(lm.png_bytes(pixels))
     names = ", ".join(r["name"] for r in looks)

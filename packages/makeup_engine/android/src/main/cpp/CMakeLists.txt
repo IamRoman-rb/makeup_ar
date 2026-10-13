@@ -47,6 +47,8 @@ add_library(makeup_engine SHARED
     gl_program.cpp
     jni_bridge.cpp
     renderer.cpp
+    scene_light.cpp
+    scene_pass.cpp
     tracking/blazeface_decoder.cpp
     tracking/roi.cpp
     tracking/tracking_state.cpp

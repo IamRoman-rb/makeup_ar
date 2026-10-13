@@ -114,7 +114,12 @@ internal object NativeBridge {
     )
 
     /** [region]: REGION_FULL o REGION_MAKEUP. */
-    @JvmStatic external fun nativeSetRenderOptions(handle: Long, showLandmarks: Boolean, region: Int)
+    @JvmStatic external fun nativeSetRenderOptions(
+        handle: Long,
+        showLandmarks: Boolean,
+        region: Int,
+        lightAdaptation: Boolean,
+    )
     @JvmStatic external fun nativeSetTint(handle: Long, r: Float, g: Float, b: Float, amount: Float)
 
     /**

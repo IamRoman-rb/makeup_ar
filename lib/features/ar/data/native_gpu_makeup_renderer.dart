@@ -17,6 +17,7 @@ final class NativeGpuMakeupRenderer implements IMakeupRenderer {
 
   final MakeupEngine _engine;
   bool _showLandmarks = false;
+  bool _lightAdaptation = true;
   String? _unavailableReason;
 
   @override
@@ -50,6 +51,12 @@ final class NativeGpuMakeupRenderer implements IMakeupRenderer {
   }
 
   @override
+  Future<void> setLightAdaptation(bool enabled) async {
+    _lightAdaptation = enabled;
+    await _applyRenderOptions();
+  }
+
+  @override
   Future<MakeupRendererStats> stats() async {
     try {
       return toRendererStats(await _engine.getStats());
@@ -65,7 +72,11 @@ final class NativeGpuMakeupRenderer implements IMakeupRenderer {
   Future<void> _applyRenderOptions() async {
     try {
       // El maquillaje de la receta siempre va sobre la malla tracked.
-      await _engine.setRenderOptions(showLandmarks: _showLandmarks, region: TintRegion.makeup);
+      await _engine.setRenderOptions(
+        showLandmarks: _showLandmarks,
+        region: TintRegion.makeup,
+        lightAdaptation: _lightAdaptation,
+      );
     } on PlatformException catch (e) {
       _discarded('renderOptions', e);
     }

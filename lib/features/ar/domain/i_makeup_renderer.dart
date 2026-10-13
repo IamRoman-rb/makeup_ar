@@ -63,6 +63,10 @@ abstract interface class IMakeupRenderer {
   /// Puntos de la malla encima de la imagen (depuración).
   Future<void> setShowLandmarks(bool show);
 
+  /// Adaptar los colores de la receta al color de la luz de la escena (por
+  /// defecto sí). Apagada solo para comparar en el arnés.
+  Future<void> setLightAdaptation(bool enabled);
+
   Future<MakeupRendererStats> stats();
 
   /// Libera cámara y GPU. Seguro de llamar más de una vez.

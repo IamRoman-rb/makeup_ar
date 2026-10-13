@@ -31,6 +31,7 @@ from lip_shading import (  # noqa: E402
     LIP_LIGHTNESS_MIN,
     SHADING_MAX,
     _smoothstep,
+    from_ok,
     hex_to_srgb,
     lin_to_srgb,
     oklab_to_linear_in_gamut,
@@ -207,3 +208,30 @@ def glitter_sparkle(map_uv: np.ndarray, density: float, tick: float = 0.0, side:
     """Destellos 0/1 por celda (cambian con tick)."""
     cell = np.floor(map_uv * GLITTER_CELLS) + np.array([side * 997.0, 0.0])
     return (hash12(cell + np.array([tick * 17.0, tick * 31.0])) >= 1.0 - density).astype(float)
+
+
+# --- Adaptación a la luz de la escena (scene_light.cpp) ---
+
+
+def scene_gain(srgb: np.ndarray, degree: float, gain_min: float, gain_max: float,
+               clipped: int = 250, min_luminance: float = 0.01, min_fraction: float = 0.25,
+               include: np.ndarray | None = None) -> np.ndarray | None:
+    """Ganancia gray-world por canal de una miniatura sRGB (..., 3) en [0, 1].
+    include: máscara de los píxeles que cuentan (la cara afuera). None si no
+    hay suficientes píxeles útiles (el motor conserva la ganancia anterior)."""
+    pixels = srgb.reshape(-1, 3)
+    keep = np.ones(len(pixels), dtype=bool) if include is None else include.reshape(-1).astype(bool)
+    keep &= np.rint(pixels * 255).max(axis=1) < clipped
+    linear = np.power(pixels, 2.2)
+    lum = linear @ np.array([0.2126, 0.7152, 0.0722])
+    keep &= lum >= min_luminance
+    if keep.sum() == 0 or keep.sum() < len(pixels) * min_fraction:
+        return None
+    total = linear[keep].sum(axis=0)
+    gain = np.clip(np.power(total / total.mean(), degree), gain_min, gain_max)
+    return gain / (gain @ np.array([0.2126, 0.7152, 0.0722]))
+
+
+def adapt_oklab(lab: np.ndarray, gain: np.ndarray) -> np.ndarray:
+    """Color OKLab bajo la luz de la escena: lineal × ganancia (scene_light.cpp: adaptOklab)."""
+    return to_ok(from_ok(lab) * gain)

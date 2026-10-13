@@ -57,7 +57,8 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "setRenderOptions" -> {
                 val showLandmarks = call.argument<Boolean>("showLandmarks") ?: false
                 val region = call.argument<Int>("region") ?: NativeBridge.REGION_FULL
-                session?.setRenderOptions(showLandmarks, region)
+                val lightAdaptation = call.argument<Boolean>("lightAdaptation") ?: true
+                session?.setRenderOptions(showLandmarks, region, lightAdaptation)
                 result.success(null)
             }
             "getStats" -> result.success(session?.stats())

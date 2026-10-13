@@ -89,6 +89,10 @@ GLuint Renderer::initGl() {
   }
 
   std::string error;
+  if (!scene_.init(&error)) {
+    setError(error);
+    return false;
+  }
   if (!crop_.init(&error)) {
     setError(error);
     return 0;
@@ -305,12 +309,14 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
     drawDisplayVersion_ = displayVersion;
   }
   const uint32_t recipeVersion = recipeVersion_.load(std::memory_order_acquire);
+  bool adapt = false;
   if (recipeVersion != drawRecipeVersion_) {
     std::lock_guard<std::mutex> lock(configMutex_);  // solo al cambiar la receta
-    drawLips_ = lipUniforms_;
-    drawFace_ = faceUniforms_;
-    drawEyes_ = eyeUniforms_;
+    baseLips_ = lipUniforms_;
+    baseFace_ = faceUniforms_;
+    baseEyes_ = eyeUniforms_;
     drawRecipeVersion_ = recipeVersion;
+    adapt = true;
   }
 
   int flags = 0;
@@ -334,6 +340,17 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   const float imageToClip[4] = {sx, -2.0f / static_cast<float>(height), drawMirrored_ ? 1.0f : -1.0f,
                                 1.0f};
   if (hasMesh) uploadMesh(landmarks.points);
+  // Luz de la escena: una miniatura cada ~0,5 s, sin la cara; los colores se
+  // vuelven a adaptar solo si la ganancia cambió (o la receta, o la opción).
+  const bool lightAdaptation = lightAdaptation_.load(std::memory_order_relaxed);
+  if (scene_.poll()) {
+    float face[4];
+    const bool hasFace = hasMesh && faceRect(landmarks.points, width, height, face);
+    if (sceneLight_.update(scene_.pixels(), EngineConfig::kScenePassSize, hasFace ? face : nullptr)) adapt = true;
+  }
+  scene_.maybeIssue(quadVao_.get(), cameraTexture_.get(), texMatrix, drawTrackerMatrix_.data(), frameStartNs);
+  if (lightAdaptation != drawLightAdapted_) adapt = true;
+  if (adapt) adaptRecipeColors(lightAdaptation);
 
   const float amount = tintAmount_.load(std::memory_order_relaxed);
   Program* program = amount > 0.0f && region == TintRegion::kFull ? &tint_ : &passthrough_;
@@ -370,6 +387,45 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   eglSwapBuffers(eglGetCurrentDisplay(), eglGetCurrentSurface(EGL_DRAW));
   stats_.record(frameStartNs, monotonicNowNs(), cameraTimestampNs);
   return flags;
+}
+
+// Rectángulo de la cara (x0, y0, x1, y1) en la imagen normalizada, con margen.
+bool Renderer::faceRect(const float* points, int width, int height, float out[4]) {
+  float minX = points[0];
+  float maxX = points[0];
+  float minY = points[1];
+  float maxY = points[1];
+  for (int i = 1; i < mesh::kVertexCount; ++i) {
+    minX = std::min(minX, points[i * 3]);
+    maxX = std::max(maxX, points[i * 3]);
+    minY = std::min(minY, points[i * 3 + 1]);
+    maxY = std::max(maxY, points[i * 3 + 1]);
+  }
+  if (width <= 0 || height <= 0 || maxX <= minX || maxY <= minY) return false;
+  const float marginX = (maxX - minX) * EngineConfig::kLightAdaptFaceMargin;
+  const float marginY = (maxY - minY) * EngineConfig::kLightAdaptFaceMargin;
+  out[0] = (minX - marginX) / static_cast<float>(width);
+  out[1] = (minY - marginY) / static_cast<float>(height);
+  out[2] = (maxX + marginX) / static_cast<float>(width);
+  out[3] = (maxY + marginY) / static_cast<float>(height);
+  return true;
+}
+
+// draw*_ = colores de la receta bajo la luz de la escena (o tal cual, sin
+// adaptación). Pocos colores, sin allocations: solo cuando algo cambió.
+void Renderer::adaptRecipeColors(bool enabled) {
+  drawLips_ = baseLips_;
+  drawFace_ = baseFace_;
+  drawEyes_ = baseEyes_;
+  drawLightAdapted_ = enabled;
+  if (!enabled) return;
+  const Vec3& gain = sceneLight_.gain();
+  adaptOklab(drawLips_.targetLab, gain);
+  adaptOklab(drawLips_.linerLab, gain);
+  for (auto& lab : drawFace_.lab) adaptOklab(lab, gain);
+  for (auto& lab : drawEyes_.shadowLab) adaptOklab(lab, gain);
+  adaptOklab(drawEyes_.linerLab, gain);
+  adaptOklab(drawEyes_.lashLab, gain);
 }
 
 void Renderer::runCropPass(const float* texMatrix, int width, int height,
@@ -514,6 +570,8 @@ void Renderer::drawLandmarks(float alpha, const float* imageToClip, int width, i
 
 void Renderer::releaseGl() {
   crop_.release();
+  scene_.release();
+  sceneLight_.reset();
   faceLayers_.release();
   passthrough_.program.reset();
   tint_.program.reset();
@@ -640,8 +698,9 @@ void Renderer::setDisplayMatrices(const float* display, const float* tracker, bo
   displayVersion_.fetch_add(1, std::memory_order_release);
 }
 
-void Renderer::setRenderOptions(bool showLandmarks, TintRegion region) {
+void Renderer::setRenderOptions(bool showLandmarks, TintRegion region, bool lightAdaptation) {
   showLandmarks_.store(showLandmarks, std::memory_order_relaxed);
+  lightAdaptation_.store(lightAdaptation, std::memory_order_relaxed);
   region_.store(static_cast<int>(region), std::memory_order_relaxed);
 }
 
