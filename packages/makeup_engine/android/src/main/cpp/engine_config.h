@@ -265,6 +265,15 @@ struct EngineConfig {
   // Distancia al wing (B.b) que cuenta como wing aunque el delineado medido
   // sea más fino.
   static constexpr float kWingMinDistance = 0.2f;
+  // Mapas espejados (P8): un lado cuenta si se ve al menos esta fracción de
+  // su máscara; entre esos, gana el que más se aparta de la piel.
+  static constexpr float kSideMinCoverage = 0.5f;
+  // Labio de dos colores (P8): los grupos de croma tienen que estar a esta
+  // distancia (a, b) y el chico tener esta fracción; se prefiere el que más
+  // se aparta de la piel si tiene al menos kLipSplitPreferFraction.
+  static constexpr float kLipSplitMinChroma = 0.06f;
+  static constexpr float kLipSplitMinFraction = 0.25f;
+  static constexpr float kLipSplitPreferFraction = 0.35f;
   // Paleta de producto (§10.6): lado máximo de la miniatura, clusters,
   // iteraciones de K-means, distancia OKLab al fondo (mediana del borde) que
   // se descarta, salto con un vecino que marca un píxel de borde (mezcla de

@@ -10,6 +10,7 @@ import 'features/ar/domain/makeup_recipe.dart';
 import 'features/ar/domain/recipe_presets.dart';
 import 'features/ar/presentation/test_filter_view.dart';
 import 'features/studio/data/engine_image_analyzer.dart';
+import 'features/studio/domain/image_look.dart';
 import 'features/studio/domain/image_recipe.dart';
 
 /// Arnés de medición de P3 (tracker + compositor), separado de la app (sin
@@ -106,9 +107,14 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
       final regions = result.regions
           .map((r) => '${r.layer.name}:${_f(r.confidence, 2)}/${_f(r.fitError, 4)}')
           .join(' ');
+      // Colores observados en la foto (para compararlos con la referencia).
+      String hex(LookRegion r) => r.valid ? r.color.toRecipeColor().toHex() : '-';
+      final eyes = [for (final r in measurements.eyeRegions) hex(r)].join(',');
       debugPrint('PHOTO ms=$ms status=${result.status.name} yaw=${_f(measurements.yawRatio, 2)} '
           'liner=${_f(measurements.linerExtent, 2)} wing=${_f(measurements.wingExtent, 2)} '
-          'worstFit=${_f(result.worstFitError, 4)} regions=[$regions]');
+          'worstFit=${_f(result.worstFitError, 4)} regions=[$regions] '
+          'seen=[skin:${hex(measurements.skin)} lips:${hex(measurements.lips)}${measurements.lipsSplit ? '(2 colores)' : ''} '
+          'cheeks:${hex(measurements.cheeks)} eyes:$eyes liner:${hex(measurements.liner)}] sides=${measurements.sideMask}');
       final recipe = result.recipe;
       if (recipe == null) {
         messenger.showSnackBar(SnackBar(content: Text('Foto: ${result.status.name}')));

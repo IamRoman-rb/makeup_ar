@@ -31,6 +31,11 @@ struct Look {
   bool liner = true;
   float linerDistance = 0.3f;  // B.g normalizado
   float wing = 0.6f;           // avance B.a
+  // Rubor, sombra y delineado solo en la mitad u < 0,5 de la cara.
+  bool oneSide = false;
+  // Otro color de labio en la mitad u >= 0,5 (labio bicolor).
+  bool bicolor = false;
+  float lip2[3] = {0.85f, 0.55f, 0.55f};
 };
 
 constexpr int kSize = 1000;
@@ -52,9 +57,10 @@ inline void mix(float dst[3], const float src[3], float t) {
 inline void paint(const Look& look, float u, float v, float out[3]) {
   for (int c = 0; c < 3; ++c) out[c] = look.skin[c];
   const float mirrored = std::fmin(u, 1.0f - u);
+  const bool madeUp = !look.oneSide || u < 0.5f;
   int col = 0;
   int row = 0;
-  if (look.blush) {
+  if (look.blush && madeUp) {
     const float* p = makeup::mesh::kCheekPlacements[look.placement];
     const float scale = 0.5f * (makeup::EngineConfig::kCheekSpreadScaleMin + makeup::EngineConfig::kCheekSpreadScaleMax);
     const float du = mirrored - p[0];
@@ -72,8 +78,8 @@ inline void paint(const Look& look, float u, float v, float out[3]) {
     const float lineD = makeup::mesh::kEyeMapB[texel + 1] / 255.0f;
     const float wingD = makeup::mesh::kEyeMapB[texel + 2] / 255.0f;
     const float progress = makeup::mesh::kEyeMapB[texel + 3] / 255.0f;
-    if (look.shadow) mix(out, look.shadowColor, lid);
-    if (look.liner) {
+    if (look.shadow && madeUp) mix(out, look.shadowColor, lid);
+    if (look.liner && madeUp) {
       const float black[3] = {0.05f, 0.05f, 0.05f};
       const bool line = lineD < look.linerDistance;
       const bool wing = progress > 0.0f && progress < look.wing && wingD < look.linerDistance;
@@ -83,7 +89,7 @@ inline void paint(const Look& look, float u, float v, float out[3]) {
   if (mapTexel(makeup::mesh::kLipsMapUvRect, makeup::mesh::kLipsMapWidth, makeup::mesh::kLipsMapHeight, u, v, &col,
                &row)) {
     const float mask = makeup::mesh::kLipsMapRgba[(static_cast<size_t>(row) * makeup::mesh::kLipsMapWidth + col) * 4] / 255.0f;
-    mix(out, look.lip, mask);
+    mix(out, look.bicolor && u >= 0.5f ? look.lip2 : look.lip, mask);
   }
 }
 

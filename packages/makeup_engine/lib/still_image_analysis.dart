@@ -74,6 +74,8 @@ final class FaceImageAnalysis {
     this.liner = FaceImageRegion.missing,
     this.linerExtent = 0,
     this.wingExtent = 0,
+    this.lipsSplit = false,
+    this.sideMask = 0,
   });
 
   // Índices de kLook* (look_analysis.h).
@@ -89,9 +91,11 @@ final class FaceImageAnalysis {
   static const int _liner = _eyeRegions + eyeRegionCount * regionFloats;
   static const int _linerExtent = _liner + regionFloats;
   static const int _wingExtent = _linerExtent + 1;
+  static const int _lipsSplit = _wingExtent + 1;
+  static const int _sideMask = _lipsSplit + 1;
 
   /// Cantidad de valores que manda el nativo (kLookValueCount).
-  static const int valueCount = _wingExtent + 1;
+  static const int valueCount = _sideMask + 1;
 
   /// null si la lista no tiene el largo esperado o trae valores no finitos.
   static FaceImageAnalysis? fromValues(List<double> values) {
@@ -116,6 +120,8 @@ final class FaceImageAnalysis {
       liner: FaceImageRegion._at(values, _liner),
       linerExtent: values[_linerExtent],
       wingExtent: values[_wingExtent],
+      lipsSplit: values[_lipsSplit] >= 0.5,
+      sideMask: values[_sideMask].round(),
     );
   }
 
@@ -150,6 +156,13 @@ final class FaceImageAnalysis {
 
   /// Largo medido del wing [0, 1] (avance a lo largo de su eje).
   final double wingExtent;
+
+  /// El labio tenía dos colores y se usó uno (el más maquillado).
+  final bool lipsSplit;
+
+  /// Lado de la cara usado (0 = mitad u < 0,5 de la malla): bit 0 rubor,
+  /// bit 1 párpado, bit 2 delineado. Diagnóstico.
+  final int sideMask;
 }
 
 /// Un color de la paleta de un producto: sRGB [0, 1] y fracción del área.

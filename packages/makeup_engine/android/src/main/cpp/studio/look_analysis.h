@@ -3,7 +3,10 @@
 // Rectifica la foto a los tres mapas del motor (labios, cara y ojos) y mide
 // con sus máscaras: piel base, labios, delineado de labios, rubor (el
 // placement que más se aparta de la piel), sombras por región, delineado de
-// ojos (grosor) y wing (largo). Solo números: la receta la arma Dart
+// ojos (grosor) y wing (largo). En los mapas espejados (cara, ojos) cada
+// región sale del lado con más maquillaje que se vea (fotos de 3/4, looks de
+// un solo lado); un labio de dos colores se queda con uno (P8). Solo
+// números: la receta la arma Dart
 // (lib/features/studio/domain/image_recipe.dart).
 //
 // Salida: un arreglo plano de kLookValueCount floats (para JNI) con los
@@ -42,7 +45,9 @@ inline constexpr int kLookEyeRegions = kLookCheekPlacement + 1;          // 5 bl
 inline constexpr int kLookLiner = kLookEyeRegions + kLookEyeRegionCount * kRegionFloats;  // texels oscuros
 inline constexpr int kLookLinerExtent = kLookLiner + kRegionFloats;  // distancia normalizada (B.g) [0, 1]
 inline constexpr int kLookWingExtent = kLookLinerExtent + 1;         // avance del wing (B.a) [0, 1]
-inline constexpr int kLookValueCount = kLookWingExtent + 1;
+inline constexpr int kLookLipsSplit = kLookWingExtent + 1;           // 1 = labio de dos colores (se usó uno)
+inline constexpr int kLookSideMask = kLookLipsSplit + 1;             // lados usados: bit 0 rubor, 1 párpado, 2 delineado
+inline constexpr int kLookValueCount = kLookSideMask + 1;
 
 // Llena [out] (kLookValueCount floats) con las medidas de [image] y sus
 // [landmarks] (px de la foto). No toca status, distancia entre ojos ni yaw

@@ -126,6 +126,50 @@ TEST(look_sinMaquillajeNoInventa) {
   CHECK(makeup::deltaE(regionLab(values, makeup::kLookCheeks), labOf(look.skin)) < 0.01f);
 }
 
+// Maquillaje en un solo lado (P8): sombra, rubor y delineado salen del lado
+// maquillado, sin mezclarse con el natural.
+TEST(look_unSoloLadoNoSeLava) {
+  synthetic::Look look;
+  look.oneSide = true;
+  const std::vector<float> values = analyze(look);
+  const int lid = eyeRegion(makeup::EyeRegion::kLid);
+  CHECK(makeup::deltaE(regionLab(values, lid), labOf(look.shadowColor)) < 0.03f);
+  CHECK(values[lid + makeup::kRegionCoverage] > 0.9f);
+  CHECK_NEAR(values[makeup::kLookLinerExtent], look.linerDistance, 0.051);
+  CHECK(values[makeup::kLookCheekPlacement] == static_cast<float>(look.placement));
+  CHECK(values[makeup::kLookCheeks + makeup::kRegionA] > values[makeup::kLookSkin + makeup::kRegionA] + 0.02f);
+}
+
+// Foto de 3/4 (P8): con media cara de costado, la sombra sale del lado que se
+// ve con su cobertura entera (antes la cobertura juntaba los dos lados y
+// quedaba en ~0,5: la región se descartaba).
+TEST(look_tresCuartosUsaElLadoVisible) {
+  synthetic::Look look;
+  const makeup::StillImage image = synthetic::photo(look);
+  std::vector<float> points = synthetic::landmarks();
+  for (int i = 0; i < makeup::mesh::kVertexCount; ++i) {
+    if (makeup::mesh::kUvs[i * 2] > 0.5f) points[i * 3] = 0.5f * synthetic::kSize + 0.01f * (points[i * 3] - 0.5f * synthetic::kSize);
+  }
+  std::vector<float> values(makeup::kLookValueCount, 0.0f);
+  CHECK(makeup::analyzeLook(image, points.data(), values.data()));
+  const int lid = eyeRegion(makeup::EyeRegion::kLid);
+  CHECK(values[lid + makeup::kRegionCoverage] > 0.9f);
+  CHECK(makeup::deltaE(regionLab(values, lid), labOf(look.shadowColor)) < 0.03f);
+  CHECK((static_cast<int>(values[makeup::kLookSideMask]) & 2) == 0);  // párpado del lado 0
+}
+
+// Labio bicolor (P8): se queda con el color más maquillado, no con la mezcla.
+TEST(look_labioBicolorEligeUnColor) {
+  synthetic::Look look;
+  look.bicolor = true;
+  const std::vector<float> values = analyze(look);
+  CHECK(values[makeup::kLookLipsSplit] == 1.0f);
+  CHECK(makeup::deltaE(regionLab(values, makeup::kLookLips), labOf(look.lip)) < 0.03f);
+  // Un solo color: no separa.
+  synthetic::Look plain;
+  CHECK(analyze(plain)[makeup::kLookLipsSplit] == 0.0f);
+}
+
 TEST(look_fotoEspejadaDaLoMismo) {
   synthetic::Look look;
   look.placement = 0;

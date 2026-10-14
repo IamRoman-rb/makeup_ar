@@ -161,3 +161,20 @@ Con 20 fotos se cierra el criterio del §7 y se recalibran los umbrales de prese
   - **UI:** los botones se deshabilitan mientras el aviso o la galería están abiertos.
   - **Excepciones C++ en JNI:** no aplica, el motor compila con `-fno-exceptions`. Una falla de memoria aborta igual; la mitigación es achicar los picos, como se hizo arriba.
 - **shader-reviewer:** F4 no toca shaders.
+
+## P8: más fiel a la foto (primeras pruebas en el E20)
+
+Con dos fotos de referencia salía un look muy distinto: labios bordó, delineado negro y casi sin sombra. La referencia tenía párpado violeta con brillo, párpado inferior verde agua y boca en degradé violeta a verde agua. Cambios:
+
+- **Por lado:** en los mapas espejados (rubor, cada sombra, delineado y wing), cada región sale del lado con más maquillaje entre los que se ven al menos `kSideMinCoverage` (0,5) de su máscara.
+  - Antes se juntaban los dos lados. Con la cara de 3/4 la cobertura quedaba en ~0,5 y la región se descartaba por baja confianza. Con un look de un solo lado, el color se mezclaba con el lado natural.
+- **Labio bicolor:** un 2-means en croma (a, b). Si los grupos están a ≥ 0,06 y el chico tiene ≥ 25 %, se queda el que más se aparta de la piel (si tiene ≥ 35 %); si no, el más grande. Antes la mediana daba un color intermedio.
+- **Diagnóstico:** la línea `PHOTO` del arnés muestra los colores observados (`seen=[skin:… lips:… cheeks:… eyes:… liner:…]`), si el labio era bicolor y los lados usados (`sides`: bit 0 rubor, bit 1 párpado, bit 2 delineado).
+- **Tests de host:** look de un solo lado, foto de 3/4 y labio bicolor.
+
+Lo que la receta todavía no puede representar:
+- **Párpado inferior** (el verde agua debajo del ojo): el esquema no tiene esa región.
+- **Degradés y labios de dos colores:** un solo color por región.
+- **Brillos de color** (duocromos): el shimmer del motor es blanco.
+
+Fotos de internet: sirven para probar en el teléfono, pero para el catálogo hacen falta fotos propias o con permiso (§10.5).

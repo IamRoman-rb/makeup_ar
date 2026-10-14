@@ -39,6 +39,8 @@ final class LookMeasurements {
     this.liner = LookRegion.missing,
     this.linerExtent = 0,
     this.wingExtent = 0,
+    this.lipsSplit = false,
+    this.sideMask = 0,
   });
 
   final PhotoLookStatus status;
@@ -61,6 +63,11 @@ final class LookMeasurements {
 
   /// Largo medido del wing [0, 1].
   final double wingExtent;
+
+  /// Diagnóstico: labio de dos colores (se usó uno) y lados usados (bit 0
+  /// rubor, bit 1 párpado, bit 2 delineado).
+  final bool lipsSplit;
+  final int sideMask;
 
   LookRegion eye(ShadowRegion region) =>
       region.index < eyeRegions.length ? eyeRegions[region.index] : LookRegion.missing;
