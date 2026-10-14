@@ -189,3 +189,22 @@ Con la foto de medio rostro (ahumado azul y violeta en un solo ojo), la receta s
 - para el wing, exige además que sea más oscuro que la V externa medida.
 
 Test de host `look_ahumadoNoEsDelineado`: un ahumado en degradé da un trazo de 0,15 como máximo y nada de wing. Con un delineado negro real encima, el grosor y el wing vuelven a medirse bien.
+
+## P10: piel de referencia local y acabado calibrado
+
+Con la foto de medio rostro, la línea `PHOTO` mostró que lo medido estaba bien (párpado `#67545A`, mejilla `#CA826A`, labio `#B43F6F`) pero la receta lo deformaba.
+
+- **Piel de referencia demasiado clara:** `#F5D2BE`, la frente y la nariz con el brillo del iluminador de estudio.
+- **La política de opacidad amplifica la diferencia de luz:** con 0,5 el párpado daba L ≈ 0,01 (negro); con 0,35 el rubor daba un ladrillo.
+
+Cambios:
+- **Piel local** (`kLookCheekSkin` y `kLookEyeSkin`):
+  - el anillo alrededor del rubor elegido (peso de la gaussiana entre 0,1 y 0,3);
+  - la ojera del lado del párpado elegido: fuera de toda región y por debajo de las pestañas inferiores.
+  - El rubor se despeja sobre la piel de la mejilla, y las sombras y el delineado sobre la de la ojera. Sin muestras, sobre la general.
+- **Políticas:** sombras 0,5 → 0,75 y rubor 0,35 → 0,5. Son más altas que las del informe: las fotos de looks tienen el maquillaje denso y una opacidad baja amplifica cualquier error de luz. El render sobre la foto es el mismo.
+- **`gloss_score`:** el delta pasa de 0,12 a 0,18 y el pleno de 0,06 a 0,07 (también en `sample_region_reference.py`). La luz despareja de un labio mate (arriba en sombra) contaba como brillo. Un reflejo especular pasa de +0,3.
+- **Wing mínimo:** de 0,15 a 0,25. Las pestañas largas del ángulo externo daban un wing corto.
+- **Diagnóstico:** la línea `PHOTO` suma `cheekSkin`, `eyeSkin` y `lipsGloss`.
+
+Con los colores de esa foto (y pieles locales estimadas), el párpado pasa de `#020003` a `#44363D` (malva oscuro) y el rubor de `#962D0E` a `#B0533C`. Los valores reales salen de la próxima línea `PHOTO`.

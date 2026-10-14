@@ -34,8 +34,10 @@ def robust_lab(pix_srgb, drop_hi=0.08, drop_lo=0.05):
     keep=(L>=lo)&(L<=hi)
     return np.median(lab[keep],axis=0), lab
 
-def gloss_score(lab, hi_delta=0.12, full_at=0.06):
-    """Fracción de píxeles claramente más claros que la mediana -> 0..1 (umbrales a calibrar)."""
+def gloss_score(lab, hi_delta=0.18, full_at=0.07):
+    """Fracción de píxeles claramente más claros que la mediana -> 0..1. Umbrales
+    de P10 (engine_config.h: kGlossHighDelta, kGlossFullAt): con 0,12 un labio mate
+    con el labio de arriba en sombra contaba como brillo."""
     L=lab[:,0]; frac=np.mean(L>np.median(L)+hi_delta)
     return float(np.clip(frac/full_at,0,1))
 

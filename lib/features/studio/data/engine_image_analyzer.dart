@@ -57,6 +57,8 @@ final class EngineImageAnalyzer implements IImageLookAnalyzer {
     wingExtent: analysis.wingExtent,
     lipsSplit: analysis.lipsSplit,
     sideMask: analysis.sideMask,
+    cheekSkin: _region(analysis.cheekSkin),
+    eyeSkin: _region(analysis.eyeSkin),
   );
 
   static LookRegion _region(FaceImageRegion region) => LookRegion(

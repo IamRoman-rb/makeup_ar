@@ -82,6 +82,19 @@ TEST(muestreo_brillanteDaUnoYNoBlanquea) {
   for (int c = 0; c < 3; ++c) CHECK_NEAR(rgb[c], kBase[c], 0.005);
 }
 
+// P10: un labio mate de estudio con el labio de arriba en sombra (la mitad
+// 0,1 más oscura en L) no es brillo.
+TEST(muestreo_mateConLuzDesparejaNoEsBrillo) {
+  std::mt19937 rng(2);
+  const std::vector<Vec3> base = toLab(matteLip(rng, 4000));
+  std::vector<Vec3> uneven = base;
+  for (size_t i = 0; i < uneven.size() / 2; ++i) {
+    const float k = (uneven[i].x - 0.1f) / uneven[i].x;  // misma croma relativa, menos luz
+    uneven[i] = Vec3{uneven[i].x * k, uneven[i].y * k, uneven[i].z * k};
+  }
+  CHECK(makeup::glossScore(uneven) < 0.15f);
+}
+
 TEST(muestreo_pocasMuestrasNoEsValida) {
   std::vector<Vec3> few(10, Vec3{0.5f, 0.1f, 0.0f});
   const makeup::RegionColor color = makeup::robustRegionColor(few);

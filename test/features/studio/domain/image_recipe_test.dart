@@ -66,11 +66,11 @@ void main() {
       lips: region(render(skin, lip, 0.85, lumaFollow: 0.8), gloss: 0.8),
       lipInterior: region(lip),
       lipLiner: region(lip),
-      cheeks: region(render(skin, red, 0.35), coverage: 0.9),
+      cheeks: region(render(skin, red, 0.5), coverage: 0.9),
       cheekPlacement: CheekPlacement.high,
       eyeRegions: [
-        region(render(skin, purple, 0.5), gloss: 0.6), // párpado shimmer
-        region(render(skin, purple, 0.5)), // pliegue: igual, se une
+        region(render(skin, purple, 0.75), gloss: 0.6), // párpado shimmer
+        region(render(skin, purple, 0.75)), // pliegue: igual, se une
         region(skin), // V externa: nada
         region(skin),
         region(skin),
@@ -90,7 +90,7 @@ void main() {
     expect(recipe.lips?.gloss, closeTo(0.8, 1e-9));
     expect(recipe.lips?.liner, isNull); // anillo igual al centro: sin delineado
     expect(recipe.cheeks?.placement, CheekPlacement.high);
-    expect(recipe.cheeks?.opacity, closeTo(0.35, 1e-9));
+    expect(recipe.cheeks?.opacity, closeTo(0.5, 1e-9));
 
     final shadows = recipe.eyes?.shadow ?? const [];
     expect(shadows, hasLength(1));
@@ -113,6 +113,47 @@ void main() {
     if (lips == null) return;
     final rendered = render(skin, Oklab.fromColor(lips.color), lips.opacity, lumaFollow: 0.8);
     expect(rendered.distanceTo(measurements.lips.color), lessThan(0.01));
+  });
+
+  // P10: la foto de medio rostro del E20 (colores del log PHOTO). La piel
+  // general (frente con brillo, #F5D2BE) es mucho más clara que la de la
+  // mejilla y la ojera: con ella el párpado salía casi negro y el rubor
+  // ladrillo. Con la piel local, no.
+  test('foto de estudio: piel local, sombra y rubor no se oscurecen', () {
+    Oklab hex(int rgb) => Oklab.fromColor(RecipeColor(rgb));
+    final measurements = LookMeasurements(
+      status: PhotoLookStatus.ok,
+      skin: region(hex(0xF5D2BE)),
+      cheekSkin: region(hex(0xE2B29A)),
+      eyeSkin: region(hex(0xD6AA94)),
+      lips: region(hex(0xB43F6F)),
+      cheeks: region(hex(0xCA826A)),
+      eyeRegions: [
+        region(hex(0x67545A)),
+        region(hex(0x645051)),
+        region(hex(0x2A2431)),
+        region(hex(0xCA9E84)),
+        region(hex(0xA27153)),
+      ],
+      liner: region(hex(0x0C0B09)),
+      linerExtent: 0.2,
+      wingExtent: 0.2,
+    );
+    final recipe = ImageRecipeBuilder.build(measurements, name: 'Medio rostro').recipe;
+    expect(recipe, isNotNull);
+    if (recipe == null) return;
+    final shadows = recipe.eyes?.shadow ?? const [];
+    expect(shadows, isNotEmpty);
+    // El párpado malva (unido al pliegue, casi del mismo color) sigue siendo
+    // malva oscuro, no negro. La V externa sí es casi negra en la foto.
+    final lid = shadows.firstWhere((s) => s.region == ShadowRegion.lid || s.region == ShadowRegion.crease);
+    expect(Oklab.fromColor(lid.color).l, greaterThan(0.25));
+    // El rubor durazno no se vuelve ladrillo.
+    final cheeks = recipe.cheeks;
+    expect(cheeks, isNotNull);
+    if (cheeks != null) expect(Oklab.fromColor(cheeks.color).l, greaterThan(0.5));
+    // Sin wing por las pestañas (0,2 < wingMin).
+    expect(recipe.eyes?.liner?.wing ?? 0, 0);
   });
 
   test('sin maquillaje: solo los labios, sin ojos ni rubor', () {
@@ -193,7 +234,7 @@ void main() {
       status: PhotoLookStatus.ok,
       skin: region(skin),
       lips: region(render(skin, red, 0.85, lumaFollow: 0.8)),
-      cheeks: region(render(skin, red, 0.35)),
+      cheeks: region(render(skin, red, 0.5)),
     );
     final faithful = ImageRecipeBuilder.build(measurements, name: 'Look').recipe;
     expect(faithful, isNotNull);
@@ -203,8 +244,8 @@ void main() {
     for (final v in variants) {
       expect(valid.validate(v.toJson()).isValid, isTrue);
     }
-    expect(variants[1].cheeks?.opacity, closeTo(0.35 * 1.25, 1e-3));
-    expect(variants[2].cheeks?.opacity, closeTo(0.35 * 0.65, 1e-3));
+    expect(variants[1].cheeks?.opacity, closeTo(0.5 * 1.25, 1e-3));
+    expect(variants[2].cheeks?.opacity, closeTo(0.5 * 0.65, 1e-3));
     expect(variants[1].lips?.opacity, 1.0); // 0,85 × 1,25 se recorta
   });
 }

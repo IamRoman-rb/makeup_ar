@@ -192,10 +192,13 @@ void main() {
     values[15] = 900;
     values[16] = 0.95;
     values[38] = 2; // placement low
-    values[FaceImageAnalysis.valueCount - 4] = 0.35; // grosor del delineado
-    values[FaceImageAnalysis.valueCount - 3] = 0.6; // wing
-    values[FaceImageAnalysis.valueCount - 2] = 1; // labio de dos colores
-    values[FaceImageAnalysis.valueCount - 1] = 5; // lados: rubor 1, párpado 0, delineado 1
+    const tail = FaceImageAnalysis.valueCount - 2 * FaceImageAnalysis.regionFloats;
+    values[tail - 4] = 0.35; // grosor del delineado
+    values[tail - 3] = 0.6; // wing
+    values[tail - 2] = 1; // labio de dos colores
+    values[tail - 1] = 5; // lados: rubor 1, párpado 0, delineado 1
+    values[tail] = 1; // piel junto al rubor válida
+    values[tail + 1] = 0.7;
     handler = (_) => values;
     final analysis = await MakeupEngine().analyzeFaceImage(Uint8List.fromList([1, 2, 3]));
     expect(calls.single.method, 'analyzeFaceImage');
@@ -213,6 +216,9 @@ void main() {
     expect(analysis.wingExtent, closeTo(0.6, 1e-9));
     expect(analysis.lipsSplit, isTrue);
     expect(analysis.sideMask, 5);
+    expect(analysis.cheekSkin.valid, isTrue);
+    expect(analysis.cheekSkin.l, closeTo(0.7, 1e-9));
+    expect(analysis.eyeSkin.valid, isFalse);
   });
 
   test('analyzeFaceImage: estado de rechazo, largo inválido y errores', () async {

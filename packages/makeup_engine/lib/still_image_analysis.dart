@@ -76,6 +76,8 @@ final class FaceImageAnalysis {
     this.wingExtent = 0,
     this.lipsSplit = false,
     this.sideMask = 0,
+    this.cheekSkin = FaceImageRegion.missing,
+    this.eyeSkin = FaceImageRegion.missing,
   });
 
   // Índices de kLook* (look_analysis.h).
@@ -93,9 +95,11 @@ final class FaceImageAnalysis {
   static const int _wingExtent = _linerExtent + 1;
   static const int _lipsSplit = _wingExtent + 1;
   static const int _sideMask = _lipsSplit + 1;
+  static const int _cheekSkin = _sideMask + 1;
+  static const int _eyeSkin = _cheekSkin + regionFloats;
 
   /// Cantidad de valores que manda el nativo (kLookValueCount).
-  static const int valueCount = _sideMask + 1;
+  static const int valueCount = _eyeSkin + regionFloats;
 
   /// null si la lista no tiene el largo esperado o trae valores no finitos.
   static FaceImageAnalysis? fromValues(List<double> values) {
@@ -122,6 +126,8 @@ final class FaceImageAnalysis {
       wingExtent: values[_wingExtent],
       lipsSplit: values[_lipsSplit] >= 0.5,
       sideMask: values[_sideMask].round(),
+      cheekSkin: FaceImageRegion._at(values, _cheekSkin),
+      eyeSkin: FaceImageRegion._at(values, _eyeSkin),
     );
   }
 
@@ -163,6 +169,11 @@ final class FaceImageAnalysis {
   /// Lado de la cara usado (0 = mitad u < 0,5 de la malla): bit 0 rubor,
   /// bit 1 párpado, bit 2 delineado. Diagnóstico.
   final int sideMask;
+
+  /// Piel con la misma luz que el rubor (anillo alrededor) y que los ojos
+  /// (ojera). Inválidas si no hubo muestras: se usa [skin].
+  final FaceImageRegion cheekSkin;
+  final FaceImageRegion eyeSkin;
 }
 
 /// Un color de la paleta de un producto: sRGB [0, 1] y fracción del área.

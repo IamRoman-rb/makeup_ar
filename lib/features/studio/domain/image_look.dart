@@ -41,6 +41,8 @@ final class LookMeasurements {
     this.wingExtent = 0,
     this.lipsSplit = false,
     this.sideMask = 0,
+    this.cheekSkin = LookRegion.missing,
+    this.eyeSkin = LookRegion.missing,
   });
 
   final PhotoLookStatus status;
@@ -68,6 +70,12 @@ final class LookMeasurements {
   /// rubor, bit 1 párpado, bit 2 delineado).
   final bool lipsSplit;
   final int sideMask;
+
+  /// Piel con la misma luz que el rubor y que los ojos (P10). Inválidas sin
+  /// muestras: entonces se usa [skin]. La de la frente y la nariz tiene el
+  /// brillo del iluminador en una foto de estudio.
+  final LookRegion cheekSkin;
+  final LookRegion eyeSkin;
 
   LookRegion eye(ShadowRegion region) =>
       region.index < eyeRegions.length ? eyeRegions[region.index] : LookRegion.missing;

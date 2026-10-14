@@ -47,7 +47,11 @@ inline constexpr int kLookLinerExtent = kLookLiner + kRegionFloats;  // distanci
 inline constexpr int kLookWingExtent = kLookLinerExtent + 1;         // avance del wing (B.a) [0, 1]
 inline constexpr int kLookLipsSplit = kLookWingExtent + 1;           // 1 = labio de dos colores (se usó uno)
 inline constexpr int kLookSideMask = kLookLipsSplit + 1;             // lados usados: bit 0 rubor, 1 párpado, 2 delineado
-inline constexpr int kLookValueCount = kLookSideMask + 1;
+// Piel con la misma luz que la región (P10): la de la frente y la nariz en una
+// foto de estudio tiene el brillo del iluminador y deformaba los colores.
+inline constexpr int kLookCheekSkin = kLookSideMask + 1;             // anillo alrededor del rubor elegido
+inline constexpr int kLookEyeSkin = kLookCheekSkin + kRegionFloats;  // ojera del lado del párpado elegido
+inline constexpr int kLookValueCount = kLookEyeSkin + kRegionFloats;
 
 // Llena [out] (kLookValueCount floats) con las medidas de [image] y sus
 // [landmarks] (px de la foto). No toca status, distancia entre ojos ni yaw

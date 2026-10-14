@@ -112,6 +112,16 @@ TEST(look_recuperaLoPintado) {
   CHECK(values[makeup::kLookLiner + makeup::kRegionL] < 0.25f);
 }
 
+// Piel local (P10): junto al rubor y en la ojera da la piel pintada.
+TEST(look_pielLocal) {
+  synthetic::Look look;
+  const std::vector<float> values = analyze(look);
+  CHECK(values[makeup::kLookCheekSkin + makeup::kRegionValid] == 1.0f);
+  CHECK(values[makeup::kLookEyeSkin + makeup::kRegionValid] == 1.0f);
+  CHECK(makeup::deltaE(regionLab(values, makeup::kLookCheekSkin), labOf(look.skin)) < 0.03f);
+  CHECK(makeup::deltaE(regionLab(values, makeup::kLookEyeSkin), labOf(look.skin)) < 0.01f);
+}
+
 TEST(look_sinMaquillajeNoInventa) {
   synthetic::Look look;
   look.blush = false;

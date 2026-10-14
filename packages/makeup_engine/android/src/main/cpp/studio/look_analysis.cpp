@@ -193,6 +193,36 @@ void measureLips(const UvGrid& lips, const RegionColor& skin, float* out) {
   interior.write(out, kLookLipInterior);
 }
 
+// Peso de la gaussiana del rubor [placement] con spread 0,5 en (u, v)
+// espejado (face_style.cpp).
+float cheekWeight(int placementIndex, float u, float v) {
+  const float scale = 0.5f * (EngineConfig::kCheekSpreadScaleMin + EngineConfig::kCheekSpreadScaleMax);
+  const float* placement = mesh::kCheekPlacements[placementIndex];
+  const float c = std::cos(placement[4]);
+  const float s = std::sin(placement[4]);
+  const float du = u - placement[0];
+  const float dv = v - placement[1];
+  const float gu = (c * du + s * dv) / (placement[2] * scale);
+  const float gv = (-s * du + c * dv) / (placement[3] * scale);
+  return std::exp(-0.5f * (gu * gu + gv * gv));
+}
+
+// Piel junto al rubor (P10): el anillo de la gaussiana elegida en su lado,
+// solo piel (sin contorno ni iluminador). Misma luz que la mejilla.
+void measureCheekSkin(const UvGrid& face, int placement, int side, float* out) {
+  Accumulator ring;
+  for (int row = 0; row < face.height; ++row) {
+    for (int col = 0; col < face.width; ++col) {
+      const float weight = cheekWeight(placement, face.texelU(col), face.texelV(row));
+      if (weight < EngineConfig::kCheekSkinRingMin || weight > EngineConfig::kCheekSkinRingMax) continue;
+      const uint8_t* map = &mesh::kFaceMapRgba[(static_cast<size_t>(row) * face.width + col) * 4];
+      if (unitByte(map[0]) < kMaskThreshold || unitByte(map[1]) > 0.25f || unitByte(map[2]) > 0.25f) continue;
+      ring.add(face, face.index(side, col, row));
+    }
+  }
+  ring.write(out, kLookCheekSkin);
+}
+
 // Rubor: la gaussiana de cada placement con spread 0,5 (face_style.cpp), por
 // lado. Gana el par (placement, lado) que más se aparta de la piel en croma
 // entre los que se ven lo suficiente. Devuelve el lado.
@@ -253,7 +283,28 @@ int measureCheeks(const UvGrid& face, const RegionColor& skin, float* out) {
     bestSide = fallbackSide;
   }
   out[kLookCheekPlacement] = static_cast<float>(bestPlacement);
+  measureCheekSkin(face, bestPlacement, bestSide, out);
   return bestSide;
+}
+
+// Ojera del lado [side] (P10): texels del mapa de ojos fuera de toda región,
+// lejos de la línea de pestañas superior y por debajo de las pestañas
+// inferiores. La luz de la cuenca, sin maquillaje.
+void measureEyeSkin(const UvGrid& eyes, int side, float* out) {
+  constexpr int kLowerLashLandmark = 23;
+  const float maxV = mesh::kUvs[kLowerLashLandmark * 2 + 1] - EngineConfig::kEyeSkinBelowLashUv;
+  Accumulator skin;
+  for (int row = 0; row < eyes.height; ++row) {
+    if (eyes.texelV(row) > maxV) continue;
+    for (int col = 0; col < eyes.width; ++col) {
+      const size_t texel = (static_cast<size_t>(row) * eyes.width + col) * 4;
+      const uint8_t* mapA = &mesh::kEyeMapA[texel];
+      const uint8_t* mapB = &mesh::kEyeMapB[texel];
+      if (std::max({mapA[0], mapA[1], mapA[2], mapA[3], mapB[0]}) > 25 || mapB[1] < 255) continue;
+      skin.add(eyes, eyes.index(side, col, row));
+    }
+  }
+  skin.write(out, kLookEyeSkin);
 }
 
 // Delineado de un lado (P9: distinto de un ahumado). Franjas de distancia a la
@@ -378,6 +429,7 @@ int measureEyes(const UvGrid& eyes, const RegionColor& skin, float* out) {
   out[kLookLinerExtent] = best.extent;
   out[kLookWingExtent] = best.wing;
   best.dark.write(out, kLookLiner);
+  measureEyeSkin(eyes, lidSide, out);
   return lidSide | (linerSide << 1);
 }
 

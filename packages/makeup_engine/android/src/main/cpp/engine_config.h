@@ -243,8 +243,11 @@ struct EngineConfig {
   static constexpr float kSampleDropHigh = 0.08f;
   static constexpr float kSampleDropLow = 0.05f;
   // gloss_score: fracción de muestras con L > mediana + delta, sobre fullAt.
-  static constexpr float kGlossHighDelta = 0.12f;
-  static constexpr float kGlossFullAt = 0.06f;
+  // P10: 0,12 contaba como brillo la diferencia de luz entre el labio de
+  // arriba y el de abajo de un labio mate de estudio; un reflejo especular
+  // pasa de +0,3. Los mismos valores en sample_region_reference.py.
+  static constexpr float kGlossHighDelta = 0.18f;
+  static constexpr float kGlossFullAt = 0.07f;
   // Un texel cuenta en una región si su máscara vale al menos esto.
   static constexpr float kRegionMaskThreshold = 0.5f;
   // Muestras mínimas para que una región sea válida.
@@ -269,6 +272,13 @@ struct EngineConfig {
   // mediana de una franja supera la de la primera por más que esto, lo
   // oscuro se aclara de a poco (degradé) y el grosor se corta ahí.
   static constexpr float kLinerPlateauDelta = 0.04f;
+  // Piel local (P10): anillo de la gaussiana del rubor (peso entre min y max)
+  // y franja de ojera por debajo de la línea de pestañas inferior (UV, v
+  // hacia arriba: hasta este margen debajo del landmark 23, fuera de las
+  // pestañas inferiores).
+  static constexpr float kCheekSkinRingMin = 0.1f;
+  static constexpr float kCheekSkinRingMax = 0.3f;
+  static constexpr float kEyeSkinBelowLashUv = 0.009f;
   // Mapas espejados (P8): un lado cuenta si se ve al menos esta fracción de
   // su máscara; entre esos, gana el que más se aparta de la piel.
   static constexpr float kSideMinCoverage = 0.5f;

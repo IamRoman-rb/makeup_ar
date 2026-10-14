@@ -114,7 +114,9 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
           'liner=${_f(measurements.linerExtent, 2)} wing=${_f(measurements.wingExtent, 2)} '
           'worstFit=${_f(result.worstFitError, 4)} regions=[$regions] '
           'seen=[skin:${hex(measurements.skin)} lips:${hex(measurements.lips)}${measurements.lipsSplit ? '(2 colores)' : ''} '
-          'cheeks:${hex(measurements.cheeks)} eyes:$eyes liner:${hex(measurements.liner)}] sides=${measurements.sideMask}');
+          'cheeks:${hex(measurements.cheeks)} eyes:$eyes liner:${hex(measurements.liner)} '
+          'cheekSkin:${hex(measurements.cheekSkin)} eyeSkin:${hex(measurements.eyeSkin)}] '
+          'lipsGloss=${_f(measurements.lips.gloss, 2)} sides=${measurements.sideMask}');
       final recipe = result.recipe;
       if (recipe == null) {
         messenger.showSnackBar(SnackBar(content: Text('Foto: ${result.status.name}')));

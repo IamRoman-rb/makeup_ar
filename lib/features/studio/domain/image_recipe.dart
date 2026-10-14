@@ -25,8 +25,12 @@ abstract final class ImageRecipePolicy {
   // Opacidad por política (§10.5 paso 5).
   static const double lipsOpacity = 0.85;
   static const double lipLinerOpacity = 0.9;
-  static const double cheeksOpacity = 0.35;
-  static const double shadowOpacity = 0.5;
+  // P10: más altas que las del informe (0,35 y 0,5). Las fotos de looks
+  // tienen el maquillaje denso y una opacidad baja amplifica cualquier error
+  // de luz entre la región y su piel de referencia (con 0,5 un párpado
+  // malva salía casi negro). El render sobre la foto es el mismo (§10.5).
+  static const double cheeksOpacity = 0.5;
+  static const double shadowOpacity = 0.75;
   static const double eyeLinerOpacity = 0.9;
 
   /// `lumaFollow` del labial (el default del motor, RecipeParams.kt).
@@ -47,7 +51,8 @@ abstract final class ImageRecipePolicy {
   static const double linerThicknessMax = 0.6;
   static const double linerFeather = 0.08;
   static const double linerMinMargin = 0.05;
-  static const double wingMin = 0.15;
+  // P10: con 0,15 las pestañas largas del ángulo externo daban un wing corto.
+  static const double wingMin = 0.25;
 
   // Acabado por gloss_score.
   static const double matteBelow = 0.15;
@@ -144,6 +149,10 @@ abstract final class ImageRecipeBuilder {
     final skin = m.skin;
     if (!skin.valid) return const ImageRecipeResult(status: PhotoLookStatus.badImage);
     final base = skin.color;
+    // Piel con la misma luz que cada región (P10): la general sale de la frente
+    // y la nariz, que en una foto de estudio tienen el brillo del iluminador.
+    final cheekBase = m.cheekSkin.valid ? m.cheekSkin.color : base;
+    final eyeBase = m.eyeSkin.valid ? m.eyeSkin.color : base;
     final pose = (1 - 0.5 * (m.yawRatio.abs() / ImageRecipePolicy.maxYawRatio)).clamp(0.0, 1.0);
     double confidence(LookRegion region) => (region.coverage * pose).clamp(0.0, 1.0);
     bool usable(LookRegion region) => region.valid && confidence(region) >= ImageRecipePolicy.minConfidence;
@@ -186,9 +195,9 @@ abstract final class ImageRecipeBuilder {
     // Rubor: más rojo que la piel y con croma distinta.
     final cheeks = m.cheeks;
     if (usable(cheeks) &&
-        cheeks.color.chromaDistanceTo(base) > ImageRecipePolicy.cheeksMinChroma &&
-        cheeks.color.a > base.a) {
-      final solved = solve(base, cheeks.color, ImageRecipePolicy.cheeksOpacity);
+        cheeks.color.chromaDistanceTo(cheekBase) > ImageRecipePolicy.cheeksMinChroma &&
+        cheeks.color.a > cheekBase.a) {
+      final solved = solve(cheekBase, cheeks.color, ImageRecipePolicy.cheeksOpacity);
       json['cheeks'] = {
         'color': solved.color.toRecipeColor().toHex(),
         'opacity': _round(solved.opacity),
@@ -207,11 +216,11 @@ abstract final class ImageRecipeBuilder {
         <({ShadowRegion region, LookRegion measured, double delta})>[
           for (final region in ShadowRegion.values)
             if (usable(m.eye(region)))
-              (region: region, measured: m.eye(region), delta: m.eye(region).color.distanceTo(base)),
+              (region: region, measured: m.eye(region), delta: m.eye(region).color.distanceTo(eyeBase)),
         ]..removeWhere(
           (c) =>
               c.delta <= ImageRecipePolicy.shadowMinDelta ||
-              (c.region == ShadowRegion.browBone && c.measured.color.l <= base.l),
+              (c.region == ShadowRegion.browBone && c.measured.color.l <= eyeBase.l),
         );
     candidates.sort((x, y) => y.delta.compareTo(x.delta));
     final chosen = <({ShadowRegion region, LookRegion measured, double delta})>[];
@@ -228,7 +237,7 @@ abstract final class ImageRecipeBuilder {
     final eyes = <String, Object?>{};
     final shadows = <Map<String, Object?>>[];
     for (final c in chosen) {
-      final solved = solve(base, c.measured.color, ImageRecipePolicy.shadowOpacity);
+      final solved = solve(eyeBase, c.measured.color, ImageRecipePolicy.shadowOpacity);
       shadows.add({
         'color': solved.color.toRecipeColor().toHex(),
         'opacity': _round(solved.opacity),
@@ -248,7 +257,7 @@ abstract final class ImageRecipeBuilder {
     // Delineado: grosor medido sobre el mínimo del motor; wing si se ve.
     final linerThreshold = ImageRecipePolicy.linerThicknessMin + ImageRecipePolicy.linerMinMargin;
     if (usable(m.liner) && m.linerExtent >= linerThreshold) {
-      final solved = solve(base, m.liner.color, ImageRecipePolicy.eyeLinerOpacity);
+      final solved = solve(eyeBase, m.liner.color, ImageRecipePolicy.eyeLinerOpacity);
       // El borde visible del motor queda ~medio feather después del umbral.
       final thickness =
           (m.linerExtent - ImageRecipePolicy.linerFeather / 2 - ImageRecipePolicy.linerThicknessMin) /
