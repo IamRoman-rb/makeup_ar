@@ -146,5 +146,32 @@
     "studioErrorQuota": "Le quota du jour est épuisé. Réessayez demain.",
     "studioErrorUnavailable": "Le générateur ne répond pas. Réessayez plus tard.",
     "studioErrorAppCheck": "L'app n'a pas passé la vérification (App Check).",
-    "studioErrorUnknown": "Échec de la génération."
+    "studioErrorUnknown": "Échec de la génération.",
+    "studioFromPhoto": "Depuis une photo",
+    "studioPalette": "Palette produit",
+    "studioPhotoNoticeTitle": "Photo de référence",
+    "studioPhotoNotice": "La photo est analysée sur ce téléphone : elle n’est ni envoyée ni enregistrée. Utilisez vos propres photos ou des photos autorisées par la personne qui y figure.",
+    "studioContinue": "Continuer",
+    "studioPhotoNoFace": "Aucun visage trouvé sur la photo.",
+    "studioPhotoSmall": "Le visage est trop petit : utilisez une photo plus rapprochée.",
+    "studioPhotoProfile": "Le visage est tourné : utilisez une photo de face.",
+    "studioPhotoBad": "La photo n’a pas pu être analysée.",
+    "studioPhotoFaithful": "Photo · fidèle",
+    "studioPhotoBolder": "Photo · intense",
+    "studioPhotoSubtler": "Photo · subtile",
+    "studioPhotoRough": "Correspondance approximative : vérifiez les couleurs dans l’aperçu.",
+    "studioRegionConfidence": "{layer} : {percent} %",
+    "@studioRegionConfidence": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            },
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "studioPaletteEmpty": "Aucune couleur trouvée sur la photo.",
+    "studioPalettePickLayer": "Où va cette couleur ?",
+    "studioNewShadow": "Nouvelle ombre"
 }

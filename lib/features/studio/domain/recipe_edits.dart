@@ -1,5 +1,6 @@
 /// Ediciones del Studio sobre una receta (F3): cambiar color, opacidad,
-/// acabado, nombre o quitar una capa. Dominio puro.
+/// acabado, nombre, quitar una capa o agregarla con un color de la paleta de
+/// un producto (F4). Dominio puro.
 ///
 /// Cada edición pasa por el JSON y vuelve por [RecipeValidator] (recortando
 /// números a rango): una edición nunca produce una receta inválida. Si algo
@@ -64,6 +65,63 @@ abstract final class RecipeEdits {
   static MakeupRecipe withColor(MakeupRecipe recipe, RecipeLayer layer, RecipeColor color) {
     if (!layer.hasColor) return recipe;
     return _edit(recipe, layer, (node) => node['color'] = color.toHex());
+  }
+
+  /// Pone [color] en [layer] y, si la capa no existe, la agrega con valores
+  /// por defecto (paleta de producto, F4). Una sombra nueva tiene que ser la
+  /// siguiente libre (shadowN con N = cantidad actual) y va a la primera región
+  /// que no esté usada. Sin cambios si no se puede: pestañas (no tienen
+  /// color), delineado de labios sin labial o sombras de más.
+  static MakeupRecipe withColorOrAdd(MakeupRecipe recipe, RecipeLayer layer, RecipeColor color) {
+    if (!layer.hasColor) return recipe;
+    if (valueOf(recipe, layer) != null) return withColor(recipe, layer, color);
+    final json = _mutable(recipe.toJson()) as Map<String, Object?>;
+    final hex = color.toHex();
+    Map<String, Object?> region(String key) {
+      final existing = json[key];
+      if (existing is Map<String, Object?>) return existing;
+      final created = <String, Object?>{};
+      json[key] = created;
+      return created;
+    }
+
+    switch (layer) {
+      case RecipeLayer.lips:
+        json['lips'] = {'color': hex, 'opacity': 0.85, 'finish': LipFinish.satin.wireName};
+      case RecipeLayer.lipLiner:
+        final lips = json['lips'];
+        if (lips is! Map<String, Object?>) return recipe;
+        lips['liner'] = {'color': hex, 'opacity': 0.9};
+      case RecipeLayer.cheeks:
+        json['cheeks'] = {'color': hex, 'opacity': 0.35, 'spread': 0.5, 'placement': CheekPlacement.apple.wireName};
+      case RecipeLayer.foundation:
+        region('skin')['foundation'] = {'color': hex, 'coverage': 0.3};
+      case RecipeLayer.contour:
+        region('skin')['contour'] = {'color': hex, 'opacity': 0.3};
+      case RecipeLayer.highlight:
+        region('skin')['highlight'] = {'color': hex, 'opacity': 0.3};
+      case RecipeLayer.eyeLiner:
+        region('eyes')['liner'] = {'color': hex, 'opacity': 0.9, 'thickness': 0.5, 'wing': 0.0};
+      case RecipeLayer.shadow0 || RecipeLayer.shadow1 || RecipeLayer.shadow2 || RecipeLayer.shadow3:
+        final eyes = region('eyes');
+        final shadows = (eyes['shadow'] as List<Object?>?) ?? <Object?>[];
+        if (layer.path.last != shadows.length || shadows.length >= RecipeLimits.maxShadowLayers) return recipe;
+        final used = {for (final s in shadows) if (s is Map) s['region']};
+        final free = ShadowRegion.values.firstWhere((r) => !used.contains(r.wireName), orElse: () => ShadowRegion.lid);
+        eyes['shadow'] = [
+          ...shadows,
+          {'color': hex, 'opacity': 0.5, 'region': free.wireName, 'finish': ShadowFinish.matte.wireName},
+        ];
+      case RecipeLayer.lashes:
+        return recipe;
+    }
+    return _validator.validate(json).recipe ?? recipe;
+  }
+
+  /// La sombra que [withColorOrAdd] agregaría a [recipe], o null si ya hay 4.
+  static RecipeLayer? nextShadow(MakeupRecipe recipe) {
+    final count = recipe.eyes?.shadow?.length ?? 0;
+    return count < RecipeLimits.maxShadowLayers ? RecipeLayer.values[RecipeLayer.shadow0.index + count] : null;
   }
 
   static MakeupRecipe withAmount(MakeupRecipe recipe, RecipeLayer layer, double amount) =>

@@ -49,6 +49,12 @@ add_library(makeup_engine SHARED
     renderer.cpp
     scene_light.cpp
     scene_pass.cpp
+    studio/still_image.cpp
+    studio/still_face_locator.cpp
+    studio/uv_rectify.cpp
+    studio/region_sampling.cpp
+    studio/look_analysis.cpp
+    studio/palette.cpp
     tracking/blazeface_decoder.cpp
     tracking/roi.cpp
     tracking/tracking_state.cpp

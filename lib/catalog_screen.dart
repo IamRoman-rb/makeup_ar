@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'camera_screen.dart';
 import 'features/ar/presentation/test_filter_view.dart';
 import 'features/studio/data/cloud_recipe_generator.dart';
+import 'features/studio/data/engine_image_analyzer.dart';
 import 'features/studio/data/firestore_look_repository.dart';
 import 'features/studio/domain/studio_look.dart';
 import 'features/studio/presentation/studio_screen.dart';
@@ -69,7 +70,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
     );
     if (choice == 'studio') {
       await navigator.push(MaterialPageRoute<void>(
-        builder: (_) => StudioScreen(generator: CloudRecipeGenerator(), repository: FirestoreLookRepository(uid: uid)),
+        builder: (_) => StudioScreen(
+          generator: CloudRecipeGenerator(),
+          repository: FirestoreLookRepository(uid: uid),
+          imageAnalyzer: EngineImageAnalyzer(),
+        ),
       ));
     } else if (choice == 'steps') {
       await navigator.push(MaterialPageRoute<void>(builder: (_) => const FilterEditorScreen()));

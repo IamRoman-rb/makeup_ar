@@ -5,13 +5,21 @@
 // tracker (15–20 Hz, hilo propio) hay tres: fillInput, submit y nada más.
 // Dart nunca cruza por frame: solo inicia/detiene, cambia el tinte y lee
 // métricas (~2 Hz).
+//
+// Studio (F4): nativeStill* analiza una foto fuera de la sesión de cámara
+// (StillImageAnalyzer.kt, hilo propio, una vez por foto).
 #include <jni.h>
 
 #include <algorithm>
 #include <array>
+#include <vector>
 
 #include "engine_config.h"
 #include "renderer.h"
+#include "studio/look_analysis.h"
+#include "studio/palette.h"
+#include "studio/still_face_locator.h"
+#include "studio/still_image.h"
 #include "tracking/tracking_state.h"
 
 namespace {
@@ -38,6 +46,51 @@ struct Engine {
 
 Engine* fromHandle(jlong handle) { return reinterpret_cast<Engine*>(handle); }
 
+// Análisis de una foto (F4): la foto, el localizador y el scratch de las salidas.
+struct StillSession {
+  makeup::StillImage image;
+  makeup::StillFaceLocator locator;
+  std::vector<float> regressors;
+  std::vector<float> scores;
+  std::vector<float> landmarks;
+};
+
+StillSession* stillFromHandle(jlong handle) { return reinterpret_cast<StillSession*>(handle); }
+
+// Copia un IntArray ARGB (Bitmap.getPixels) a [image] por bloques de filas:
+// sin una copia entera intermedia (pico de memoria en el E20). false si no coincide.
+bool copyArgb(JNIEnv* env, jintArray argb, jint width, jint height, makeup::StillImage* image) {
+  if (argb == nullptr || width <= 0 || height <= 0) return false;
+  const jsize count = env->GetArrayLength(argb);
+  if (static_cast<long long>(count) != static_cast<long long>(width) * height) return false;
+  constexpr int kRowsPerBlock = 64;
+  image->width = width;
+  image->height = height;
+  image->rgba.resize(static_cast<size_t>(count) * 4);
+  std::vector<jint> block(static_cast<size_t>(width) * kRowsPerBlock);
+  for (int row = 0; row < height; row += kRowsPerBlock) {
+    const int rows = std::min(kRowsPerBlock, height - row);
+    env->GetIntArrayRegion(argb, row * width, rows * width, block.data());
+    makeup::argbToRgba(reinterpret_cast<const int32_t*>(block.data()), rows * width,
+                       &image->rgba[static_cast<size_t>(row) * width * 4]);
+  }
+  return true;
+}
+
+std::vector<float> copyFloats(JNIEnv* env, jfloatArray array) {
+  std::vector<float> out;
+  if (array == nullptr) return out;
+  out.resize(static_cast<size_t>(env->GetArrayLength(array)));
+  if (!out.empty()) env->GetFloatArrayRegion(array, 0, static_cast<jsize>(out.size()), out.data());
+  return out;
+}
+
+jfloatArray toFloatArray(JNIEnv* env, const float* values, int count) {
+  jfloatArray result = env->NewFloatArray(count);
+  if (result != nullptr && count > 0) env->SetFloatArrayRegion(result, 0, count, values);
+  return result;
+}
+
 jintArray nativeGetConfig(JNIEnv* env, jclass) {
   jint values[makeup::kConfigCount] = {};
   values[makeup::kConfigMaxPreviewLongSide] = EngineConfig::kMaxPreviewLongSide;
@@ -47,6 +100,8 @@ jintArray nativeGetConfig(JNIEnv* env, jclass) {
   values[makeup::kConfigDetectorInputSize] = EngineConfig::kDetectorInputSize;
   values[makeup::kConfigLandmarkInputSize] = EngineConfig::kLandmarkInputSize;
   values[makeup::kConfigLandmarkCount] = EngineConfig::kLandmarkCount;
+  values[makeup::kConfigStillMaxSide] = EngineConfig::kStillMaxSide;
+  values[makeup::kConfigLookValueCount] = makeup::kLookValueCount;
   jintArray result = env->NewIntArray(makeup::kConfigCount);
   if (result != nullptr) env->SetIntArrayRegion(result, 0, makeup::kConfigCount, values);
   return result;
@@ -272,6 +327,85 @@ void nativeTrackerSubmitLandmarks(JNIEnv* env, jclass, jlong handle, jfloatArray
   engine->tracking.submitLandmarks(engine->landmarks.data(), count, presenceLogit, inferenceMs);
 }
 
+// --- Studio (F4): una foto ---
+
+jlong nativeStillCreate(JNIEnv* env, jclass, jintArray argb, jint width, jint height) {
+  auto* session = new StillSession();
+  if (copyArgb(env, argb, width, height, &session->image)) {
+    session->locator.begin(width, height);
+  } else {
+    session->locator.begin(0, 0);  // kFailed / kBadImage
+  }
+  return reinterpret_cast<jlong>(session);
+}
+
+jint nativeStillStep(JNIEnv*, jclass, jlong handle) {
+  return static_cast<jint>(stillFromHandle(handle)->locator.step());
+}
+
+jboolean nativeStillFillInput(JNIEnv* env, jclass, jlong handle, jfloatArray out, jfloat scale, jfloat offset) {
+  if (out == nullptr) return JNI_FALSE;
+  StillSession* session = stillFromHandle(handle);
+  const jsize count = env->GetArrayLength(out);
+  std::vector<float> tensor(static_cast<size_t>(count));
+  if (!session->locator.fillInput(session->image, tensor.data(), count, scale, offset)) return JNI_FALSE;
+  env->SetFloatArrayRegion(out, 0, count, tensor.data());
+  return JNI_TRUE;
+}
+
+void nativeStillSubmitDetections(JNIEnv* env, jclass, jlong handle, jfloatArray regressors, jfloatArray scores) {
+  StillSession* session = stillFromHandle(handle);
+  session->regressors = copyFloats(env, regressors);
+  session->scores = copyFloats(env, scores);
+  session->locator.submitDetections(session->regressors.data(), static_cast<int>(session->regressors.size()),
+                                    session->scores.data(), static_cast<int>(session->scores.size()));
+}
+
+void nativeStillSubmitLandmarks(JNIEnv* env, jclass, jlong handle, jfloatArray landmarks, jfloat presenceLogit) {
+  StillSession* session = stillFromHandle(handle);
+  session->landmarks = copyFloats(env, landmarks);
+  session->locator.submitLandmarks(session->landmarks.data(), static_cast<int>(session->landmarks.size()),
+                                   presenceLogit);
+}
+
+void nativeStillFail(JNIEnv*, jclass, jlong handle, jint status) {
+  stillFromHandle(handle)->locator.fail(static_cast<makeup::StillFaceStatus>(status));
+}
+
+// kLookValueCount floats (look_analysis.h). Sin cara, solo el estado.
+jfloatArray nativeStillAnalyze(JNIEnv* env, jclass, jlong handle) {
+  StillSession* session = stillFromHandle(handle);
+  std::vector<float> values(makeup::kLookValueCount, 0.0f);
+  makeup::StillFaceStatus status = session->locator.status();
+  if (session->locator.step() == makeup::StillFaceLocator::Step::kDone &&
+      !makeup::analyzeLook(session->image, session->locator.landmarks(), values.data())) {
+    status = makeup::StillFaceStatus::kBadImage;  // sin piel base no hay referencia
+  }
+  values[makeup::kLookStatus] = static_cast<float>(status);
+  values[makeup::kLookEyeDistancePx] = session->locator.eyeDistancePx();
+  values[makeup::kLookYawRatio] = session->locator.yawRatio();
+  return toFloatArray(env, values.data(), makeup::kLookValueCount);
+}
+
+void nativeStillDestroy(JNIEnv*, jclass, jlong handle) { delete stillFromHandle(handle); }
+
+// Swatches × kPaletteSwatchFloats (r, g, b sRGB [0,1], fracción), por área.
+jfloatArray nativeStillPalette(JNIEnv* env, jclass, jintArray argb, jint width, jint height) {
+  makeup::StillImage image;
+  if (!copyArgb(env, argb, width, height, &image)) return toFloatArray(env, nullptr, 0);
+  std::array<makeup::PaletteSwatch, EngineConfig::kPaletteClusters> swatches{};
+  const int count = makeup::extractPalette(image, swatches.data(), EngineConfig::kPaletteClusters);
+  std::vector<float> values;
+  values.reserve(static_cast<size_t>(count) * makeup::kPaletteSwatchFloats);
+  for (int i = 0; i < count; ++i) {
+    values.push_back(swatches[i].rgb[0]);
+    values.push_back(swatches[i].rgb[1]);
+    values.push_back(swatches[i].rgb[2]);
+    values.push_back(swatches[i].fraction);
+  }
+  return toFloatArray(env, values.data(), static_cast<int>(values.size()));
+}
+
 const JNINativeMethod kMethods[] = {
     {"nativeGetConfig", "()[I", reinterpret_cast<void*>(nativeGetConfig)},
     {"nativeCreate", "()J", reinterpret_cast<void*>(nativeCreate)},
@@ -305,6 +439,15 @@ const JNINativeMethod kMethods[] = {
      reinterpret_cast<void*>(nativeTrackerSubmitDetections)},
     {"nativeTrackerSubmitLandmarks", "(J[FFF)V",
      reinterpret_cast<void*>(nativeTrackerSubmitLandmarks)},
+    {"nativeStillCreate", "([III)J", reinterpret_cast<void*>(nativeStillCreate)},
+    {"nativeStillStep", "(J)I", reinterpret_cast<void*>(nativeStillStep)},
+    {"nativeStillFillInput", "(J[FFF)Z", reinterpret_cast<void*>(nativeStillFillInput)},
+    {"nativeStillSubmitDetections", "(J[F[F)V", reinterpret_cast<void*>(nativeStillSubmitDetections)},
+    {"nativeStillSubmitLandmarks", "(J[FF)V", reinterpret_cast<void*>(nativeStillSubmitLandmarks)},
+    {"nativeStillFail", "(JI)V", reinterpret_cast<void*>(nativeStillFail)},
+    {"nativeStillAnalyze", "(J)[F", reinterpret_cast<void*>(nativeStillAnalyze)},
+    {"nativeStillDestroy", "(J)V", reinterpret_cast<void*>(nativeStillDestroy)},
+    {"nativeStillPalette", "([III)[F", reinterpret_cast<void*>(nativeStillPalette)},
 };
 
 }  // namespace

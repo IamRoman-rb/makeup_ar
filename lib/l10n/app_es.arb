@@ -305,5 +305,81 @@
     "studioErrorUnknown": "No se pudo generar.",
     "@studioErrorUnknown": {
         "description": "Error de generación."
+    },
+    "studioFromPhoto": "Desde foto",
+    "@studioFromPhoto": {
+        "description": "Botón del Studio: receta desde una foto de referencia (F4)."
+    },
+    "studioPalette": "Paleta de producto",
+    "@studioPalette": {
+        "description": "Botón del Studio: colores de una foto de producto."
+    },
+    "studioPhotoNoticeTitle": "Foto de referencia",
+    "@studioPhotoNoticeTitle": {
+        "description": "Título del aviso antes de elegir una foto de referencia."
+    },
+    "studioPhotoNotice": "La foto se analiza en este teléfono: no se sube ni se guarda. Usá fotos propias o con permiso de la persona que aparece.",
+    "@studioPhotoNotice": {
+        "description": "Aviso de privacidad y derechos antes de analizar una foto de referencia."
+    },
+    "studioContinue": "Continuar",
+    "@studioContinue": {
+        "description": "Botón para continuar."
+    },
+    "studioPhotoNoFace": "No se encontró una cara en la foto.",
+    "@studioPhotoNoFace": {
+        "description": "Error del análisis de foto."
+    },
+    "studioPhotoSmall": "La cara es muy chica: usá una foto más cercana.",
+    "@studioPhotoSmall": {
+        "description": "Error del análisis de foto."
+    },
+    "studioPhotoProfile": "La cara está girada: usá una foto de frente.",
+    "@studioPhotoProfile": {
+        "description": "Error del análisis de foto."
+    },
+    "studioPhotoBad": "No se pudo analizar la foto.",
+    "@studioPhotoBad": {
+        "description": "Error del análisis de foto."
+    },
+    "studioPhotoFaithful": "Foto · fiel",
+    "@studioPhotoFaithful": {
+        "description": "Nombre de la variante fiel a la foto."
+    },
+    "studioPhotoBolder": "Foto · intensa",
+    "@studioPhotoBolder": {
+        "description": "Nombre de la variante más intensa."
+    },
+    "studioPhotoSubtler": "Foto · sutil",
+    "@studioPhotoSubtler": {
+        "description": "Nombre de la variante más sutil."
+    },
+    "studioPhotoRough": "Ajuste aproximado: revisá los colores en la vista previa.",
+    "@studioPhotoRough": {
+        "description": "Aviso cuando el error de ajuste supera el umbral."
+    },
+    "studioRegionConfidence": "{layer}: {percent} %",
+    "@studioRegionConfidence": {
+        "description": "Confianza de una región medida en la foto.",
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            },
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "studioPaletteEmpty": "No se encontraron colores en la foto.",
+    "@studioPaletteEmpty": {
+        "description": "La paleta del producto quedó vacía."
+    },
+    "studioPalettePickLayer": "¿Dónde va este color?",
+    "@studioPalettePickLayer": {
+        "description": "Título al elegir la capa para un color de la paleta."
+    },
+    "studioNewShadow": "Sombra nueva",
+    "@studioNewShadow": {
+        "description": "Agregar una sombra con el color de la paleta."
     }
 }

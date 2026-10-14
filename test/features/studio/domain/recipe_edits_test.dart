@@ -57,6 +57,41 @@ void main() {
     expect(valid.validate(noEyes.toJson()).isValid, isTrue);
   });
 
+  test('color de la paleta: cambia la capa o la agrega', () {
+    final color = RecipeColor.tryParse('#7A3E8C');
+    expect(color, isNotNull);
+    if (color == null) return;
+    // Existente: igual que withColor.
+    expect(RecipeEdits.withColorOrAdd(red, RecipeLayer.lips, color).lips?.color, color);
+    // Rubor nuevo con valores por defecto.
+    final noCheeks = RecipeEdits.without(red, RecipeLayer.cheeks);
+    final cheeks = RecipeEdits.withColorOrAdd(noCheeks, RecipeLayer.cheeks, color).cheeks;
+    expect(cheeks?.color, color);
+    expect(cheeks?.opacity, 0.35);
+    // Sombra nueva: la siguiente libre, en una región sin usar.
+    final next = RecipeEdits.nextShadow(red);
+    expect(next, isNotNull);
+    if (next == null) return;
+    final withShadow = RecipeEdits.withColorOrAdd(red, next, color);
+    final before = red.eyes?.shadow?.length ?? 0;
+    expect(withShadow.eyes?.shadow, hasLength(before + 1));
+    final regions = withShadow.eyes?.shadow?.map((s) => s.region).toSet();
+    expect(regions, hasLength(before + 1));
+    expect(valid.validate(withShadow.toJson()).isValid, isTrue);
+    // Saltear una sombra o pintar pestañas no cambia nada.
+    if (next != RecipeLayer.shadow3) {
+      final skipped = RecipeLayer.values[next.index + 1];
+      expect(identical(RecipeEdits.withColorOrAdd(red, skipped, color), red), isTrue);
+    }
+    expect(identical(RecipeEdits.withColorOrAdd(red, RecipeLayer.lashes, color), red), isTrue);
+    // Delineado de labios sin labial: no se puede.
+    final noLips = RecipeEdits.without(red, RecipeLayer.lips);
+    expect(RecipeEdits.withColorOrAdd(noLips, RecipeLayer.lipLiner, color).lips, isNull);
+    // Receta sin ojos: delineado nuevo.
+    final liner = RecipeEdits.withColorOrAdd(MakeupRecipe(name: 'x'), RecipeLayer.eyeLiner, color);
+    expect(liner.eyes?.liner?.color, color);
+  });
+
   test('acabado y nombre', () {
     final matte = RecipeEdits.withLipFinish(red, LipFinish.matte);
     expect(matte.lips?.finish, LipFinish.matte);

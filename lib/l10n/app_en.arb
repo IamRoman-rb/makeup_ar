@@ -272,5 +272,32 @@
     "studioErrorUnknown": "Couldn't generate.",
     "@studioErrorUnknown": {
         "description": "Error de generación."
-    }
+    },
+    "studioFromPhoto": "From photo",
+    "studioPalette": "Product palette",
+    "studioPhotoNoticeTitle": "Reference photo",
+    "studioPhotoNotice": "The photo is analyzed on this phone: it is not uploaded or stored. Use your own photos or ones you have permission to use from the person shown.",
+    "studioContinue": "Continue",
+    "studioPhotoNoFace": "No face was found in the photo.",
+    "studioPhotoSmall": "The face is too small: use a closer photo.",
+    "studioPhotoProfile": "The face is turned: use a front-facing photo.",
+    "studioPhotoBad": "The photo could not be analyzed.",
+    "studioPhotoFaithful": "Photo · faithful",
+    "studioPhotoBolder": "Photo · bolder",
+    "studioPhotoSubtler": "Photo · subtler",
+    "studioPhotoRough": "Approximate match: check the colors in the preview.",
+    "studioRegionConfidence": "{layer}: {percent}%",
+    "@studioRegionConfidence": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            },
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "studioPaletteEmpty": "No colors were found in the photo.",
+    "studioPalettePickLayer": "Where does this color go?",
+    "studioNewShadow": "New shadow"
 }

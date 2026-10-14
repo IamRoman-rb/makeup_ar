@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:makeup_engine/makeup_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'features/ar/domain/makeup_recipe.dart';
 import 'features/ar/domain/recipe_presets.dart';
 import 'features/ar/presentation/test_filter_view.dart';
+import 'features/studio/data/engine_image_analyzer.dart';
+import 'features/studio/domain/image_recipe.dart';
 
 /// Arnés de medición de P3 (tracker + compositor), separado de la app (sin
 /// Firebase ni RevenueCat): el filtro de prueba del Espejo a pantalla completa
@@ -14,6 +18,11 @@ import 'features/ar/presentation/test_filter_view.dart';
 /// flutter). Medir siempre en profile:
 ///   `flutter run --profile -t lib/main_tracker.dart -d <id>`
 /// Pide el permiso de cámara antes de montar la vista.
+///
+/// F4: "Foto" mide el maquillaje de una foto de la galería y suma sus 3
+/// variantes como chips (línea `PHOTO ...` en logcat con el tiempo, el estado,
+/// la confianza y el error de ajuste por región); "Paleta" deja los colores de
+/// una foto de producto en una línea `PALETTE ...`. La foto no se guarda.
 void main() {
   runApp(const MaterialApp(debugShowCheckedModeBanner: false, home: _TrackerHarness()));
 }
@@ -34,6 +43,9 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
   Timer? _timer;
   bool _inFlight = false;
   bool? _granted;
+  final EngineImageAnalyzer _analyzer = EngineImageAnalyzer();
+  late List<TestFilterOption> _extraOptions = [_lipLinerOption()];
+  bool _analyzing = false;
 
   @override
   void initState() {
@@ -74,6 +86,73 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
     }
   }
 
+  Future<Uint8List?> _pickPhoto() async {
+    final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 2048, maxHeight: 2048, imageQuality: 95);
+    return file?.readAsBytes();
+  }
+
+  /// Foto de referencia -> receta (F4) con su reporte en logcat.
+  Future<void> _analyzePhoto() async {
+    if (_analyzing) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _analyzing = true);
+    try {
+      final bytes = await _pickPhoto();
+      if (bytes == null || !mounted) return;
+      final watch = Stopwatch()..start();
+      final measurements = await _analyzer.analyzeFace(bytes);
+      final ms = watch.elapsedMilliseconds;
+      final result = ImageRecipeBuilder.build(measurements, name: 'Foto · fiel');
+      final regions = result.regions
+          .map((r) => '${r.layer.name}:${_f(r.confidence, 2)}/${_f(r.fitError, 4)}')
+          .join(' ');
+      debugPrint('PHOTO ms=$ms status=${result.status.name} yaw=${_f(measurements.yawRatio, 2)} '
+          'liner=${_f(measurements.linerExtent, 2)} wing=${_f(measurements.wingExtent, 2)} '
+          'worstFit=${_f(result.worstFitError, 4)} regions=[$regions]');
+      final recipe = result.recipe;
+      if (recipe == null) {
+        messenger.showSnackBar(SnackBar(content: Text('Foto: ${result.status.name}')));
+        return;
+      }
+      final variants = ImageRecipeBuilder.variants(recipe, names: const ['Foto · fiel', 'Foto · intensa', 'Foto · sutil']);
+      setState(() {
+        _extraOptions = [
+          _lipLinerOption(),
+          for (var i = 0; i < variants.length; i++)
+            TestFilterOption(id: 'photo-${_clock.elapsedMilliseconds}-$i', label: variants[i].name, recipe: variants[i]),
+        ];
+      });
+      messenger.showSnackBar(SnackBar(
+        content: Text('Foto en $ms ms · ajuste ${_f(result.worstFitError, 3)} · ${result.regions.length} regiones'),
+      ));
+    } on Exception catch (e) {
+      debugPrint('PHOTO error $e');
+      messenger.showSnackBar(SnackBar(content: Text('Foto: $e')));
+    } finally {
+      if (mounted) setState(() => _analyzing = false);
+    }
+  }
+
+  /// Foto de producto -> paleta (F4) en logcat.
+  Future<void> _analyzePalette() async {
+    if (_analyzing) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _analyzing = true);
+    try {
+      final bytes = await _pickPhoto();
+      if (bytes == null || !mounted) return;
+      final watch = Stopwatch()..start();
+      final swatches = await _analyzer.palette(bytes);
+      final text = swatches.map((s) => '${s.color.toHex()} ${(s.fraction * 100).round()}%').join(' ');
+      debugPrint('PALETTE ms=${watch.elapsedMilliseconds} $text');
+      messenger.showSnackBar(SnackBar(content: Text(text.isEmpty ? 'Paleta vacía' : text)));
+    } on Exception catch (e) {
+      debugPrint('PALETTE error $e');
+    } finally {
+      if (mounted) setState(() => _analyzing = false);
+    }
+  }
+
   /// Receta de prueba: ningún preset usa el delineado de labios (P6b). Rojo
   /// clásico con un delineado bordó.
   static TestFilterOption _lipLinerOption() {
@@ -106,8 +185,41 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: granted == true
-          ? TestFilterView(
-              extraOptions: [_lipLinerOption()],
+          ? Stack(
+              children: [
+                Positioned.fill(child: _filterView()),
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      // Debajo de la píldora "Mantené para comparar".
+                      padding: const EdgeInsets.fromLTRB(8, 64, 8, 8),
+                      child: Wrap(
+                        spacing: 8,
+                        children: [
+                          FilledButton.tonal(
+                            onPressed: _analyzing ? null : _analyzePhoto,
+                            child: Text(_analyzing ? '…' : 'Foto'),
+                          ),
+                          FilledButton.tonal(onPressed: _analyzing ? null : _analyzePalette, child: const Text('Paleta')),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Center(
+              child: Text(
+                granted == null ? 'Pidiendo permiso de cámara…' : 'Sin permiso de cámara',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+    );
+  }
+
+  Widget _filterView() => TestFilterView(
+              extraOptions: _extraOptions,
               labels: const TestFilterLabels(
                 noFilter: 'Sin filtro',
                 intensity: 'Intensidad',
@@ -126,13 +238,5 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
                 unavailable: 'Maquillaje en vivo no disponible (AR_RENDERER=painter o el motor no pudo iniciar).',
                 lightAdaptation: 'Luz adaptada',
               ),
-            )
-          : Center(
-              child: Text(
-                granted == null ? 'Pidiendo permiso de cámara…' : 'Sin permiso de cámara',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-    );
-  }
+            );
 }

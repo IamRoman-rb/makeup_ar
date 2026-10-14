@@ -6,6 +6,7 @@ package com.makeupar.makeup_engine
  * Hilos:
  *  - render (con el contexto EGL actual): nativeInitGl, nativeDrawFrame, nativeReleaseGl.
  *  - tracker: nativeTracker*.
+ *  - analizador de fotos (StillImageAnalyzer, F4): nativeStill*.
  *  - cualquiera: el resto.
  */
 internal object NativeBridge {
@@ -21,6 +22,8 @@ internal object NativeBridge {
     const val CONFIG_DETECTOR_INPUT_SIZE = 4
     const val CONFIG_LANDMARK_INPUT_SIZE = 5
     const val CONFIG_LANDMARK_COUNT = 6
+    const val CONFIG_STILL_MAX_SIDE = 7
+    const val CONFIG_LOOK_VALUE_COUNT = 8
 
     // Índices de nativeGetStats(); mismo orden que StatIndex en frame_stats.h.
     const val STAT_FRAMES = 0
@@ -93,6 +96,15 @@ internal object NativeBridge {
     const val CROP_NONE = 0
     const val CROP_DETECTOR = 1
     const val CROP_LANDMARKS = 2
+
+    // Valores de nativeStillStep(); mismo valor que StillFaceLocator::Step.
+    const val STILL_DETECTOR = 0
+    const val STILL_LANDMARKS = 1
+    const val STILL_DONE = 2
+    const val STILL_FAILED = 3
+
+    // StillFaceStatus (studio/still_face_locator.h) para nativeStillFail.
+    const val STILL_STATUS_BAD_IMAGE = 5
 
     @JvmStatic external fun nativeGetConfig(): IntArray
     @JvmStatic external fun nativeCreate(): Long
@@ -226,4 +238,19 @@ internal object NativeBridge {
     @JvmStatic external fun nativeTrackerFillInput(handle: Long, out: FloatArray, scale: Float, offset: Float): Boolean
     @JvmStatic external fun nativeTrackerSubmitDetections(handle: Long, regressors: FloatArray, scores: FloatArray, inferenceMs: Float)
     @JvmStatic external fun nativeTrackerSubmitLandmarks(handle: Long, landmarks: FloatArray, presenceLogit: Float, inferenceMs: Float)
+
+    /** Foto ARGB (Bitmap.getPixels) -> sesión de análisis. Liberar con nativeStillDestroy. */
+    @JvmStatic external fun nativeStillCreate(argb: IntArray, width: Int, height: Int): Long
+    @JvmStatic external fun nativeStillStep(handle: Long): Int
+    @JvmStatic external fun nativeStillFillInput(handle: Long, out: FloatArray, scale: Float, offset: Float): Boolean
+    @JvmStatic external fun nativeStillSubmitDetections(handle: Long, regressors: FloatArray, scores: FloatArray)
+    @JvmStatic external fun nativeStillSubmitLandmarks(handle: Long, landmarks: FloatArray, presenceLogit: Float)
+    @JvmStatic external fun nativeStillFail(handle: Long, status: Int)
+
+    /** CONFIG_LOOK_VALUE_COUNT floats (studio/look_analysis.h). */
+    @JvmStatic external fun nativeStillAnalyze(handle: Long): FloatArray
+    @JvmStatic external fun nativeStillDestroy(handle: Long)
+
+    /** Paleta de producto: (r, g, b sRGB [0,1], fracción) por swatch, de mayor a menor área. */
+    @JvmStatic external fun nativeStillPalette(argb: IntArray, width: Int, height: Int): FloatArray
 }

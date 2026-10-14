@@ -176,4 +176,64 @@ void main() {
     expect(results.last.runP50Ms, isNull);
     expect(results.last.error, contains('OpenGL'));
   });
+
+  test('analyzeFaceImage manda los bytes y parsea las medidas', () async {
+    // Medidas sintéticas: estado ok, labio válido y delineado con wing.
+    final values = List<double>.filled(FaceImageAnalysis.valueCount, 0);
+    values[1] = 180; // distancia entre ojos
+    values[3] = 1; // piel válida
+    values[4] = 0.8;
+    values[10] = 1; // labios válidos
+    values[11] = 0.5;
+    values[12] = 0.16;
+    values[14] = 0.7; // gloss_score
+    values[15] = 900;
+    values[16] = 0.95;
+    values[38] = 2; // placement low
+    values[FaceImageAnalysis.valueCount - 2] = 0.35;
+    values[FaceImageAnalysis.valueCount - 1] = 0.6;
+    handler = (_) => values;
+    final analysis = await MakeupEngine().analyzeFaceImage(Uint8List.fromList([1, 2, 3]));
+    expect(calls.single.method, 'analyzeFaceImage');
+    expect((calls.single.arguments as Map)['bytes'], [1, 2, 3]);
+    expect(analysis.status, FaceImageStatus.ok);
+    expect(analysis.eyeDistancePx, 180);
+    expect(analysis.skin.valid, isTrue);
+    expect(analysis.lips.valid, isTrue);
+    expect(analysis.lips.a, closeTo(0.16, 1e-9));
+    expect(analysis.lips.gloss, closeTo(0.7, 1e-9));
+    expect(analysis.lips.samples, 900);
+    expect(analysis.cheekPlacement, 2);
+    expect(analysis.eyeRegions, hasLength(5));
+    expect(analysis.linerExtent, closeTo(0.35, 1e-9));
+    expect(analysis.wingExtent, closeTo(0.6, 1e-9));
+  });
+
+  test('analyzeFaceImage: estado de rechazo, largo inválido y errores', () async {
+    final values = List<double>.filled(FaceImageAnalysis.valueCount, 0)..[0] = 4;
+    handler = (_) => values;
+    expect((await MakeupEngine().analyzeFaceImage(Uint8List(1))).status, FaceImageStatus.profile);
+
+    handler = (_) => [0.0, 1.0];
+    await expectLater(
+      MakeupEngine().analyzeFaceImage(Uint8List(1)),
+      throwsA(isA<MakeupEngineException>().having((e) => e.code, 'code', 'bad_response')),
+    );
+
+    handler = (_) => throw PlatformException(code: 'bad_image', message: 'No se pudo leer la foto');
+    await expectLater(
+      MakeupEngine().analyzeFaceImage(Uint8List(1)),
+      throwsA(isA<MakeupEngineException>().having((e) => e.code, 'code', 'bad_image')),
+    );
+  });
+
+  test('extractPalette parsea swatches de a 4 valores', () async {
+    handler = (_) => [0.7, 0.1, 0.2, 0.6, 0.4, 0.3, 0.2, 0.3, 0.9];
+    final swatches = await MakeupEngine().extractPalette(Uint8List(1));
+    expect(calls.single.method, 'extractPalette');
+    expect(swatches, hasLength(2));
+    expect(swatches.first.r, closeTo(0.7, 1e-9));
+    expect(swatches.first.fraction, closeTo(0.6, 1e-9));
+    expect(swatches.last.b, closeTo(0.2, 1e-9));
+  });
 }

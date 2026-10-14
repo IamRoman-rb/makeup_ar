@@ -3,14 +3,17 @@ package com.makeupar.makeup_engine
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.TextureRegistry
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 /**
  * Canal `makeup_engine`. Métodos: start, stop, setTint, setRecipe, setRenderOptions, getStats,
- * resetStats, runBenchmark.
+ * resetStats, runBenchmark, analyzeFaceImage y extractPalette (Studio, F4: una foto, sin sesión).
  * Una sola sesión a la vez. Ver lib/makeup_engine.dart para el contrato.
  */
 class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
@@ -18,6 +21,8 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private var context: Context? = null
     private var textures: TextureRegistry? = null
     private var session: EngineSession? = null
+    // Un análisis de foto a la vez, en orden, fuera del hilo de UI (F4).
+    private var stillExecutor: ExecutorService? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         context = binding.applicationContext
@@ -30,6 +35,8 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         channel = null
         session?.release()
         session = null
+        stillExecutor?.shutdown()
+        stillExecutor = null
         context = null
         textures = null
     }
@@ -67,6 +74,8 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 result.success(null)
             }
             "runBenchmark" -> runBenchmark(result)
+            "analyzeFaceImage" -> analyzeStill(call, result) { analyzer, bytes -> analyzer.analyzeFace(bytes) }
+            "extractPalette" -> analyzeStill(call, result) { analyzer, bytes -> analyzer.palette(bytes) }
             else -> result.notImplemented()
         }
     }
@@ -141,6 +150,52 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 )
             }
         }, "makeup-benchmark").start()
+    }
+
+    /**
+     * Foto (bytes JPEG/PNG) -> números, en el executor del Studio. Responde
+     * List<Double>; "bad_image" si no se pudo decodificar.
+     */
+    private fun analyzeStill(
+        call: MethodCall,
+        result: MethodChannel.Result,
+        work: (StillImageAnalyzer, ByteArray) -> FloatArray?,
+    ) {
+        val currentContext = context
+        val bytes = call.argument<ByteArray>("bytes")
+        if (currentContext == null) {
+            result.error("not_attached", "El plugin no está adjunto a un FlutterEngine", null)
+            return
+        }
+        if (bytes == null || bytes.isEmpty()) {
+            result.error("bad_image", "Faltan los bytes de la foto", null)
+            return
+        }
+        // Prioridad de fondo: la sesión de cámara y el tracker en vivo van primero
+        // (el pool de LiteRT se crea desde este hilo).
+        val executor = stillExecutor ?: Executors.newSingleThreadExecutor { runnable ->
+            Thread({
+                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+                runnable.run()
+            }, "makeup-still")
+        }.also { stillExecutor = it }
+        val mainHandler = Handler(Looper.getMainLooper())
+        val cameraActive = session != null
+        executor.execute {
+            val outcome = runCatching { work(StillImageAnalyzer(currentContext, cameraActive), bytes) }
+            mainHandler.post {
+                outcome.fold(
+                    onSuccess = { values ->
+                        if (values == null) {
+                            result.error("bad_image", "No se pudo leer la foto", null)
+                        } else {
+                            result.success(values.map { it.toDouble() })
+                        }
+                    },
+                    onFailure = { result.error("analysis_failed", it.message, null) },
+                )
+            }
+        }
     }
 
     private companion object {

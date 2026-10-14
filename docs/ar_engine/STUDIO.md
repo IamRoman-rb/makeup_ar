@@ -14,6 +14,11 @@ Catálogo (admin) -> "Crear con IA (Studio)"
   Guardar borrador -> look_drafts/{id}
   Publicar         -> looks/{id} (con recipe, recipeSchema, minEngine y source)
 Catálogo y paso a paso -> "Probar en AR" -> espejo con el motor y ese look puesto
+
+F4 (en el teléfono, sin LLM; F4_PLAN.md):
+  "Desde foto": aviso de privacidad -> galería -> landmarks + rectificación a UV + muestreo
+               -> receta (política de opacidad) -> 3 variantes con la confianza por región
+  "Paleta de producto": galería -> K-means en OKLab -> tocar un color -> elegir la capa
 ```
 
 ## Código
@@ -30,6 +35,8 @@ Catálogo y paso a paso -> "Probar en AR" -> espejo con el motor y ese look pues
 | | `recipe_editor_panel.dart` | Editor de capas. |
 | Vista previa | `TestFilterView(options:, initialOptionId:, onOptionSelected:)` | Si cambian las opciones, conserva la elegida por id y vuelve a mandar su receta. Así cada edición se ve en vivo. |
 | Entrada | `catalog_screen.dart`, `step_by_step_screen.dart` y `CameraScreen(initialLook:)` | Menú de admin y botones "Probar en AR". |
+| F4: dominio | `image_look.dart`, `image_recipe.dart`, `oklab.dart` | Medidas de la foto, `IImageLookAnalyzer` e `ImageRecipeBuilder`: inversión del sombreado del motor, presencia, confianza, error de ajuste y variantes. |
+| F4: datos | `engine_image_analyzer.dart` | El analizador del motor (`MakeupEngine.analyzeFaceImage`/`extractPalette`). |
 
 ## Datos y reglas
 
@@ -64,6 +71,7 @@ Hace falta haber hecho primero el deploy de F2 (`F2_PLAN.md`, "Para desplegar"),
 
 ## Pendiente
 
-- **Imagen → receta (F4)** y **QA automático (F5)**.
+- **QA automático (F5).**
+- **Calibrar F4** con 20 fotos en el E20 (F4_PLAN.md, "Para probarlo en el E20").
 - **Usuarios finales que generan sus propios looks:** hoy solo admins.
 - La imagen del catálogo es una URL opcional; todavía no se sube desde el Studio.

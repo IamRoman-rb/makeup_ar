@@ -215,6 +215,65 @@ struct EngineConfig {
 
   // Tamaño de los puntos del overlay de depuración (px de salida).
   static constexpr float kLandmarkPointSizePx = 5.0f;
+
+  // --- Imagen -> receta (F4; docs/ar_engine/F4_PLAN.md, cpp/studio/) ---
+  // No es camino caliente: una foto por análisis, en el hilo del analizador.
+  // Lado máximo de la foto (px): Kotlin la reduce antes de pasarla.
+  static constexpr int kStillMaxSide = 1280;
+  // Supersampling máximo por eje al recortar la foto para los modelos.
+  static constexpr int kStillMaxTaps = 8;
+  // Pasadas de landmarks: la segunda con el ROI de los landmarks de la primera
+  // (el del detector es más flojo).
+  static constexpr int kStillLandmarkPasses = 2;
+  // Cara mínima: distancia entre los ángulos externos de los ojos (px).
+  static constexpr float kStillMinEyeDistancePx = 60.0f;
+  // Perfil: desplazamiento de la punta de la nariz respecto del medio de los
+  // ojos, en distancias entre ojos (de frente ~0; a ~30° de giro, ~0,2).
+  static constexpr float kStillMaxYawRatio = 0.22f;
+  // Triángulos vistos de costado: área en la foto menor que esta fracción de
+  // la mediana (en relación con su área UV) no se muestrean.
+  static constexpr float kStillMinTriangleAreaRatio = 0.25f;
+  // Muestreo robusto (tools/studio/sample_region_reference.py): se descartan
+  // las L más altas (brillo) y más bajas (sombra) antes de la mediana.
+  static constexpr float kSampleDropHigh = 0.08f;
+  static constexpr float kSampleDropLow = 0.05f;
+  // gloss_score: fracción de muestras con L > mediana + delta, sobre fullAt.
+  static constexpr float kGlossHighDelta = 0.12f;
+  static constexpr float kGlossFullAt = 0.06f;
+  // Un texel cuenta en una región si su máscara vale al menos esto.
+  static constexpr float kRegionMaskThreshold = 0.5f;
+  // Muestras mínimas para que una región sea válida.
+  static constexpr int kRegionMinSamples = 24;
+  // Radio (UV) de los parches de piel base alrededor de cada landmark.
+  static constexpr float kSkinPatchRadiusUv = 0.02f;
+  // Sombras: solo texels a esta distancia normalizada (canal B.g) o más de la
+  // línea de pestañas, para no mezclar el delineado.
+  static constexpr float kShadowMinLinerDistance = 0.75f;
+  // Delineado: franjas de distancia a la línea de pestañas (B.g en [0, 1]) y
+  // de avance del wing (B.a). Un texel es oscuro con L por debajo de
+  // min(piel, párpado) - delta; una franja es de delineado si lo es al menos
+  // esta fracción de sus texels.
+  static constexpr int kLinerBands = 20;
+  static constexpr int kWingBands = 10;
+  static constexpr float kLinerDarkDelta = 0.12f;
+  static constexpr float kLinerDarkFraction = 0.5f;
+  // Distancia al wing (B.b) que cuenta como wing aunque el delineado medido
+  // sea más fino.
+  static constexpr float kWingMinDistance = 0.2f;
+  // Paleta de producto (§10.6): lado máximo de la miniatura, clusters,
+  // iteraciones de K-means, distancia OKLab al fondo (mediana del borde) que
+  // se descarta, salto con un vecino que marca un píxel de borde (mezcla de
+  // dos colores), blancos casi puros (L y croma), clusters que se unen y
+  // fracción mínima de un swatch.
+  static constexpr int kPaletteMaxSide = 96;
+  static constexpr int kPaletteClusters = 5;
+  static constexpr int kPaletteIterations = 12;
+  static constexpr float kPaletteBackgroundDelta = 0.05f;
+  static constexpr float kPaletteEdgeDelta = 0.06f;
+  static constexpr float kPaletteWhiteLightness = 0.96f;
+  static constexpr float kPaletteWhiteChroma = 0.02f;
+  static constexpr float kPaletteMergeDelta = 0.03f;
+  static constexpr float kPaletteMinFraction = 0.03f;
 };
 
 // Orden del arreglo que devuelve nativeGetConfig().
@@ -226,6 +285,8 @@ enum ConfigIndex : int {
   kConfigDetectorInputSize,
   kConfigLandmarkInputSize,
   kConfigLandmarkCount,
+  kConfigStillMaxSide,
+  kConfigLookValueCount,
   kConfigCount,
 };
 

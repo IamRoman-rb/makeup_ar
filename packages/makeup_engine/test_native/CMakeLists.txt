@@ -22,6 +22,10 @@ add_executable(makeup_engine_host_tests
     appearance_test.cpp
     lip_occlusion_test.cpp
     scene_light_test.cpp
+    studio_sampling_test.cpp
+    studio_look_test.cpp
+    studio_locator_test.cpp
+    studio_palette_test.cpp
     tracking_state_test.cpp
     ${ENGINE_CPP}/tracking/roi.cpp
     ${ENGINE_CPP}/tracking/umeyama.cpp
@@ -30,7 +34,13 @@ add_executable(makeup_engine_host_tests
     ${ENGINE_CPP}/tracking/appearance.cpp
     ${ENGINE_CPP}/tracking/lip_occlusion.cpp
     ${ENGINE_CPP}/face_style.cpp
-    ${ENGINE_CPP}/scene_light.cpp)
+    ${ENGINE_CPP}/scene_light.cpp
+    ${ENGINE_CPP}/studio/still_image.cpp
+    ${ENGINE_CPP}/studio/still_face_locator.cpp
+    ${ENGINE_CPP}/studio/uv_rectify.cpp
+    ${ENGINE_CPP}/studio/region_sampling.cpp
+    ${ENGINE_CPP}/studio/look_analysis.cpp
+    ${ENGINE_CPP}/studio/palette.cpp)
 
 target_include_directories(makeup_engine_host_tests PRIVATE ${ENGINE_CPP} ${CMAKE_CURRENT_SOURCE_DIR})
 

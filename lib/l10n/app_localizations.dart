@@ -941,6 +941,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t generate.'**
   String get studioErrorUnknown;
+
+  /// No description provided for @studioFromPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'From photo'**
+  String get studioFromPhoto;
+
+  /// No description provided for @studioPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Product palette'**
+  String get studioPalette;
+
+  /// No description provided for @studioPhotoNoticeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference photo'**
+  String get studioPhotoNoticeTitle;
+
+  /// No description provided for @studioPhotoNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'The photo is analyzed on this phone: it is not uploaded or stored. Use your own photos or ones you have permission to use from the person shown.'**
+  String get studioPhotoNotice;
+
+  /// No description provided for @studioContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get studioContinue;
+
+  /// No description provided for @studioPhotoNoFace.
+  ///
+  /// In en, this message translates to:
+  /// **'No face was found in the photo.'**
+  String get studioPhotoNoFace;
+
+  /// No description provided for @studioPhotoSmall.
+  ///
+  /// In en, this message translates to:
+  /// **'The face is too small: use a closer photo.'**
+  String get studioPhotoSmall;
+
+  /// No description provided for @studioPhotoProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'The face is turned: use a front-facing photo.'**
+  String get studioPhotoProfile;
+
+  /// No description provided for @studioPhotoBad.
+  ///
+  /// In en, this message translates to:
+  /// **'The photo could not be analyzed.'**
+  String get studioPhotoBad;
+
+  /// No description provided for @studioPhotoFaithful.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo · faithful'**
+  String get studioPhotoFaithful;
+
+  /// No description provided for @studioPhotoBolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo · bolder'**
+  String get studioPhotoBolder;
+
+  /// No description provided for @studioPhotoSubtler.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo · subtler'**
+  String get studioPhotoSubtler;
+
+  /// No description provided for @studioPhotoRough.
+  ///
+  /// In en, this message translates to:
+  /// **'Approximate match: check the colors in the preview.'**
+  String get studioPhotoRough;
+
+  /// No description provided for @studioRegionConfidence.
+  ///
+  /// In en, this message translates to:
+  /// **'{layer}: {percent}%'**
+  String studioRegionConfidence(String layer, int percent);
+
+  /// No description provided for @studioPaletteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No colors were found in the photo.'**
+  String get studioPaletteEmpty;
+
+  /// No description provided for @studioPalettePickLayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Where does this color go?'**
+  String get studioPalettePickLayer;
+
+  /// No description provided for @studioNewShadow.
+  ///
+  /// In en, this message translates to:
+  /// **'New shadow'**
+  String get studioNewShadow;
 }
 
 class _AppLocalizationsDelegate

@@ -27,7 +27,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
 - Benchmark del tracker (LiteRT, GPU vs CPU; imagen sintética): `flutter run --profile -t lib/main_benchmark.dart -d <id>`. Resultados en pantalla y en logcat (`makeup_bench`).
 - Renderer de maquillaje: `--dart-define=AR_RENDERER=native|painter` (por defecto native; `painter` = respaldo sin maquillaje, muestra el espejo con un aviso). Contrato en `lib/features/ar/domain/i_makeup_renderer.dart`.
-- Arnés del tracker (P3; filtro de prueba sin Firebase, línea `TRACK` cada 5 s en logcat): `flutter run --profile -t lib/main_tracker.dart -d <id>`. Protocolo en `docs/ar_engine/TRACKER.md`.
+- Arnés del tracker (P3; filtro de prueba sin Firebase, línea `TRACK` cada 5 s en logcat): `flutter run --profile -t lib/main_tracker.dart -d <id>`. Protocolo en `docs/ar_engine/TRACKER.md`. Botones "Foto" y "Paleta" (F4: foto de referencia → receta, foto de producto → paleta; líneas `PHOTO` y `PALETTE`), ver `docs/ar_engine/F4_PLAN.md`.
 - Regenerar el mapa UV de labios (si cambia `tools/uv_masks/lips.json` o la malla): `python tools/uv_masks/gen_lips_maps.py`; `--check` verifica que lo versionado esté al día. Vista previa en `docs/ar_engine/img/lips_maps.png`.
 - Regenerar los mapas UV de cara y ojos (base, contorno, iluminador, rubor, sombras, delineado; si cambia `tools/uv_masks/face.json` o la malla): `python tools/uv_masks/gen_face_maps.py`; `--check` igual que el de labios. Vistas previas en `docs/ar_engine/img/{face,eye}_maps.png`.
 - Validar shaders (glslc del NDK; sintaxis y tipos, no reemplaza probar en el teléfono): `python tools/shaders/check_shaders.py`.

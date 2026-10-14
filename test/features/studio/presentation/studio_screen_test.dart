@@ -1,10 +1,14 @@
 import 'package:ar_makeup_app/features/ar/domain/i_makeup_renderer.dart';
 import 'package:ar_makeup_app/features/ar/domain/makeup_recipe.dart';
 import 'package:ar_makeup_app/features/ar/domain/recipe_presets.dart';
+import 'package:ar_makeup_app/features/studio/domain/image_look.dart';
+import 'package:ar_makeup_app/features/studio/domain/oklab.dart';
 import 'package:ar_makeup_app/features/studio/domain/recipe_generator.dart';
 import 'package:ar_makeup_app/features/studio/domain/studio_look.dart';
 import 'package:ar_makeup_app/features/studio/presentation/studio_screen.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -83,12 +87,31 @@ final class MemoryRepository implements ILookRepository {
   }
 }
 
+final class FakeAnalyzer implements IImageLookAnalyzer {
+  FakeAnalyzer(this.measurements, {this.swatches = const []});
+
+  LookMeasurements measurements;
+  List<ProductSwatch> swatches;
+  int faceCalls = 0;
+
+  @override
+  Future<LookMeasurements> analyzeFace(Uint8List bytes) async {
+    faceCalls++;
+    return measurements;
+  }
+
+  @override
+  Future<List<ProductSwatch>> palette(Uint8List bytes) async => swatches;
+}
+
+LookRegion region(Oklab color, {double gloss = 0}) => LookRegion(valid: true, color: color, gloss: gloss, coverage: 1);
+
 /// Receta con los labios de un preset y otro nombre.
 MakeupRecipe named(String preset, String name) => MakeupRecipe(name: name, lips: RecipePresets.byId(preset).recipe.lips);
 
 void main() {
   Future<void> pumpStudio(WidgetTester tester, FakeGenerator generator, MemoryRepository repository,
-      FakeRenderer renderer) async {
+      FakeRenderer renderer, {IImageLookAnalyzer? analyzer}) async {
     tester.view.physicalSize = const Size(900, 2000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -96,7 +119,13 @@ void main() {
       locale: const Locale('es'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: StudioScreen(generator: generator, repository: repository, renderer: renderer),
+      home: StudioScreen(
+        generator: generator,
+        repository: repository,
+        renderer: renderer,
+        imageAnalyzer: analyzer,
+        pickImage: () async => Uint8List.fromList([1, 2, 3]),
+      ),
     ));
     await tester.pumpAndSettle();
   }
@@ -174,5 +203,79 @@ void main() {
     await tester.pumpAndSettle();
     expect(generator.remixBase?.name, 'Rojo');
     expect(find.text('Rojo natural'), findsWidgets);
+  });
+
+  testWidgets('desde foto: aviso, 3 variantes, confianza y origen image', (tester) async {
+    final skin = Oklab.fromSrgb(0.8, 0.62, 0.52);
+    final analyzer = FakeAnalyzer(LookMeasurements(
+      status: PhotoLookStatus.ok,
+      skin: region(skin),
+      lips: region(Oklab.fromSrgb(0.7, 0.15, 0.22), gloss: 0.8),
+    ));
+    final renderer = FakeRenderer();
+    final repository = MemoryRepository();
+    await pumpStudio(tester, FakeGenerator(GenerationResult(variants: const [])), repository, renderer,
+        analyzer: analyzer);
+
+    await tester.tap(find.text('Desde foto'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('no se sube ni se guarda'), findsOneWidget);
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    expect(analyzer.faceCalls, 1);
+    expect(renderer.recipes.last?.name, 'Foto · fiel');
+    expect(find.text('Foto · intensa'), findsWidgets);
+    expect(find.text('Labial: 100 %'), findsOneWidget);
+    expect(renderer.recipes.last?.lips?.finish, LipFinish.gloss);
+
+    // El aviso es una vez por pantalla.
+    await tester.tap(find.text('Desde foto'));
+    await tester.pumpAndSettle();
+    expect(find.text('Continuar'), findsNothing);
+    expect(analyzer.faceCalls, 2);
+
+    await tester.tap(find.text('Guardar borrador'));
+    await tester.pumpAndSettle();
+    expect(repository.savedDrafts.values.single.sourceType, LookSourceType.image);
+    expect(repository.savedDrafts.values.single.sourcePrompt, isNull);
+  });
+
+  testWidgets('desde foto: cara girada muestra el motivo', (tester) async {
+    final analyzer = FakeAnalyzer(const LookMeasurements(status: PhotoLookStatus.profile));
+    await pumpStudio(tester, FakeGenerator(GenerationResult(variants: const [])), MemoryRepository(), FakeRenderer(),
+        analyzer: analyzer);
+    await tester.tap(find.text('Desde foto'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('foto de frente'), findsOneWidget);
+  });
+
+  testWidgets('paleta de producto: color a una capa nueva', (tester) async {
+    final plum = RecipeColor(0x7A3E8C);
+    final analyzer = FakeAnalyzer(
+      const LookMeasurements(status: PhotoLookStatus.ok),
+      swatches: [ProductSwatch(color: plum, fraction: 0.7), ProductSwatch(color: RecipeColor(0xD08080), fraction: 0.3)],
+    );
+    final renderer = FakeRenderer();
+    final generator = FakeGenerator(GenerationResult(variants: [named('classic_red', 'Rojo')]));
+    await pumpStudio(tester, generator, MemoryRepository(), renderer, analyzer: analyzer);
+    // Sin receta la paleta está deshabilitada.
+    expect(tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Paleta de producto')).onPressed, isNull);
+    await tester.enterText(find.byType(TextField).first, 'rojo');
+    await tester.tap(find.text('Generar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Paleta de producto'));
+    await tester.pumpAndSettle();
+    expect(find.text('70 %'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('swatch-#7A3E8C')));
+    await tester.pumpAndSettle();
+    expect(find.text('¿Dónde va este color?'), findsOneWidget);
+    await tester.tap(find.text('Sombra nueva'));
+    await tester.pumpAndSettle();
+    final shadows = renderer.recipes.last?.eyes?.shadow ?? const [];
+    expect(shadows.single.color, plum);
+    expect(renderer.recipes.last?.lips, isNotNull);
   });
 }

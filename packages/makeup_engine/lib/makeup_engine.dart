@@ -8,6 +8,10 @@ library;
 
 import 'package:flutter/services.dart';
 
+import 'still_image_analysis.dart';
+
+export 'still_image_analysis.dart';
+
 /// Resultado de [MakeupEngine.start].
 final class EngineStartInfo {
   const EngineStartInfo({
@@ -284,6 +288,8 @@ final class ModelBenchmarkResult {
 
 /// Error de [MakeupEngine.start]. [code]: `no_front_camera`,
 /// `camera_unavailable`, `gl_init_failed`, `already_started`, `not_attached`.
+/// De [MakeupEngine.analyzeFaceImage] y [MakeupEngine.extractPalette]:
+/// `bad_image` (no se pudo leer la foto), `analysis_failed`, `bad_response`.
 final class MakeupEngineException implements Exception {
   const MakeupEngineException(this.code, this.message);
 
@@ -358,6 +364,31 @@ final class MakeupEngine {
   }
 
   Future<void> resetStats() => _channel.invokeMethod<void>('resetStats');
+
+  /// Studio (F4): mide el maquillaje de una foto de referencia (bytes JPEG o
+  /// PNG). Corre en el teléfono, en un hilo propio, con los modelos del
+  /// tracker en CPU (puede convivir con una sesión de cámara); la foto no se
+  /// guarda. Unos cientos de ms en el E20 (a medir).
+  Future<FaceImageAnalysis> analyzeFaceImage(Uint8List bytes) async {
+    final values = await _stillValues('analyzeFaceImage', bytes);
+    final analysis = FaceImageAnalysis.fromValues(values);
+    if (analysis == null) throw const MakeupEngineException('bad_response', 'medidas incompletas');
+    return analysis;
+  }
+
+  /// Studio (F4): colores de una foto de producto o paleta, de mayor a menor
+  /// área (sin el fondo ni los blancos). Vacía si no hay colores útiles.
+  Future<List<PaletteSwatch>> extractPalette(Uint8List bytes) async =>
+      PaletteSwatch.fromValues(await _stillValues('extractPalette', bytes));
+
+  Future<List<double>> _stillValues(String method, Uint8List bytes) async {
+    try {
+      final result = await _channel.invokeListMethod<Object?>(method, {'bytes': bytes});
+      return [for (final value in result ?? const <Object?>[]) value is num ? value.toDouble() : double.nan];
+    } on PlatformException catch (e) {
+      throw MakeupEngineException(e.code, e.message);
+    }
+  }
 
   /// Benchmark de los modelos del tracker (unos minutos; imagen sintética, sin
   /// cámara). No llamar con una sesión de cámara activa: compiten por la GPU.

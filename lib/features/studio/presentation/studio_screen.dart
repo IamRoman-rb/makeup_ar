@@ -1,28 +1,59 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../ar/domain/i_makeup_renderer.dart';
 import '../../ar/domain/makeup_recipe.dart';
 import '../../ar/presentation/test_filter_view.dart';
+import '../domain/image_look.dart';
+import '../domain/image_recipe.dart';
 import '../domain/recipe_edits.dart';
 import '../domain/recipe_generator.dart';
 import '../domain/studio_look.dart';
 import 'recipe_editor_panel.dart';
 
+/// Elige una foto y devuelve sus bytes (null si se cancela).
+typedef ImageBytesPicker = Future<Uint8List?> Function();
+
+/// Galería con image_picker. La foto queda en memoria: no se guarda.
+Future<Uint8List?> pickGalleryImage() async {
+  final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 2048, maxHeight: 2048, imageQuality: 95);
+  return file?.readAsBytes();
+}
+
 /// Studio (F3, solo admins): prompt -> 3 variantes generadas por IA, vista
 /// previa en vivo con el motor, edición, remix, borradores y publicación en
 /// el catálogo (docs/ar_engine/motor_ar_propio.md §10.13).
+///
+/// F4: "Desde foto" arma la receta midiendo una foto de referencia y
+/// "Paleta de producto" saca colores de una foto de un producto. Las dos
+/// corren en el teléfono ([IImageLookAnalyzer]); la foto no se sube ni se
+/// guarda (docs/ar_engine/F4_PLAN.md).
 ///
 /// La IA solo elige parámetros: cada variante llega validada por la función
 /// y otra vez por la app (CloudRecipeGenerator), y cada edición pasa por
 /// RecipeEdits, que nunca produce una receta inválida.
 class StudioScreen extends StatefulWidget {
-  const StudioScreen({super.key, required this.generator, required this.repository, this.renderer});
+  const StudioScreen({
+    super.key,
+    required this.generator,
+    required this.repository,
+    this.renderer,
+    this.imageAnalyzer,
+    this.pickImage = pickGalleryImage,
+  });
 
   final IRecipeGenerator generator;
   final ILookRepository repository;
+
+  /// Sin analizador no aparecen "Desde foto" ni "Paleta de producto".
+  final IImageLookAnalyzer? imageAnalyzer;
+
+  /// Inyectable para tests; por defecto, la galería.
+  final ImageBytesPicker pickImage;
 
   /// Inyectable para tests; por defecto, el de `AR_RENDERER`.
   final IMakeupRenderer? renderer;
@@ -47,7 +78,13 @@ class _StudioScreenState extends State<StudioScreen> {
   String? _model;
   String? _draftId;
   bool _busy = false;
+  // Aviso o galería abiertos (sin spinner: no hay trabajo en curso).
+  bool _picking = false;
   String? _message;
+
+  /// Confianza y ajuste por región de la última receta desde foto.
+  List<ImageRegionReport> _report = const [];
+  bool _photoNoticeAccepted = false;
 
   @override
   void dispose() {
@@ -105,6 +142,7 @@ class _StudioScreenState extends State<StudioScreen> {
     if (!mounted) return;
     setState(() {
       final failure = result.failure;
+      _report = const [];
       if (result.hasVariants) {
         _setVariants(result.variants);
         _sourceType = type;
@@ -206,6 +244,7 @@ class _StudioScreenState extends State<StudioScreen> {
     );
     if (picked == null || !mounted) return;
     setState(() {
+      _report = const [];
       _setVariants([picked.recipe]);
       _sourceType = picked.sourceType;
       _sourcePrompt = picked.sourcePrompt;
@@ -213,6 +252,148 @@ class _StudioScreenState extends State<StudioScreen> {
       _draftId = picked.id;
       _message = null;
     });
+  }
+
+  /// Aviso de privacidad y derechos, una vez por pantalla.
+  Future<bool> _acceptPhotoNotice() async {
+    if (_photoNoticeAccepted) return true;
+    final l10n = AppLocalizations.of(context)!;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.studioPhotoNoticeTitle),
+        content: Text(l10n.studioPhotoNotice),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.studioCancel)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.studioContinue)),
+        ],
+      ),
+    );
+    _photoNoticeAccepted = accepted ?? false;
+    return _photoNoticeAccepted;
+  }
+
+  String _photoStatusText(AppLocalizations l10n, PhotoLookStatus status) => switch (status) {
+        PhotoLookStatus.noFace || PhotoLookStatus.lowPresence => l10n.studioPhotoNoFace,
+        PhotoLookStatus.faceTooSmall => l10n.studioPhotoSmall,
+        PhotoLookStatus.profile => l10n.studioPhotoProfile,
+        PhotoLookStatus.ok || PhotoLookStatus.badImage => l10n.studioPhotoBad,
+      };
+
+  /// Aviso (si hace falta) y galería, con los botones deshabilitados mientras
+  /// tanto: un doble toque no abre dos galerías ni dos análisis.
+  Future<Uint8List?> _pick({required bool notice}) async {
+    if (_busy || _picking) return null;
+    setState(() => _picking = true);
+    try {
+      if (notice && !await _acceptPhotoNotice()) return null;
+      return await widget.pickImage();
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
+
+  /// Foto de referencia -> 3 variantes (fiel, intensa, sutil) con su reporte.
+  Future<void> _fromPhoto() async {
+    final analyzer = widget.imageAnalyzer;
+    if (analyzer == null) return;
+    final bytes = await _pick(notice: true);
+    if (bytes == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    ImageRecipeResult result;
+    try {
+      final measurements = await analyzer.analyzeFace(bytes);
+      result = ImageRecipeBuilder.build(measurements, name: l10n.studioPhotoFaithful);
+    } catch (e) {
+      debugPrint('Studio: no se pudo analizar la foto: $e');
+      result = const ImageRecipeResult(status: PhotoLookStatus.badImage);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted) return;
+    setState(() {
+      final recipe = result.recipe;
+      if (recipe == null) {
+        _message = _photoStatusText(l10n, result.status);
+        return;
+      }
+      _setVariants(ImageRecipeBuilder.variants(
+        recipe,
+        names: [l10n.studioPhotoFaithful, l10n.studioPhotoBolder, l10n.studioPhotoSubtler],
+      ));
+      _report = result.regions;
+      _sourceType = LookSourceType.image;
+      _sourcePrompt = null;
+      _model = null;
+      _draftId = null;
+    });
+  }
+
+  /// Foto de un producto -> swatches -> un color en una capa de la receta.
+  Future<void> _fromPalette() async {
+    final analyzer = widget.imageAnalyzer;
+    if (analyzer == null || _current == null) return;
+    final bytes = await _pick(notice: false);
+    if (bytes == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    List<ProductSwatch> swatches;
+    try {
+      swatches = await analyzer.palette(bytes);
+    } catch (e) {
+      debugPrint('Studio: no se pudo sacar la paleta: $e');
+      swatches = const [];
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    final recipe = _current;
+    if (!mounted || recipe == null) return;
+    if (swatches.isEmpty) {
+      setState(() => _message = l10n.studioPaletteEmpty);
+      return;
+    }
+    final picked = await showModalBottomSheet<({RecipeLayer layer, RecipeColor color})>(
+      context: context,
+      builder: (_) => _PaletteSheet(swatches: swatches, recipe: recipe),
+    );
+    final current = _current;
+    if (picked == null || current == null || !mounted) return;
+    _edit(RecipeEdits.withColorOrAdd(current, picked.layer, picked.color));
+  }
+
+  Widget _reportView(AppLocalizations l10n) {
+    final worst = _report.fold(0.0, (w, r) => r.fitError > w ? r.fitError : w);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final region in _report)
+                Chip(
+                  visualDensity: VisualDensity.compact,
+                  label: Text(l10n.studioRegionConfidence(
+                    RecipeEditorPanel.layerLabel(l10n, region.layer),
+                    (region.confidence * 100).round(),
+                  )),
+                ),
+            ],
+          ),
+          if (worst > ImageRecipePolicy.maxFitError)
+            Text(l10n.studioPhotoRough, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+        ],
+      ),
+    );
   }
 
   TestFilterLabels _labels(AppLocalizations l10n) => TestFilterLabels(
@@ -288,6 +469,22 @@ class _StudioScreenState extends State<StudioScreen> {
                     ),
                   ],
                 ),
+                if (widget.imageAnalyzer != null)
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _busy || _picking ? null : _fromPhoto,
+                        icon: const Icon(Icons.photo_outlined, size: 18),
+                        label: Text(l10n.studioFromPhoto),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _busy || _picking || current == null ? null : _fromPalette,
+                        icon: const Icon(Icons.palette_outlined, size: 18),
+                        label: Text(l10n.studioPalette),
+                      ),
+                    ],
+                  ),
                 if (_message case final message?)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
@@ -298,6 +495,7 @@ class _StudioScreenState extends State<StudioScreen> {
                 else ...[
                   const SizedBox(height: 8),
                   Text(current.name, style: Theme.of(context).textTheme.titleMedium),
+                  if (_report.isNotEmpty) _reportView(l10n),
                   RecipeEditorPanel(recipe: current, onChanged: _edit),
                   Row(
                     children: [
@@ -394,6 +592,100 @@ class _PublishDialogState extends State<_PublishDialog> {
           child: Text(l10n.studioPublish),
         ),
       ],
+    );
+  }
+}
+
+/// Paleta de un producto: primero un color, después la capa donde va. Las
+/// capas que faltan se pueden agregar (RecipeEdits.withColorOrAdd).
+class _PaletteSheet extends StatefulWidget {
+  const _PaletteSheet({required this.swatches, required this.recipe});
+
+  final List<ProductSwatch> swatches;
+  final MakeupRecipe recipe;
+
+  @override
+  State<_PaletteSheet> createState() => _PaletteSheetState();
+}
+
+class _PaletteSheetState extends State<_PaletteSheet> {
+  RecipeColor? _color;
+
+  /// Capas con color presentes, más las que se pueden agregar.
+  List<RecipeLayer> _targets() {
+    final present = RecipeEdits.layersOf(widget.recipe).where((l) => l.hasColor).toList();
+    final next = RecipeEdits.nextShadow(widget.recipe);
+    return [
+      ...present,
+      for (final layer in [RecipeLayer.lips, RecipeLayer.lipLiner, RecipeLayer.cheeks, RecipeLayer.eyeLiner])
+        if (!present.contains(layer) && (layer != RecipeLayer.lipLiner || widget.recipe.lips != null)) layer,
+      ?next,
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final color = _color;
+    final next = RecipeEdits.nextShadow(widget.recipe);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(l10n.studioPalette, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                for (final swatch in widget.swatches)
+                  InkWell(
+                    key: ValueKey('swatch-${swatch.color.toHex()}'),
+                    onTap: () => setState(() => _color = swatch.color),
+                    customBorder: const CircleBorder(),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Color(0xFF000000 | swatch.color.rgb),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: swatch.color == color ? Theme.of(context).colorScheme.primary : Colors.black26,
+                              width: swatch.color == color ? 3 : 1,
+                            ),
+                          ),
+                        ),
+                        Text('${(swatch.fraction * 100).round()} %', style: Theme.of(context).textTheme.labelSmall),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            if (color != null) ...[
+              const SizedBox(height: 12),
+              Text(l10n.studioPalettePickLayer),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final layer in _targets())
+                      ListTile(
+                        dense: true,
+                        title: Text(layer == next ? l10n.studioNewShadow : RecipeEditorPanel.layerLabel(l10n, layer)),
+                        onTap: () => Navigator.pop(context, (layer: layer, color: color)),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

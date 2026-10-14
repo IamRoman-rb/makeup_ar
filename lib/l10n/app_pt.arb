@@ -146,5 +146,32 @@
     "studioErrorQuota": "A cota de hoje acabou. Tente amanhã.",
     "studioErrorUnavailable": "O gerador não responde. Tente novamente mais tarde.",
     "studioErrorAppCheck": "O app não passou na verificação (App Check).",
-    "studioErrorUnknown": "Não foi possível gerar."
+    "studioErrorUnknown": "Não foi possível gerar.",
+    "studioFromPhoto": "Da foto",
+    "studioPalette": "Paleta de produto",
+    "studioPhotoNoticeTitle": "Foto de referência",
+    "studioPhotoNotice": "A foto é analisada neste telefone: não é enviada nem salva. Use fotos próprias ou com permissão da pessoa que aparece.",
+    "studioContinue": "Continuar",
+    "studioPhotoNoFace": "Nenhum rosto foi encontrado na foto.",
+    "studioPhotoSmall": "O rosto está muito pequeno: use uma foto mais próxima.",
+    "studioPhotoProfile": "O rosto está virado: use uma foto de frente.",
+    "studioPhotoBad": "Não foi possível analisar a foto.",
+    "studioPhotoFaithful": "Foto · fiel",
+    "studioPhotoBolder": "Foto · intensa",
+    "studioPhotoSubtler": "Foto · sutil",
+    "studioPhotoRough": "Ajuste aproximado: confira as cores na pré-visualização.",
+    "studioRegionConfidence": "{layer}: {percent}%",
+    "@studioRegionConfidence": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            },
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "studioPaletteEmpty": "Nenhuma cor foi encontrada na foto.",
+    "studioPalettePickLayer": "Onde vai esta cor?",
+    "studioNewShadow": "Nova sombra"
 }

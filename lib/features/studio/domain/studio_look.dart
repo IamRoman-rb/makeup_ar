@@ -39,6 +39,8 @@ enum LookCategory {
 enum LookSourceType {
   prompt('prompt'),
   remix('remix'),
+  // Foto de referencia analizada en el teléfono (F4): sin prompt ni modelo.
+  image('image'),
   manual('manual');
 
   const LookSourceType(this.wireName);

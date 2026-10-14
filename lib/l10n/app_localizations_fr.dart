@@ -457,4 +457,61 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get studioErrorUnknown => 'Échec de la génération.';
+
+  @override
+  String get studioFromPhoto => 'Depuis une photo';
+
+  @override
+  String get studioPalette => 'Palette produit';
+
+  @override
+  String get studioPhotoNoticeTitle => 'Photo de référence';
+
+  @override
+  String get studioPhotoNotice =>
+      'La photo est analysée sur ce téléphone : elle n’est ni envoyée ni enregistrée. Utilisez vos propres photos ou des photos autorisées par la personne qui y figure.';
+
+  @override
+  String get studioContinue => 'Continuer';
+
+  @override
+  String get studioPhotoNoFace => 'Aucun visage trouvé sur la photo.';
+
+  @override
+  String get studioPhotoSmall =>
+      'Le visage est trop petit : utilisez une photo plus rapprochée.';
+
+  @override
+  String get studioPhotoProfile =>
+      'Le visage est tourné : utilisez une photo de face.';
+
+  @override
+  String get studioPhotoBad => 'La photo n’a pas pu être analysée.';
+
+  @override
+  String get studioPhotoFaithful => 'Photo · fidèle';
+
+  @override
+  String get studioPhotoBolder => 'Photo · intense';
+
+  @override
+  String get studioPhotoSubtler => 'Photo · subtile';
+
+  @override
+  String get studioPhotoRough =>
+      'Correspondance approximative : vérifiez les couleurs dans l’aperçu.';
+
+  @override
+  String studioRegionConfidence(String layer, int percent) {
+    return '$layer : $percent %';
+  }
+
+  @override
+  String get studioPaletteEmpty => 'Aucune couleur trouvée sur la photo.';
+
+  @override
+  String get studioPalettePickLayer => 'Où va cette couleur ?';
+
+  @override
+  String get studioNewShadow => 'Nouvelle ombre';
 }

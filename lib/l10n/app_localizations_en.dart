@@ -446,4 +446,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get studioErrorUnknown => 'Couldn\'t generate.';
+
+  @override
+  String get studioFromPhoto => 'From photo';
+
+  @override
+  String get studioPalette => 'Product palette';
+
+  @override
+  String get studioPhotoNoticeTitle => 'Reference photo';
+
+  @override
+  String get studioPhotoNotice =>
+      'The photo is analyzed on this phone: it is not uploaded or stored. Use your own photos or ones you have permission to use from the person shown.';
+
+  @override
+  String get studioContinue => 'Continue';
+
+  @override
+  String get studioPhotoNoFace => 'No face was found in the photo.';
+
+  @override
+  String get studioPhotoSmall => 'The face is too small: use a closer photo.';
+
+  @override
+  String get studioPhotoProfile =>
+      'The face is turned: use a front-facing photo.';
+
+  @override
+  String get studioPhotoBad => 'The photo could not be analyzed.';
+
+  @override
+  String get studioPhotoFaithful => 'Photo · faithful';
+
+  @override
+  String get studioPhotoBolder => 'Photo · bolder';
+
+  @override
+  String get studioPhotoSubtler => 'Photo · subtler';
+
+  @override
+  String get studioPhotoRough =>
+      'Approximate match: check the colors in the preview.';
+
+  @override
+  String studioRegionConfidence(String layer, int percent) {
+    return '$layer: $percent%';
+  }
+
+  @override
+  String get studioPaletteEmpty => 'No colors were found in the photo.';
+
+  @override
+  String get studioPalettePickLayer => 'Where does this color go?';
+
+  @override
+  String get studioNewShadow => 'New shadow';
 }
