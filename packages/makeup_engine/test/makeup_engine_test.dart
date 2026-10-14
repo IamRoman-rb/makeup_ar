@@ -123,6 +123,7 @@ void main() {
             'jitterP50Px': 0.4,
             'presence': 0.99,
             'yawDeg': -12.5,
+            'occlusionGate': 0.75,
             'initMs': 812.0,
             'backend': 'detector=gpu landmarks=gpu',
             'error': null,
@@ -137,6 +138,7 @@ void main() {
     expect(tracker.intervalP95Ms, isNull);
     expect(tracker.jitterP50Px, 0.4);
     expect(tracker.yawDeg, -12.5);
+    expect(tracker.occlusionGate, 0.75);
     expect(tracker.backend, contains('gpu'));
   });
 

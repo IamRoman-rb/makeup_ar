@@ -271,6 +271,10 @@ void TrackingState::updateAppearance(const float* tensorLandmarks, int size) {
   appearance_.skinLightness = smooth(appearance_.skinLightness, skin);
   const LipOcclusion occlusion = occlusion_.update(faceSamples_);
   appearance_.occlusionGate = occlusion.gate;
+  {
+    std::lock_guard<std::mutex> lock(statsMutex_);
+    occlusionGate_ = occlusion.gate;
+  }
   appearance_.skinChromaA = occlusion.skin.a;
   appearance_.skinChromaB = occlusion.skin.b;
   appearance_.occlusionAxisA = occlusion.axis.a;
@@ -392,6 +396,7 @@ void TrackingState::snapshotStats(float* out) {
   out[kTrackStatRollDeg] = rollDeg_;
   out[kTrackStatReadbackMs] = readbackMs_.load(std::memory_order_relaxed);
   out[kTrackStatCropFailures] = static_cast<float>(cropFailures_.load(std::memory_order_relaxed));
+  out[kTrackStatOcclusionGate] = occlusionGate_;
 }
 
 void TrackingState::resetStats() {

@@ -427,6 +427,7 @@ internal class EngineSession(
             "rollDeg" to t[NativeBridge.TRACK_STAT_ROLL_DEG].toDouble(),
             "readbackMs" to t[NativeBridge.TRACK_STAT_READBACK_MS].toDouble(),
             "cropFailures" to t[NativeBridge.TRACK_STAT_CROP_FAILURES].toDouble(),
+            "occlusionGate" to t[NativeBridge.TRACK_STAT_OCCLUSION_GATE].toDouble(),
             "initMs" to tracker.initMs,
             "backend" to tracker.backend,
             "error" to tracker.error,

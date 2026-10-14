@@ -52,7 +52,8 @@ internal object NativeBridge {
     const val TRACK_STAT_ROLL_DEG = 13
     const val TRACK_STAT_READBACK_MS = 14
     const val TRACK_STAT_CROP_FAILURES = 15
-    const val TRACK_STAT_COUNT = 16
+    const val TRACK_STAT_OCCLUSION_GATE = 16
+    const val TRACK_STAT_COUNT = 17
 
     // Bits de nativeDrawFrame(); mismo valor que FrameFlag en renderer.h.
     const val FRAME_FLAG_CROP_READY = 1

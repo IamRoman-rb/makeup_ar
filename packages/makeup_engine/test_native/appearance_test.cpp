@@ -87,6 +87,27 @@ TEST(apariencia_mideLabioYPiel) {
   CHECK_NEAR(makeup::measureSkinLightness(crop.data(), kSize, face.data()), lightnessOf(skin), 0.01);
 }
 
+// Luz quemada (P8): las muestras con un canal saturado no dan croma (para la
+// oclusión parecían piel); la L sigue midiéndose.
+TEST(apariencia_quemadoNoDaCroma) {
+  const std::vector<float> face = faceLandmarks(0.0f);
+  std::vector<uint8_t> crop(kSize * kSize * 4);
+  const uint8_t skin[3] = {205, 160, 135};
+  const uint8_t lip[3] = {150, 70, 80};
+  paintFace(crop.data(), face.data(), skin, lip);
+  makeup::FaceSamples normal;
+  makeup::measureFace(crop.data(), kSize, face.data(), &normal);
+  CHECK(normal.lipChromaCount == makeup::kLipLightnessSamples);
+
+  const uint8_t burned[3] = {255, 210, 205};
+  paintFace(crop.data(), face.data(), skin, burned);
+  makeup::FaceSamples clipped;
+  makeup::measureFace(crop.data(), kSize, face.data(), &clipped);
+  CHECK(clipped.lipChromaCount == 0);
+  CHECK(!std::isnan(clipped.lipLightness));
+  CHECK(clipped.skinChromaValid);
+}
+
 TEST(apariencia_fueraDelRecorteEsNaN) {
   std::vector<float> face = faceLandmarks(0.0f);
   for (float& value : face) value += 10000.0f;

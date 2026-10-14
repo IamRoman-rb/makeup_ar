@@ -92,6 +92,11 @@ struct EngineConfig {
   static constexpr float kOcclusionLearnMaxFraction = 0.05f;
   static constexpr float kOcclusionLearnRise = 0.5f;
   static constexpr float kOcclusionLearnFall = 0.05f;
+  // Luz quemada (P8): con algún canal sRGB >= esto la croma se lava hacia la
+  // de la piel (el rojo satura) y el labio parecía una mano. Esas muestras no
+  // cuentan (ni tapadas ni labio). El shader hace lo mismo por píxel con
+  // OCCLUSION_CLIP_LOW/HIGH (lips.frag).
+  static constexpr float kOcclusionClipValue = 0.94f;
 
   // Adaptación al color de la luz (P7, scene_light.h / scene_pass.h).
   // Miniatura de la cámara: lado en px y cada cuánto se lee (1 KB por lectura).

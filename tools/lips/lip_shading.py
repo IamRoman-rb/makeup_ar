@@ -30,6 +30,10 @@ GLOSS_SHADING_HIGH = 1.05
 OCCLUSION_LOW = 0.3
 OCCLUSION_HIGH = 0.6
 OCCLUSION_MIN_LIGHTNESS = 0.05
+# Luz quemada (P8): canal sRGB máximo en que el píxel deja de contar para la
+# oclusión (lips.frag: OCCLUSION_CLIP_LOW/HIGH).
+OCCLUSION_CLIP_LOW = 0.9
+OCCLUSION_CLIP_HIGH = 0.97
 
 
 def _in_gamut(rgb_lin: np.ndarray) -> np.ndarray:
@@ -94,7 +98,10 @@ def occlusion_visibility(camera_srgb: np.ndarray, occlusion: LipOcclusion | None
     lab = to_ok(srgb_to_lin(camera_srgb))
     chroma = lab[..., 1:] / np.maximum(lab[..., :1], OCCLUSION_MIN_LIGHTNESS)
     p = ((chroma - occlusion.skin) * occlusion.axis).sum(axis=-1)
-    return 1.0 + (_smoothstep(OCCLUSION_LOW, OCCLUSION_HIGH, p) - 1.0) * occlusion.gate
+    lip_like = _smoothstep(OCCLUSION_LOW, OCCLUSION_HIGH, p)
+    # Un píxel quemado tiene la croma lavada (parece piel): nunca pierde el labial.
+    clipped = _smoothstep(OCCLUSION_CLIP_LOW, OCCLUSION_CLIP_HIGH, np.max(camera_srgb, axis=-1))
+    return 1.0 + (np.maximum(lip_like, clipped) - 1.0) * occlusion.gate
 
 
 def liner_alpha(distance: np.ndarray, liner: LipLiner, aa: np.ndarray | float) -> np.ndarray:

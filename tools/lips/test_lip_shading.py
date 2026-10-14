@@ -13,6 +13,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lip_shading import LipLiner, LipOcclusion, LipParams, from_ok, liner_alpha, hex_to_srgb, oklab_to_linear_in_gamut, occlusion_visibility, shade, srgb_to_oklab, to_ok  # noqa: E402
+from sample_region_reference import srgb_to_lin  # noqa: E402
 
 
 def hue(lab: np.ndarray) -> float:
@@ -167,6 +168,19 @@ class ShadeTest(unittest.TestCase):
         np.testing.assert_allclose(out[2], camera[2], atol=1e-9)
         free = shade(camera, np.ones(3), np.ones(3), p, liner=np.full(3, 0.8), liner_lab=liner_lab)
         np.testing.assert_allclose(out[1], free[1], atol=1e-9)  # el labio, igual que sin mano
+
+    def test_oclusion_ignora_la_luz_quemada(self):
+        # Labio quemado por una ventana: rojo saturado y verde/azul altos, la
+        # croma lavada se parece a la de la piel.
+        skin_c = to_ok(srgb_to_lin(np.array([0.85, 0.66, 0.56])))
+        lip_c = to_ok(srgb_to_lin(np.array([0.70, 0.35, 0.38])))
+        skin = skin_c[1:] / skin_c[0]
+        d = lip_c[1:] / lip_c[0] - skin
+        on = LipOcclusion(gate=1.0, skin=skin, axis=d / np.dot(d, d))
+        burned = np.array([[1.0, 0.82, 0.80]])
+        hand = np.array([[0.85, 0.66, 0.56]])
+        self.assertAlmostEqual(float(occlusion_visibility(burned, on)[0]), 1.0)
+        self.assertAlmostEqual(float(occlusion_visibility(hand, on)[0]), 0.0)
 
     def test_salida_siempre_en_rango(self):
         rng = np.random.default_rng(3)

@@ -151,6 +151,7 @@ final class TrackerStats {
     this.rollDeg,
     this.readbackMs,
     this.cropFailures = 0,
+    this.occlusionGate,
     this.initMs,
     this.backend,
     this.error,
@@ -175,6 +176,7 @@ final class TrackerStats {
       rollDeg: _double(map['rollDeg']),
       readbackMs: _double(map['readbackMs']),
       cropFailures: _double(map['cropFailures'])?.round() ?? 0,
+      occlusionGate: _double(map['occlusionGate']),
       initMs: _double(map['initMs']),
       backend: map['backend'] as String?,
       error: map['error'] as String?,
@@ -218,6 +220,9 @@ final class TrackerStats {
 
   /// Recortes descartados (fence fallido o la GPU no terminó a tiempo).
   final int cropFailures;
+
+  /// Compuerta de oclusión del labial [0, 1]: 0 = nada tapa la boca.
+  final double? occlusionGate;
 
   /// Carga de los modelos (la primera vez incluye compilar para la GPU).
   final double? initMs;

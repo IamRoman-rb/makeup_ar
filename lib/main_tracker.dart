@@ -76,7 +76,7 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
           'fps=${_f(s.renderFps)} cpuP95=${_f(s.cpuP95Ms)} frameP95=${_f(s.intervalP95Ms)} '
           'state=${t.state.name} hz=${_f(t.hz)} lmP50=${_f(t.landmarkP50Ms)} lmP95=${_f(t.landmarkP95Ms)} '
           'detP50=${_f(t.detectorP50Ms)} readback=${_f(t.readbackMs)} cropFails=${t.cropFailures} jitter=${_f(t.jitterP50Px, 2)} '
-          'presence=${_f(t.presence, 2)} yaw=${_f(t.yawDeg)} pitch=${_f(t.pitchDeg)} roll=${_f(t.rollDeg)} '
+          'presence=${_f(t.presence, 2)} occl=${_f(t.occlusionGate, 2)} yaw=${_f(t.yawDeg)} pitch=${_f(t.pitchDeg)} roll=${_f(t.rollDeg)} '
           'runs=${t.landmarkRuns}/${t.detectorRuns} losses=${t.losses} init=${_f(t.initMs, 0)} '
           'backend="${t.backend ?? '-'}" error="${s.error ?? t.error ?? '-'}"');
     } on Exception catch (e) {

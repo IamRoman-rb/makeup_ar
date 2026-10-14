@@ -102,6 +102,10 @@ uniform float uSparkle;
 #define OCCLUSION_LOW 0.3
 #define OCCLUSION_HIGH 0.6
 #define OCCLUSION_MIN_LIGHTNESS 0.05
+// Canal sRGB máximo en que un píxel quemado empieza y termina de ignorar la
+// oclusión (centrado en kOcclusionClipValue de la CPU, engine_config.h).
+#define OCCLUSION_CLIP_LOW 0.9
+#define OCCLUSION_CLIP_HIGH 0.97
 
 // highp: coordenadas de textura (ver camera_quad.vert).
 in highp vec2 vTexCoord;
@@ -144,7 +148,10 @@ void main() {
   if (uOcclusionGate > 0.0) {
     highp vec2 chroma = lab.yz / max(lab.x, OCCLUSION_MIN_LIGHTNESS);
     float lipLike = smoothstep(OCCLUSION_LOW, OCCLUSION_HIGH, dot(chroma - uOcclusion.xy, uOcclusion.zw));
-    float visible = mix(1.0, lipLike, uOcclusionGate);
+    // Luz quemada: la croma no dice nada (el canal saturado la lava hacia la
+    // de la piel). Ese píxel nunca pierde el labial (P8; kOcclusionClipValue).
+    float clipped = smoothstep(OCCLUSION_CLIP_LOW, OCCLUSION_CLIP_HIGH, max(max(camera.r, camera.g), camera.b));
+    float visible = mix(1.0, max(lipLike, clipped), uOcclusionGate);
     w *= visible;
     liner *= visible;
     // La mano entera fuera: el píxel queda como la cámara, exacto (sin esto

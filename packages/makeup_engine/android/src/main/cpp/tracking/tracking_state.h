@@ -58,6 +58,7 @@ enum TrackerStatIndex : int {
   kTrackStatRollDeg,
   kTrackStatReadbackMs,      // último recorte: de pedirlo en GPU a tenerlo en CPU
   kTrackStatCropFailures,    // recortes descartados (fence fallido o timeout: GPU ocupada)
+  kTrackStatOcclusionGate,   // compuerta de oclusión del labial [0, 1] (lip_occlusion.h)
   kTrackStatCount,
 };
 
@@ -201,6 +202,7 @@ class TrackingState {
   uint32_t losses_ = 0;
   int state_ = 0;
   float presence_ = NAN;
+  float occlusionGate_ = 0.0f;
   float pitchDeg_ = NAN;
   float yawDeg_ = NAN;
   float rollDeg_ = NAN;

@@ -215,7 +215,18 @@ En el E20 (2026-10-13), con la mano sobre la boca el labial y su delineado se pi
 - **Mano sobre mejillas u ojos:** tiene el mismo color que la piel y no se distingue. Eso necesita un modelo de segmentación (§5.6 del informe), que requiere aprobar el modelo.
 - **Mano muy roja o labio muy pálido:** la compuerta puede no prenderse. **Falta calibrar los umbrales en el E20.**
 
+### Luz quemada (P8)
+
+En el E20, con una ventana de costado, la mitad iluminada del labio inferior quedaba sin labial.
+
+- **Causa:** la sobreexposición satura el rojo y lava la croma hacia la de la piel. El oclusor tomaba el labio quemado como una mano; con un tercio del labio así, la compuerta se prendía entera.
+- **Arreglo, en CPU:** las muestras con algún canal sRGB ≥ `kOcclusionClipValue` (0,94) no cuentan para la oclusión (`measureFace`): ni tapadas ni labio.
+- **Arreglo, en GPU:** el píxel con canal máximo entre `OCCLUSION_CLIP_LOW` (0,90) y `OCCLUSION_CLIP_HIGH` (0,97) deja de poder perder el labial (`lips.frag` y `occlusion_visibility` en `tools/lips/lip_shading.py`).
+- **Para verla en el E20:** la compuerta sale como `occl=` en la línea `TRACK` del arnés (`TrackerStats.occlusionGate`).
+
 ## 10. Limitaciones conocidas
+
+- **Mano quemada:** una mano muy iluminada, con un canal saturado, ya no tapa el labial en sus partes quemadas (§9, P8). Es el precio de no borrar el labio quemado, que es mucho más común.
 
 - **Lengua sobre la boca:** se pinta encima (§9).
 - **Bigote sobre el labio superior:** se pinta como labio oscuro (el pelo baja `s`). Es lo que haría un labial real debajo del bigote, pero el contorno lo pone el tracker.

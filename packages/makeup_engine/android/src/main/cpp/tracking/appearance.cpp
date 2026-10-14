@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "color_math.h"
+#include "engine_config.h"
 #include "mesh/canonical_mesh.h"
 
 namespace makeup {
@@ -30,7 +31,10 @@ static_assert(kSkinChromaSamples <= kSkinLightnessSamples, "las muestras de colo
 constexpr float kChromaMinLightness = 0.15f;
 
 // OKLab del promedio 2×2 alrededor de (x, y); L = NaN fuera del recorte.
-Vec3 sampleOklab(const uint8_t* rgba, int size, float x, float y) {
+// [clipped]: algún canal sRGB >= kOcclusionClipValue (luz quemada: la croma
+// se lava hacia la de la piel y no sirve para la oclusión).
+Vec3 sampleOklab(const uint8_t* rgba, int size, float x, float y, bool* clipped) {
+  *clipped = false;
   const int x0 = static_cast<int>(std::floor(x - 0.5f));
   const int y0 = static_cast<int>(std::floor(y - 0.5f));
   if (x0 < 0 || y0 < 0 || x0 + 1 >= size || y0 + 1 >= size) return Vec3{NAN, 0.0f, 0.0f};
@@ -44,6 +48,8 @@ Vec3 sampleOklab(const uint8_t* rgba, int size, float x, float y) {
     b += row[2] + row[6];
   }
   constexpr float kNorm = 1.0f / (4.0f * 255.0f);
+  const float brightest = static_cast<float>(std::max({r, g, b})) * kNorm;
+  *clipped = brightest >= EngineConfig::kOcclusionClipValue;
   return srgbToOklab(static_cast<float>(r) * kNorm, static_cast<float>(g) * kNorm,
                      static_cast<float>(b) * kNorm);
 }
@@ -67,11 +73,13 @@ void measureFace(const uint8_t* rgba, int size, const float* landmarks, FaceSamp
     const float* outer = landmarks + mesh::kLipsOuter[k] * 3;
     const float* inner = landmarks + mesh::kLipsInner[k] * 3;
     for (float depth : kLipDepths) {
+      bool clipped = false;
       const Vec3 lab = sampleOklab(rgba, size, outer[0] + (inner[0] - outer[0]) * depth,
-                                   outer[1] + (inner[1] - outer[1]) * depth);
+                                   outer[1] + (inner[1] - outer[1]) * depth, &clipped);
       if (std::isnan(lab.x)) continue;
       lipL[lipCount++] = lab.x;
-      if (lab.x >= kChromaMinLightness) {
+      // Las quemadas no cuentan para la oclusión: ni tapadas ni labio.
+      if (lab.x >= kChromaMinLightness && !clipped) {
         out->lipChroma[out->lipChromaCount++] = Chroma{lab.y / lab.x, lab.z / lab.x};
       }
     }
@@ -85,10 +93,11 @@ void measureFace(const uint8_t* rgba, int size, const float* landmarks, FaceSamp
   int chromaCount = 0;
   for (int n = 0; n < kSkinLightnessSamples; ++n) {
     const int index = kCheekLandmarks[n];
-    const Vec3 lab = sampleOklab(rgba, size, landmarks[index * 3], landmarks[index * 3 + 1]);
+    bool clipped = false;
+    const Vec3 lab = sampleOklab(rgba, size, landmarks[index * 3], landmarks[index * 3 + 1], &clipped);
     if (std::isnan(lab.x)) continue;
     skinL[skinCount++] = lab.x;
-    if (n < kSkinChromaSamples && lab.x >= kChromaMinLightness) {
+    if (n < kSkinChromaSamples && lab.x >= kChromaMinLightness && !clipped) {
       skinA[chromaCount] = lab.y / lab.x;
       skinB[chromaCount] = lab.z / lab.x;
       ++chromaCount;
