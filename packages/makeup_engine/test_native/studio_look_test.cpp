@@ -170,6 +170,27 @@ TEST(look_labioBicolorEligeUnColor) {
   CHECK(analyze(plain)[makeup::kLookLipsSplit] == 0.0f);
 }
 
+// Ahumado sin delineado (P9): el degradé oscuro pegado a las pestañas no se
+// lee como un delineado grueso, y la V externa ahumada no da wing. Con un
+// delineado negro real encima, sí.
+TEST(look_ahumadoNoEsDelineado) {
+  synthetic::Look look;
+  look.liner = false;
+  look.smoky = true;
+  const std::vector<float> values = analyze(look);
+  CHECK(values[makeup::kLookLinerExtent] <= 0.15f);
+  CHECK(values[makeup::kLookWingExtent] == 0.0f);
+  const int lid = eyeRegion(makeup::EyeRegion::kLid);
+  const int outerV = eyeRegion(makeup::EyeRegion::kOuterV);
+  CHECK(values[outerV + makeup::kRegionValid] == 1.0f);
+  CHECK(values[outerV + makeup::kRegionL] < values[lid + makeup::kRegionL]);
+
+  look.liner = true;
+  const std::vector<float> lined = analyze(look);
+  CHECK_NEAR(lined[makeup::kLookLinerExtent], look.linerDistance, 0.051);
+  CHECK(lined[makeup::kLookWingExtent] >= 0.4f);
+}
+
 TEST(look_fotoEspejadaDaLoMismo) {
   synthetic::Look look;
   look.placement = 0;

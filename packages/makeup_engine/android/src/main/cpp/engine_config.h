@@ -265,6 +265,10 @@ struct EngineConfig {
   // Distancia al wing (B.b) que cuenta como wing aunque el delineado medido
   // sea más fino.
   static constexpr float kWingMinDistance = 0.2f;
+  // Delineado vs. ahumado (P9): un delineado es una meseta pareja; si la L
+  // mediana de una franja supera la de la primera por más que esto, lo
+  // oscuro se aclara de a poco (degradé) y el grosor se corta ahí.
+  static constexpr float kLinerPlateauDelta = 0.04f;
   // Mapas espejados (P8): un lado cuenta si se ve al menos esta fracción de
   // su máscara; entre esos, gana el que más se aparta de la piel.
   static constexpr float kSideMinCoverage = 0.5f;

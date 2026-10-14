@@ -256,39 +256,55 @@ int measureCheeks(const UvGrid& face, const RegionColor& skin, float* out) {
   return bestSide;
 }
 
-// Delineado de un lado: franjas de distancia a la línea de pestañas; una
-// franja es de delineado si la mayoría de sus texels es más oscura que la piel
-// y el párpado. El grosor es la última franja contigua desde la línea; el
-// wing, igual a lo largo de su avance (B.a), cerca de su eje (B.b).
+// Delineado de un lado (P9: distinto de un ahumado). Franjas de distancia a la
+// línea de pestañas (B.g):
+//   referencia = min(piel, L de la franja de párpado justo encima de la zona
+//                del delineado, B.g en [kShadowMinLinerDistance, 1))
+//   una franja es oscura si la mayoría de sus texels tiene L < referencia − delta
+//   grosor = franjas oscuras contiguas desde la línea que además forman una
+//            meseta: L mediana a menos de kLinerPlateauDelta de la primera. Un
+//            delineado es parejo; un ahumado se aclara de a poco y se corta ahí.
+// El wing, igual a lo largo de su avance (B.a), cerca de su eje (B.b), y más
+// oscuro también que la V externa medida (una V ahumada no es un wing).
 struct LinerSide {
   float extent = 0.0f;
   float wing = 0.0f;
   Accumulator dark;
 };
 
-LinerSide measureLinerSide(const UvGrid& eyes, int side, float darkBelow) {
+LinerSide measureLinerSide(const UvGrid& eyes, int side, float skinLightness, float outerVLightness) {
   LinerSide out;
-  std::array<int, EngineConfig::kLinerBands> lineTotal{};
-  std::array<int, EngineConfig::kLinerBands> lineDark{};
+  constexpr int kBands = EngineConfig::kLinerBands;
+  std::array<std::vector<float>, kBands> bandL;
+  std::vector<float> above;
   for (int row = 0; row < eyes.height; ++row) {
     for (int col = 0; col < eyes.width; ++col) {
       const size_t index = eyes.index(side, col, row);
       if (!eyes.valid[index]) continue;
       const float distance = unitByte(mesh::kEyeMapB[(static_cast<size_t>(row) * eyes.width + col) * 4 + 1]);
       if (distance >= 1.0f) continue;
-      const int band = std::min(static_cast<int>(distance * EngineConfig::kLinerBands), EngineConfig::kLinerBands - 1);
-      ++lineTotal[band];
-      if (eyes.lab[index].x < darkBelow) ++lineDark[band];
+      if (distance >= EngineConfig::kShadowMinLinerDistance) above.push_back(eyes.lab[index].x);
+      const int band = std::min(static_cast<int>(distance * kBands), kBands - 1);
+      bandL[band].push_back(eyes.lab[index].x);
     }
   }
+  const float reference = above.empty() ? skinLightness : std::min(skinLightness, medianInPlace(above));
+  const float darkBelow = reference - EngineConfig::kLinerDarkDelta;
   int lineBands = 0;
-  while (lineBands < EngineConfig::kLinerBands && lineTotal[lineBands] > 0 &&
-         static_cast<float>(lineDark[lineBands]) >= EngineConfig::kLinerDarkFraction * lineTotal[lineBands]) {
+  float firstMedian = 0.0f;
+  while (lineBands < kBands && !bandL[lineBands].empty()) {
+    std::vector<float>& values = bandL[lineBands];
+    const auto dark = std::count_if(values.begin(), values.end(), [&](float l) { return l < darkBelow; });
+    if (static_cast<float>(dark) < EngineConfig::kLinerDarkFraction * static_cast<float>(values.size())) break;
+    const float median = medianInPlace(values);
+    if (lineBands == 0) firstMedian = median;
+    if (median - firstMedian > EngineConfig::kLinerPlateauDelta) break;  // se aclara: ahumado
     ++lineBands;
   }
-  out.extent = static_cast<float>(lineBands) / EngineConfig::kLinerBands;
+  out.extent = static_cast<float>(lineBands) / kBands;
   if (lineBands == 0) return out;
 
+  const float wingDarkBelow = std::min(darkBelow, outerVLightness - EngineConfig::kLinerDarkDelta);
   const float wingDistance = std::max(out.extent, EngineConfig::kWingMinDistance);
   std::array<int, EngineConfig::kWingBands> wingTotal{};
   std::array<int, EngineConfig::kWingBands> wingDark{};
@@ -299,13 +315,14 @@ LinerSide measureLinerSide(const UvGrid& eyes, int side, float darkBelow) {
       const float wingD = unitByte(mesh::kEyeMapB[texel + 2]);
       const float progress = unitByte(mesh::kEyeMapB[texel + 3]);
       const size_t index = eyes.index(side, col, row);
-      const bool dark = eyes.valid[index] && eyes.lab[index].x < darkBelow;
+      if (!eyes.valid[index]) continue;
+      const float l = eyes.lab[index].x;
       const bool inLine = lineD < out.extent;
-      if (inLine && dark) out.dark.samples.push_back(eyes.lab[index]);
-      if (progress <= 0.0f || wingD >= wingDistance || !eyes.valid[index]) continue;
+      if (inLine && l < darkBelow) out.dark.samples.push_back(eyes.lab[index]);
+      if (progress <= 0.0f || wingD >= wingDistance) continue;
       const int band = std::min(static_cast<int>(progress * EngineConfig::kWingBands), EngineConfig::kWingBands - 1);
       ++wingTotal[band];
-      if (dark) {
+      if (l < wingDarkBelow) {
         ++wingDark[band];
         if (!inLine) out.dark.samples.push_back(eyes.lab[index]);
       }
@@ -347,14 +364,12 @@ int measureEyes(const UvGrid& eyes, const RegionColor& skin, float* out) {
     if (region == static_cast<int>(EyeRegion::kLid)) lidSide = side;
   }
 
-  // Delineado: el lado con el trazo más grueso (el oscuro se mide contra la
-  // piel y el párpado de ese lado).
+  // Delineado: el lado con el trazo más grueso (measureLinerSide).
   LinerSide best;
   int linerSide = 0;
   for (int side = 0; side < eyes.sides; ++side) {
-    const RegionColor lid = robustRegionColor(regions[static_cast<int>(EyeRegion::kLid)][side].samples);
-    const float reference = lid.valid ? std::min(skin.lab.x, lid.lab.x) : skin.lab.x;
-    LinerSide measured = measureLinerSide(eyes, side, reference - EngineConfig::kLinerDarkDelta);
+    const RegionColor outerV = robustRegionColor(regions[static_cast<int>(EyeRegion::kOuterV)][side].samples);
+    LinerSide measured = measureLinerSide(eyes, side, skin.lab.x, outerV.valid ? outerV.lab.x : skin.lab.x);
     if (measured.extent > best.extent) {
       best = std::move(measured);
       linerSide = side;

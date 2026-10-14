@@ -178,3 +178,14 @@ Lo que la receta todavía no puede representar:
 - **Brillos de color** (duocromos): el shimmer del motor es blanco.
 
 Fotos de internet: sirven para probar en el teléfono, pero para el catálogo hacen falta fotos propias o con permiso (§10.5).
+
+## P9: ahumado no es delineado
+
+Con la foto de medio rostro (ahumado azul y violeta en un solo ojo), la receta salía con un delineado negro grueso y wing, y la foto no tiene delineado: el degradé oscuro pegado a las pestañas y la V externa pasaban el umbral de "oscuro".
+
+`measureLinerSide` ahora:
+- compara contra la franja de párpado justo encima de la zona del delineado (B.g ≥ 0,75), no contra el promedio del párpado;
+- exige una meseta: la L mediana de cada franja a menos de `kLinerPlateauDelta` (0,04) de la primera. Un delineado es parejo; un ahumado se aclara de a poco y el grosor se corta ahí;
+- para el wing, exige además que sea más oscuro que la V externa medida.
+
+Test de host `look_ahumadoNoEsDelineado`: un ahumado en degradé da un trazo de 0,15 como máximo y nada de wing. Con un delineado negro real encima, el grosor y el wing vuelven a medirse bien.

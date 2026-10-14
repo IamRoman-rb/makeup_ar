@@ -36,6 +36,10 @@ struct Look {
   // Otro color de labio en la mitad u >= 0,5 (labio bicolor).
   bool bicolor = false;
   float lip2[3] = {0.85f, 0.55f, 0.55f};
+  // Ahumado: color oscuro en la V externa y en degradé desde la línea de
+  // pestañas, encima de la sombra del párpado.
+  bool smoky = false;
+  float smokyColor[3] = {0.16f, 0.13f, 0.32f};
 };
 
 constexpr int kSize = 1000;
@@ -79,6 +83,11 @@ inline void paint(const Look& look, float u, float v, float out[3]) {
     const float wingD = makeup::mesh::kEyeMapB[texel + 2] / 255.0f;
     const float progress = makeup::mesh::kEyeMapB[texel + 3] / 255.0f;
     if (look.shadow && madeUp) mix(out, look.shadowColor, lid);
+    if (look.smoky && madeUp) {
+      const float outerV = makeup::mesh::kEyeMapA[texel + 2] / 255.0f;
+      // Degradé desde la línea de pestañas (un ahumado se esfuma hacia arriba).
+      mix(out, look.smokyColor, std::fmax(outerV, std::fmax(0.0f, 1.0f - lineD / 0.9f)));
+    }
     if (look.liner && madeUp) {
       const float black[3] = {0.05f, 0.05f, 0.05f};
       const bool line = lineD < look.linerDistance;
