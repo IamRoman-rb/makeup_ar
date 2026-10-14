@@ -24,7 +24,19 @@ FaceSamples samples(int hidden, Chroma lip = kLip, Chroma skin = kSkin) {
   out.skinChroma = skin;
   out.skinChromaValid = true;
   out.lipChromaCount = makeup::kLipLightnessSamples;
-  for (int i = 0; i < out.lipChromaCount; ++i) out.lipChroma[i] = i < hidden ? skin : lip;
+  for (int i = 0; i < out.lipChromaCount; ++i) {
+    out.lipChroma[i] = i < hidden ? skin : lip;
+    out.lipChromaValid[i] = true;
+  }
+  return out;
+}
+
+// Luz de costado: las primeras [lit] posiciones (media boca) con el labio más
+// cerca de la piel, estable; las primeras [hidden] tapadas por una mano.
+FaceSamples sideLit(int lit, int hidden = 0) {
+  FaceSamples out = samples(hidden);
+  constexpr Chroma kLitLip{0.088f, 0.07f};
+  for (int i = hidden; i < lit; ++i) out.lipChroma[i] = kLitLip;
   return out;
 }
 
@@ -70,6 +82,27 @@ TEST(oclusion_manoSobreLaBoca) {
   const float afterOne = estimator.update(samples(0)).gate;
   CHECK(afterOne > 0.3f);
   CHECK(run(estimator, samples(0), 15).gate == 0.0f);
+}
+
+// P9: media boca iluminada distinto (labio pálido, ventana de costado). Con
+// una referencia única esa mitad votaba como "tapada" y la compuerta llegaba a
+// 1 sin mano; con una referencia por posición, no. Una mano después sí.
+TEST(oclusion_mediaBocaConOtraLuzNoEsMano) {
+  LipOcclusionEstimator estimator;
+  CHECK(run(estimator, sideLit(18), 20).gate == 0.0f);
+  CHECK(estimator.occludedFraction() == 0.0f);
+  // La mano tapa 24 posiciones (incluida la mitad iluminada).
+  CHECK(run(estimator, sideLit(18, 24), 6).gate > 0.95f);
+}
+
+// Muestras inválidas (oscuras, quemadas) no votan ni se aprenden.
+TEST(oclusion_invalidasNoVotan) {
+  LipOcclusionEstimator estimator;
+  run(estimator, samples(0), 5);
+  FaceSamples input = samples(18);
+  for (int i = 0; i < 18; ++i) input.lipChromaValid[i] = false;  // las tapadas, inválidas
+  input.lipChromaCount = makeup::kLipLightnessSamples - 18;
+  CHECK(run(estimator, input, 10).gate == 0.0f);
 }
 
 TEST(oclusion_labioPalidoSinContraste) {
@@ -120,6 +153,7 @@ TEST(oclusion_midenCromaticidadEnElRecorte) {
   makeup::measureFace(crop.data(), kSize, face.data(), &out);
   CHECK(out.skinChromaValid);
   CHECK(out.lipChromaCount == makeup::kLipLightnessSamples);
+  CHECK(out.lipChromaValid[0] && out.lipChromaValid[makeup::kLipLightnessSamples - 1]);
   CHECK_NEAR(out.lipChroma[0].a, out.skinChroma.a, 1e-5);
   CHECK_NEAR(out.lipChroma[0].b, out.skinChroma.b, 1e-5);
   CHECK(out.skinChroma.a > 0.0f);  // piel cálida: a y b positivos

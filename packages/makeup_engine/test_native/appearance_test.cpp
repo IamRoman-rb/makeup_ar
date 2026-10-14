@@ -104,6 +104,7 @@ TEST(apariencia_quemadoNoDaCroma) {
   makeup::FaceSamples clipped;
   makeup::measureFace(crop.data(), kSize, face.data(), &clipped);
   CHECK(clipped.lipChromaCount == 0);
+  CHECK(!clipped.lipChromaValid[0]);  // en su posición, inválida
   CHECK(!std::isnan(clipped.lipLightness));
   CHECK(clipped.skinChromaValid);
 }

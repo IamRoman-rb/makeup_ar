@@ -3,20 +3,29 @@
 // poniendo la boca donde estaba, pero las muestras del labio (FaceSamples)
 // pasan a tener el color de la piel.
 //
+// Cada una de las kLipLightnessSamples posiciones del labio tiene su propia
+// referencia (P9): con luz de costado, la mitad iluminada de un labio pálido
+// queda más cerca de la piel que la otra, y con una referencia única votaba
+// como "tapada" aunque no hubiera mano. Comparada consigo misma, no.
+//
 // En cada inferencia (hilo del tracker, sin allocations):
-//   eje       = labio de referencia − piel, en cromaticidad (a, b) / L
-//   p         = dot(c − piel, eje) / |eje|²   (0 = piel, 1 = labio)
-//   tapadas   = fracción de muestras de labio con p < kOcclusionSampleThreshold
+//   eje_i     = referencia_i − piel, en cromaticidad (a, b) / L
+//   p_i       = dot(c_i − piel, eje_i) / |eje_i|²   (0 = piel, 1 = labio)
+//   tapadas   = fracción de las muestras que votan (válidas, con referencia y
+//               contraste suficiente) con p_i < kOcclusionSampleThreshold
 //   compuerta = smoothstep(kOcclusionGateLow, kOcclusionGateHigh, tapadas),
 //               suavizada (sube rápido, baja más lento)
-// El shader (lips.frag) recibe la compuerta, la piel y eje / |eje|², y con la
-// compuerta prendida saca el labial de cada píxel que se parece a la piel.
+// El shader (lips.frag) recibe la compuerta, la piel y un eje global (mediana
+// de las referencias − piel) / |eje|², y con la compuerta prendida saca el
+// labial de cada píxel que se parece a la piel.
 //
-// El labio de referencia se aprende solo mientras se ve entero (y sube rápido
-// cuando el labio se aleja de la piel), así no aprende la mano. Si el
-// contraste piel-labio es muy bajo, no hay oclusión: no se puede distinguir.
+// Las referencias se aprenden solo mientras el labio se ve entero (y suben
+// rápido cuando la muestra se aleja de la piel), así no aprenden la mano. Una
+// posición sin contraste con la piel no vota: no se puede distinguir.
 // Referencia de lo que hace el shader: tools/lips/lip_shading.py (occlusion).
 #pragma once
+
+#include <array>
 
 #include "tracking/appearance.h"
 
@@ -25,7 +34,7 @@ namespace makeup {
 struct LipOcclusion {
   float gate = 0.0f;  // [0, 1]; 0 = sin oclusión (el shader no hace nada)
   Chroma skin;        // cromaticidad de la piel
-  Chroma axis;        // (labio − piel) / |labio − piel|²
+  Chroma axis;        // (labio − piel) / |labio − piel|² (labio = mediana de las referencias)
 };
 
 class LipOcclusionEstimator {
@@ -40,8 +49,8 @@ class LipOcclusionEstimator {
   float occludedFraction() const { return occluded_; }
 
  private:
-  Chroma lip_;
-  bool hasLip_ = false;
+  std::array<Chroma, kLipLightnessSamples> ref_{};
+  std::array<bool, kLipLightnessSamples> hasRef_{};
   float gate_ = 0.0f;
   float occluded_ = 0.0f;
   LipOcclusion last_;

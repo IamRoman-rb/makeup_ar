@@ -396,7 +396,8 @@ void TrackingState::snapshotStats(float* out) {
   out[kTrackStatRollDeg] = rollDeg_;
   out[kTrackStatReadbackMs] = readbackMs_.load(std::memory_order_relaxed);
   out[kTrackStatCropFailures] = static_cast<float>(cropFailures_.load(std::memory_order_relaxed));
-  out[kTrackStatOcclusionGate] = occlusionGate_;
+  // Sin cara la compuerta no se actualiza: 0, no el último valor.
+  out[kTrackStatOcclusionGate] = state_ == 2 ? occlusionGate_ : 0.0f;
 }
 
 void TrackingState::resetStats() {

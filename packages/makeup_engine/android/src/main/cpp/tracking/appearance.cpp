@@ -68,11 +68,13 @@ void measureFace(const uint8_t* rgba, int size, const float* landmarks, FaceSamp
   *out = FaceSamples{};
   std::array<float, kLipLightnessSamples> lipL{};
   int lipCount = 0;
+  int position = 0;
   for (int k = 0; k < mesh::kLipsOuterCount; ++k) {
     if (k == 0 || k == mesh::kLipsOuterCount / 2) continue;  // comisuras
     const float* outer = landmarks + mesh::kLipsOuter[k] * 3;
     const float* inner = landmarks + mesh::kLipsInner[k] * 3;
     for (float depth : kLipDepths) {
+      const int index = position++;
       bool clipped = false;
       const Vec3 lab = sampleOklab(rgba, size, outer[0] + (inner[0] - outer[0]) * depth,
                                    outer[1] + (inner[1] - outer[1]) * depth, &clipped);
@@ -80,7 +82,9 @@ void measureFace(const uint8_t* rgba, int size, const float* landmarks, FaceSamp
       lipL[lipCount++] = lab.x;
       // Las quemadas no cuentan para la oclusión: ni tapadas ni labio.
       if (lab.x >= kChromaMinLightness && !clipped) {
-        out->lipChroma[out->lipChromaCount++] = Chroma{lab.y / lab.x, lab.z / lab.x};
+        out->lipChroma[index] = Chroma{lab.y / lab.x, lab.z / lab.x};
+        out->lipChromaValid[index] = true;
+        ++out->lipChromaCount;
       }
     }
   }

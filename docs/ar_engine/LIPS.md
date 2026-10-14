@@ -224,6 +224,18 @@ En el E20, con una ventana de costado, la mitad iluminada del labio inferior que
 - **Arreglo, en GPU:** el píxel con canal máximo entre `OCCLUSION_CLIP_LOW` (0,90) y `OCCLUSION_CLIP_HIGH` (0,97) deja de poder perder el labial (`lips.frag` y `occlusion_visibility` en `tools/lips/lip_shading.py`).
 - **Para verla en el E20:** la compuerta sale como `occl=` en la línea `TRACK` del arnés (`TrackerStats.occlusionGate`).
 
+### Referencia por punto del labio (P9)
+
+Después de P8, en el E20 seguía media boca sin labial con la ventana de costado, y el log decía `occl=1.00` sin ninguna mano.
+
+- **Causa:** un labio pálido con la mitad iluminada distinto. Comparada contra una sola referencia (la mediana de la boca), esa mitad quedaba más cerca de la piel que del labio (p ≈ 0,38 < 0,4) y votaba como tapada. Con la mitad de los votos, la compuerta llegaba a 1.
+- **Arreglo:**
+  - Cada una de las 36 posiciones del labio (`FaceSamples::lipChroma`, ahora en posición fija con `lipChromaValid`) aprende su propia referencia y vota contra ella. La mitad iluminada se compara consigo misma.
+  - Una mano sigue cambiando todas las posiciones que tapa.
+  - Al shader le llega un eje global: la mediana de las referencias.
+- **Stat:** `occl=` vale 0 sin cara. Antes mostraba el último valor.
+- **Tests:** `oclusion_mediaBocaConOtraLuzNoEsMano` y `oclusion_invalidasNoVotan`.
+
 ## 10. Limitaciones conocidas
 
 - **Mano quemada:** una mano muy iluminada, con un canal saturado, ya no tapa el labial en sus partes quemadas (§9, P8). Es el precio de no borrar el labio quemado, que es mucho más común.

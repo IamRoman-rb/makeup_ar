@@ -36,10 +36,13 @@ struct FaceSamples {
   float skinLightness = NAN;  // mediana de L de las mejillas [0, 1]
   Chroma skinChroma;          // mediana por componente de las mejillas altas
   bool skinChromaValid = false;
-  // Cromaticidad de cada muestra de labio con L suficiente (las muy oscuras
-  // no tienen cromaticidad confiable).
+  // Cromaticidad de cada muestra de labio, en su posición fija (pares del
+  // contorno × profundidad: la misma posición en todas las inferencias, para
+  // la referencia por punto de lip_occlusion.h). Inválida si cae fuera del
+  // recorte, es muy oscura (cromaticidad poco confiable) o está quemada.
   std::array<Chroma, kLipLightnessSamples> lipChroma{};
-  int lipChromaCount = 0;
+  std::array<bool, kLipLightnessSamples> lipChromaValid{};
+  int lipChromaCount = 0;  // cantidad de válidas
 };
 
 // [rgba]: recorte de [size]×[size] RGBA8, fila 0 arriba (el orden del tensor).
