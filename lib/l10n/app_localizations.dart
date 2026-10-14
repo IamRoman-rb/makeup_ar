@@ -1043,6 +1043,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New shadow'**
   String get studioNewShadow;
+
+  /// No description provided for @studioQaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality check'**
+  String get studioQaTitle;
+
+  /// No description provided for @studioQaVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get studioQaVisibility;
+
+  /// No description provided for @studioQaClipping.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturation'**
+  String get studioQaClipping;
+
+  /// No description provided for @studioQaConsistency.
+  ///
+  /// In en, this message translates to:
+  /// **'Skin tones'**
+  String get studioQaConsistency;
+
+  /// No description provided for @studioQaCoverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get studioQaCoverage;
+
+  /// No description provided for @studioQaCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get studioQaCost;
+
+  /// No description provided for @studioQaOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get studioQaOk;
+
+  /// No description provided for @studioQaCostOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Within what was measured on the reference phone'**
+  String get studioQaCostOk;
+
+  /// No description provided for @studioQaInvisible.
+  ///
+  /// In en, this message translates to:
+  /// **'{layer}: not visible on any skin tone'**
+  String studioQaInvisible(String layer);
+
+  /// No description provided for @studioQaSubtle.
+  ///
+  /// In en, this message translates to:
+  /// **'{layer}: barely visible'**
+  String studioQaSubtle(String layer);
+
+  /// No description provided for @studioQaWashedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'{layer}: very saturated, washes out in light'**
+  String studioQaWashedOut(String layer);
+
+  /// No description provided for @studioQaChalky.
+  ///
+  /// In en, this message translates to:
+  /// **'{layer}: looks chalky on deep skin'**
+  String studioQaChalky(String layer);
+
+  /// No description provided for @studioQaAshy.
+  ///
+  /// In en, this message translates to:
+  /// **'{layer}: looks ashy on deep skin'**
+  String studioQaAshy(String layer);
+
+  /// No description provided for @studioQaFades.
+  ///
+  /// In en, this message translates to:
+  /// **'{layer}: not visible on some skin tones'**
+  String studioQaFades(String layer);
+
+  /// No description provided for @studioQaExtremeLiner.
+  ///
+  /// In en, this message translates to:
+  /// **'Liner and wing at maximum'**
+  String get studioQaExtremeLiner;
+
+  /// No description provided for @studioQaMaskFoundation.
+  ///
+  /// In en, this message translates to:
+  /// **'Very heavy foundation (mask effect)'**
+  String get studioQaMaskFoundation;
+
+  /// No description provided for @studioQaHeavyBlush.
+  ///
+  /// In en, this message translates to:
+  /// **'Very large, intense blush'**
+  String get studioQaHeavyBlush;
+
+  /// No description provided for @studioQaEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'3 effects at once: not measured on the reference phone'**
+  String get studioQaEffects;
+
+  /// No description provided for @studioQaBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the items in red to publish.'**
+  String get studioQaBlocked;
 }
 
 class _AppLocalizationsDelegate

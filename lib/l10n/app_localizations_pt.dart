@@ -506,4 +506,74 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get studioNewShadow => 'Nova sombra';
+
+  @override
+  String get studioQaTitle => 'Controle de qualidade';
+
+  @override
+  String get studioQaVisibility => 'Visibilidade';
+
+  @override
+  String get studioQaClipping => 'Saturação';
+
+  @override
+  String get studioQaConsistency => 'Tons de pele';
+
+  @override
+  String get studioQaCoverage => 'Cobertura';
+
+  @override
+  String get studioQaCost => 'Desempenho';
+
+  @override
+  String get studioQaOk => 'Ok';
+
+  @override
+  String get studioQaCostOk => 'Dentro do medido no telefone de referência';
+
+  @override
+  String studioQaInvisible(String layer) {
+    return '$layer: não aparece em nenhum tom de pele';
+  }
+
+  @override
+  String studioQaSubtle(String layer) {
+    return '$layer: quase não aparece';
+  }
+
+  @override
+  String studioQaWashedOut(String layer) {
+    return '$layer: cor muito saturada, desbota com a luz';
+  }
+
+  @override
+  String studioQaChalky(String layer) {
+    return '$layer: fica esbranquiçado em pele escura';
+  }
+
+  @override
+  String studioQaAshy(String layer) {
+    return '$layer: fica acinzentado em pele escura';
+  }
+
+  @override
+  String studioQaFades(String layer) {
+    return '$layer: não aparece em alguns tons';
+  }
+
+  @override
+  String get studioQaExtremeLiner => 'Delineado e asa no máximo';
+
+  @override
+  String get studioQaMaskFoundation => 'Base muito pesada (efeito máscara)';
+
+  @override
+  String get studioQaHeavyBlush => 'Blush muito grande e intenso';
+
+  @override
+  String get studioQaEffects =>
+      '3 efeitos ao mesmo tempo: não medido no telefone de referência';
+
+  @override
+  String get studioQaBlocked => 'Corrija os itens em vermelho para publicar.';
 }

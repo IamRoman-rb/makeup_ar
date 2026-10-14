@@ -173,5 +173,66 @@
     },
     "studioPaletteEmpty": "Aucune couleur trouvée sur la photo.",
     "studioPalettePickLayer": "Où va cette couleur ?",
-    "studioNewShadow": "Nouvelle ombre"
+    "studioNewShadow": "Nouvelle ombre",
+    "studioQaTitle": "Contrôle qualité",
+    "studioQaVisibility": "Visibilité",
+    "studioQaClipping": "Saturation",
+    "studioQaConsistency": "Teintes de peau",
+    "studioQaCoverage": "Couvrance",
+    "studioQaCost": "Performance",
+    "studioQaOk": "OK",
+    "studioQaCostOk": "Dans les limites mesurées sur le téléphone de référence",
+    "studioQaInvisible": "{layer} : invisible sur toutes les peaux",
+    "@studioQaInvisible": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaSubtle": "{layer} : à peine visible",
+    "@studioQaSubtle": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaWashedOut": "{layer} : couleur très saturée, délavée à la lumière",
+    "@studioQaWashedOut": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaChalky": "{layer} : aspect plâtreux sur peau foncée",
+    "@studioQaChalky": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaAshy": "{layer} : aspect cendré sur peau foncée",
+    "@studioQaAshy": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaFades": "{layer} : invisible sur certaines teintes",
+    "@studioQaFades": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaExtremeLiner": "Eye-liner et wing au maximum",
+    "studioQaMaskFoundation": "Fond de teint très couvrant (effet masque)",
+    "studioQaHeavyBlush": "Blush très grand et intense",
+    "studioQaEffects": "3 effets à la fois : non mesuré sur le téléphone de référence",
+    "studioQaBlocked": "Corrigez les points en rouge pour publier."
 }

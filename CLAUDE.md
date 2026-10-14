@@ -43,6 +43,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Cloud Functions (`functions/`, Node 22 + TypeScript): `npm install` y `npm test` dentro de `functions/` (con la cuota contra el emulador: `npm run test:emulator`, necesita `JAVA_HOME` y java en el PATH). Deploy (lo corre el usuario): `firebase deploy --only functions --project armakeupapp`. Diseño y pasos en `docs/ar_engine/F2_PLAN.md`.
 - App Check: `--dart-define=APP_CHECK=debug|playIntegrity` (por defecto debug fuera de release). Callables contra el emulador: `--dart-define=FUNCTIONS_EMULATOR=127.0.0.1:5001` + `adb reverse tcp:5001 tcp:5001`.
 - Paridad del esquema de recetas: `python tools/studio/validate_recipe_cases.py` (requiere `jsonschema`). Si tocás el esquema o `test/fixtures/recipe_v2_cases.json`, corré esto y `flutter test test/features`.
+- QA automático del Studio (F5): `python tools/studio/qa_reference.py` regenera `test/fixtures/qa_render_cases.json` (`--check` verifica, `--report` muestra los valores de los presets para calibrar umbrales). Si cambia la matemática de los shaders o una constante de `engine_config.h`, regenerá y corré `flutter test test/features/studio`.
 
 ## Reglas de código (Dart)
 

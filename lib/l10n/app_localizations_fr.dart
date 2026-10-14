@@ -514,4 +514,76 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get studioNewShadow => 'Nouvelle ombre';
+
+  @override
+  String get studioQaTitle => 'Contrôle qualité';
+
+  @override
+  String get studioQaVisibility => 'Visibilité';
+
+  @override
+  String get studioQaClipping => 'Saturation';
+
+  @override
+  String get studioQaConsistency => 'Teintes de peau';
+
+  @override
+  String get studioQaCoverage => 'Couvrance';
+
+  @override
+  String get studioQaCost => 'Performance';
+
+  @override
+  String get studioQaOk => 'OK';
+
+  @override
+  String get studioQaCostOk =>
+      'Dans les limites mesurées sur le téléphone de référence';
+
+  @override
+  String studioQaInvisible(String layer) {
+    return '$layer : invisible sur toutes les peaux';
+  }
+
+  @override
+  String studioQaSubtle(String layer) {
+    return '$layer : à peine visible';
+  }
+
+  @override
+  String studioQaWashedOut(String layer) {
+    return '$layer : couleur très saturée, délavée à la lumière';
+  }
+
+  @override
+  String studioQaChalky(String layer) {
+    return '$layer : aspect plâtreux sur peau foncée';
+  }
+
+  @override
+  String studioQaAshy(String layer) {
+    return '$layer : aspect cendré sur peau foncée';
+  }
+
+  @override
+  String studioQaFades(String layer) {
+    return '$layer : invisible sur certaines teintes';
+  }
+
+  @override
+  String get studioQaExtremeLiner => 'Eye-liner et wing au maximum';
+
+  @override
+  String get studioQaMaskFoundation =>
+      'Fond de teint très couvrant (effet masque)';
+
+  @override
+  String get studioQaHeavyBlush => 'Blush très grand et intense';
+
+  @override
+  String get studioQaEffects =>
+      '3 effets à la fois : non mesuré sur le téléphone de référence';
+
+  @override
+  String get studioQaBlocked => 'Corrigez les points en rouge pour publier.';
 }

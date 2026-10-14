@@ -502,4 +502,75 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get studioNewShadow => 'New shadow';
+
+  @override
+  String get studioQaTitle => 'Quality check';
+
+  @override
+  String get studioQaVisibility => 'Visibility';
+
+  @override
+  String get studioQaClipping => 'Saturation';
+
+  @override
+  String get studioQaConsistency => 'Skin tones';
+
+  @override
+  String get studioQaCoverage => 'Coverage';
+
+  @override
+  String get studioQaCost => 'Performance';
+
+  @override
+  String get studioQaOk => 'OK';
+
+  @override
+  String get studioQaCostOk =>
+      'Within what was measured on the reference phone';
+
+  @override
+  String studioQaInvisible(String layer) {
+    return '$layer: not visible on any skin tone';
+  }
+
+  @override
+  String studioQaSubtle(String layer) {
+    return '$layer: barely visible';
+  }
+
+  @override
+  String studioQaWashedOut(String layer) {
+    return '$layer: very saturated, washes out in light';
+  }
+
+  @override
+  String studioQaChalky(String layer) {
+    return '$layer: looks chalky on deep skin';
+  }
+
+  @override
+  String studioQaAshy(String layer) {
+    return '$layer: looks ashy on deep skin';
+  }
+
+  @override
+  String studioQaFades(String layer) {
+    return '$layer: not visible on some skin tones';
+  }
+
+  @override
+  String get studioQaExtremeLiner => 'Liner and wing at maximum';
+
+  @override
+  String get studioQaMaskFoundation => 'Very heavy foundation (mask effect)';
+
+  @override
+  String get studioQaHeavyBlush => 'Very large, intense blush';
+
+  @override
+  String get studioQaEffects =>
+      '3 effects at once: not measured on the reference phone';
+
+  @override
+  String get studioQaBlocked => 'Fix the items in red to publish.';
 }

@@ -12,7 +12,9 @@ import '../domain/image_look.dart';
 import '../domain/image_recipe.dart';
 import '../domain/recipe_edits.dart';
 import '../domain/recipe_generator.dart';
+import '../domain/recipe_qa.dart';
 import '../domain/studio_look.dart';
+import 'qa_panel.dart';
 import 'recipe_editor_panel.dart';
 
 /// Elige una foto y devuelve sus bytes (null si se cancela).
@@ -27,6 +29,9 @@ Future<Uint8List?> pickGalleryImage() async {
 /// Studio (F3, solo admins): prompt -> 3 variantes generadas por IA, vista
 /// previa en vivo con el motor, edición, remix, borradores y publicación en
 /// el catálogo (docs/ar_engine/motor_ar_propio.md §10.13).
+///
+/// F5: QA automático (§10.10) de la receta elegida, recalculado en cada
+/// edición; con algo en rojo no se publica (los borradores sí se guardan).
 ///
 /// F4: "Desde foto" arma la receta midiendo una foto de referencia y
 /// "Paleta de producto" saca colores de una foto de un producto. Las dos
@@ -418,6 +423,8 @@ class _StudioScreenState extends State<StudioScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final current = _current;
+    // Unas decenas de cuentas OKLab: se recalcula en cada edición.
+    final qa = current == null ? null : RecipeQa.check(current);
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.studioTitle),
@@ -497,6 +504,7 @@ class _StudioScreenState extends State<StudioScreen> {
                   Text(current.name, style: Theme.of(context).textTheme.titleMedium),
                   if (_report.isNotEmpty) _reportView(l10n),
                   RecipeEditorPanel(recipe: current, onChanged: _edit),
+                  if (qa != null) QaPanel(report: qa),
                   Row(
                     children: [
                       Expanded(
@@ -516,7 +524,12 @@ class _StudioScreenState extends State<StudioScreen> {
                     children: [
                       Expanded(child: OutlinedButton(onPressed: _saveDraft, child: Text(l10n.studioSaveDraft))),
                       const SizedBox(width: 8),
-                      Expanded(child: FilledButton(onPressed: _publish, child: Text(l10n.studioPublish))),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: qa?.blocksPublish ?? true ? null : _publish,
+                          child: Text(l10n.studioPublish),
+                        ),
+                      ),
                     ],
                   ),
                 ],

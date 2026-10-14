@@ -278,4 +278,35 @@ void main() {
     expect(shadows.single.color, plum);
     expect(renderer.recipes.last?.lips, isNotNull);
   });
+
+  testWidgets('QA: una capa invisible bloquea Publicar y se ve el motivo', (tester) async {
+    final lips = RecipePresets.byId('classic_red').recipe.lips;
+    expect(lips, isNotNull);
+    if (lips == null) return;
+    final invisible = MakeupRecipe(
+      name: 'Casi nada',
+      lips: LipsSpec(color: lips.color, opacity: 0.01, finish: lips.finish, gloss: lips.gloss, lumaFollow: lips.lumaFollow),
+    );
+    final repository = MemoryRepository();
+    await pumpStudio(tester, FakeGenerator(GenerationResult(variants: [invisible])), repository, FakeRenderer());
+    await tester.enterText(find.byType(TextField).first, 'casi nada');
+    await tester.tap(find.text('Generar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Control de calidad'), findsOneWidget);
+    expect(find.text('Labial: no se nota en ninguna piel'), findsOneWidget);
+    expect(find.text('Corregí lo marcado en rojo para publicar.'), findsOneWidget);
+    final publish = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Publicar'));
+    expect(publish.onPressed, isNull);
+    // El borrador se guarda igual.
+    await tester.tap(find.text('Guardar borrador'));
+    await tester.pumpAndSettle();
+    expect(repository.savedDrafts, hasLength(1));
+
+    // Subir la opacidad: deja de fallar y se puede publicar.
+    tester.widget<Slider>(find.byKey(const ValueKey('amount-lips'))).onChanged?.call(0.85);
+    await tester.pumpAndSettle();
+    expect(find.text('Corregí lo marcado en rojo para publicar.'), findsNothing);
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Publicar')).onPressed, isNotNull);
+  });
 }

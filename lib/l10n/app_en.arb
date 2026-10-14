@@ -299,5 +299,66 @@
     },
     "studioPaletteEmpty": "No colors were found in the photo.",
     "studioPalettePickLayer": "Where does this color go?",
-    "studioNewShadow": "New shadow"
+    "studioNewShadow": "New shadow",
+    "studioQaTitle": "Quality check",
+    "studioQaVisibility": "Visibility",
+    "studioQaClipping": "Saturation",
+    "studioQaConsistency": "Skin tones",
+    "studioQaCoverage": "Coverage",
+    "studioQaCost": "Performance",
+    "studioQaOk": "OK",
+    "studioQaCostOk": "Within what was measured on the reference phone",
+    "studioQaInvisible": "{layer}: not visible on any skin tone",
+    "@studioQaInvisible": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaSubtle": "{layer}: barely visible",
+    "@studioQaSubtle": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaWashedOut": "{layer}: very saturated, washes out in light",
+    "@studioQaWashedOut": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaChalky": "{layer}: looks chalky on deep skin",
+    "@studioQaChalky": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaAshy": "{layer}: looks ashy on deep skin",
+    "@studioQaAshy": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaFades": "{layer}: not visible on some skin tones",
+    "@studioQaFades": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaExtremeLiner": "Liner and wing at maximum",
+    "studioQaMaskFoundation": "Very heavy foundation (mask effect)",
+    "studioQaHeavyBlush": "Very large, intense blush",
+    "studioQaEffects": "3 effects at once: not measured on the reference phone",
+    "studioQaBlocked": "Fix the items in red to publish."
 }

@@ -173,5 +173,66 @@
     },
     "studioPaletteEmpty": "Nenhuma cor foi encontrada na foto.",
     "studioPalettePickLayer": "Onde vai esta cor?",
-    "studioNewShadow": "Nova sombra"
+    "studioNewShadow": "Nova sombra",
+    "studioQaTitle": "Controle de qualidade",
+    "studioQaVisibility": "Visibilidade",
+    "studioQaClipping": "Saturação",
+    "studioQaConsistency": "Tons de pele",
+    "studioQaCoverage": "Cobertura",
+    "studioQaCost": "Desempenho",
+    "studioQaOk": "Ok",
+    "studioQaCostOk": "Dentro do medido no telefone de referência",
+    "studioQaInvisible": "{layer}: não aparece em nenhum tom de pele",
+    "@studioQaInvisible": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaSubtle": "{layer}: quase não aparece",
+    "@studioQaSubtle": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaWashedOut": "{layer}: cor muito saturada, desbota com a luz",
+    "@studioQaWashedOut": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaChalky": "{layer}: fica esbranquiçado em pele escura",
+    "@studioQaChalky": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaAshy": "{layer}: fica acinzentado em pele escura",
+    "@studioQaAshy": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaFades": "{layer}: não aparece em alguns tons",
+    "@studioQaFades": {
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaExtremeLiner": "Delineado e asa no máximo",
+    "studioQaMaskFoundation": "Base muito pesada (efeito máscara)",
+    "studioQaHeavyBlush": "Blush muito grande e intenso",
+    "studioQaEffects": "3 efeitos ao mesmo tempo: não medido no telefone de referência",
+    "studioQaBlocked": "Corrija os itens em vermelho para publicar."
 }

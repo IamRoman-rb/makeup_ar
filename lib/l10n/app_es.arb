@@ -381,5 +381,111 @@
     "studioNewShadow": "Sombra nueva",
     "@studioNewShadow": {
         "description": "Agregar una sombra con el color de la paleta."
+    },
+    "studioQaTitle": "Control de calidad",
+    "@studioQaTitle": {
+        "description": "Título del panel de QA automático (F5)."
+    },
+    "studioQaVisibility": "Visibilidad",
+    "@studioQaVisibility": {
+        "description": "Chequeo de QA."
+    },
+    "studioQaClipping": "Saturación",
+    "@studioQaClipping": {
+        "description": "Chequeo de QA."
+    },
+    "studioQaConsistency": "Tonos de piel",
+    "@studioQaConsistency": {
+        "description": "Chequeo de QA."
+    },
+    "studioQaCoverage": "Cobertura",
+    "@studioQaCoverage": {
+        "description": "Chequeo de QA."
+    },
+    "studioQaCost": "Rendimiento",
+    "@studioQaCost": {
+        "description": "Chequeo de QA."
+    },
+    "studioQaOk": "Bien",
+    "@studioQaOk": {
+        "description": "Chequeo de QA sin avisos."
+    },
+    "studioQaCostOk": "Dentro de lo medido en el teléfono de referencia",
+    "@studioQaCostOk": {
+        "description": "Costo de render dentro de lo medido en el Moto E20."
+    },
+    "studioQaInvisible": "{layer}: no se nota en ninguna piel",
+    "@studioQaInvisible": {
+        "description": "Falla de QA: la capa no se nota.",
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaSubtle": "{layer}: apenas se nota",
+    "@studioQaSubtle": {
+        "description": "Aviso de QA.",
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaWashedOut": "{layer}: color muy saturado, se lava con la luz",
+    "@studioQaWashedOut": {
+        "description": "Aviso de QA.",
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaChalky": "{layer}: queda como tiza en piel profunda",
+    "@studioQaChalky": {
+        "description": "Falla de QA: base o iluminador aclaran demasiado la piel profunda.",
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaAshy": "{layer}: se ve ceniza en piel profunda",
+    "@studioQaAshy": {
+        "description": "Aviso de QA.",
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaFades": "{layer}: no se nota en algunos tonos",
+    "@studioQaFades": {
+        "description": "Aviso de QA.",
+        "placeholders": {
+            "layer": {
+                "type": "String"
+            }
+        }
+    },
+    "studioQaExtremeLiner": "Delineado y wing al máximo",
+    "@studioQaExtremeLiner": {
+        "description": "Aviso de QA."
+    },
+    "studioQaMaskFoundation": "Base muy cubritiva (efecto máscara)",
+    "@studioQaMaskFoundation": {
+        "description": "Aviso de QA."
+    },
+    "studioQaHeavyBlush": "Rubor muy grande e intenso",
+    "@studioQaHeavyBlush": {
+        "description": "Aviso de QA."
+    },
+    "studioQaEffects": "3 efectos a la vez: combinación no medida en el teléfono de referencia",
+    "@studioQaEffects": {
+        "description": "Aviso de QA."
+    },
+    "studioQaBlocked": "Corregí lo marcado en rojo para publicar.",
+    "@studioQaBlocked": {
+        "description": "El QA bloquea la publicación."
     }
 }

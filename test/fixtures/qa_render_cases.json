@@ -1,0 +1,2501 @@
+[
+ {
+  "recipe": "Natural",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.903172,
+   0.652832,
+   0.641015
+  ],
+  "out": [
+   0.842948,
+   0.584286,
+   0.554507
+  ],
+  "maxShading": 1.265283
+ },
+ {
+  "recipe": "Natural",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.900582,
+   0.755584,
+   0.665552
+  ],
+  "maxShading": 1.088916
+ },
+ {
+  "recipe": "Natural",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.836039,
+   0.712406,
+   0.61801
+  ],
+  "maxShading": 1.376025
+ },
+ {
+  "recipe": "Natural",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.796575,
+   0.55644,
+   0.545826
+  ],
+  "out": [
+   0.775341,
+   0.523787,
+   0.495335
+  ],
+  "maxShading": 1.265283
+ },
+ {
+  "recipe": "Natural",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.842827,
+   0.665438,
+   0.561237
+  ],
+  "maxShading": 1.088916
+ },
+ {
+  "recipe": "Natural",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.783342,
+   0.629296,
+   0.521857
+  ],
+  "maxShading": 1.376025
+ },
+ {
+  "recipe": "Natural",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.667978,
+   0.44157,
+   0.432725
+  ],
+  "out": [
+   0.692738,
+   0.450489,
+   0.42385
+  ],
+  "maxShading": 1.265283
+ },
+ {
+  "recipe": "Natural",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.755269,
+   0.562196,
+   0.450967
+  ],
+  "maxShading": 1.088916
+ },
+ {
+  "recipe": "Natural",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.703178,
+   0.534021,
+   0.420165
+  ],
+  "maxShading": 1.376025
+ },
+ {
+  "recipe": "Natural",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.50907,
+   0.302416,
+   0.296593
+  ],
+  "out": [
+   0.588653,
+   0.35927,
+   0.335322
+  ],
+  "maxShading": 1.265283
+ },
+ {
+  "recipe": "Natural",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.627552,
+   0.440562,
+   0.34168
+  ],
+  "maxShading": 1.088916
+ },
+ {
+  "recipe": "Natural",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.585965,
+   0.421609,
+   0.319377
+  ],
+  "maxShading": 1.376025
+ },
+ {
+  "recipe": "Natural",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.338438,
+   0.1574,
+   0.157487
+  ],
+  "out": [
+   0.47345,
+   0.260074,
+   0.239945
+  ],
+  "maxShading": 1.265283
+ },
+ {
+  "recipe": "Natural",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.462968,
+   0.320978,
+   0.260959
+  ],
+  "maxShading": 1.088916
+ },
+ {
+  "recipe": "Natural",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.434399,
+   0.310705,
+   0.245141
+  ],
+  "maxShading": 1.376025
+ },
+ {
+  "recipe": "Natural",
+  "tone": 2,
+  "light": "warm",
+  "layer": "lips",
+  "camera": [
+   0.706671,
+   0.438395,
+   0.383733
+  ],
+  "out": [
+   0.721762,
+   0.449089,
+   0.389941
+  ],
+  "maxShading": 1.238916
+ },
+ {
+  "recipe": "Natural",
+  "tone": 2,
+  "light": "warm",
+  "layer": "cheeks",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.793888,
+   0.558586,
+   0.406293
+  ],
+  "maxShading": 1.066357
+ },
+ {
+  "recipe": "Natural",
+  "tone": 2,
+  "light": "warm",
+  "layer": "shadow0",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.739098,
+   0.530703,
+   0.378565
+  ],
+  "maxShading": 1.347461
+ },
+ {
+  "recipe": "Natural",
+  "tone": 2,
+  "light": "cool",
+  "layer": "lips",
+  "camera": [
+   0.633889,
+   0.444105,
+   0.469215
+  ],
+  "out": [
+   0.667275,
+   0.451863,
+   0.44874
+  ],
+  "maxShading": 1.289453
+ },
+ {
+  "recipe": "Natural",
+  "tone": 2,
+  "light": "cool",
+  "layer": "cheeks",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.721297,
+   0.565177,
+   0.484248
+  ],
+  "maxShading": 1.109863
+ },
+ {
+  "recipe": "Natural",
+  "tone": 2,
+  "light": "cool",
+  "layer": "shadow0",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.671562,
+   0.536784,
+   0.451144
+  ],
+  "maxShading": 1.402393
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.903172,
+   0.652832,
+   0.641015
+  ],
+  "out": [
+   0.774085,
+   0.24258,
+   0.270232
+  ],
+  "maxShading": 1.296191
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.908882,
+   0.724556,
+   0.639713
+  ],
+  "maxShading": 1.071777
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.123969,
+   0.117543,
+   0.111705
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.796575,
+   0.55644,
+   0.545826
+  ],
+  "out": [
+   0.74789,
+   0.218776,
+   0.250977
+  ],
+  "maxShading": 1.296191
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.853379,
+   0.640354,
+   0.542533
+  ],
+  "maxShading": 1.071777
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.119963,
+   0.11075,
+   0.103716
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.667978,
+   0.44157,
+   0.432725
+  ],
+  "out": [
+   0.715357,
+   0.188009,
+   0.227195
+  ],
+  "maxShading": 1.296191
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.769974,
+   0.543904,
+   0.439653
+  ],
+  "maxShading": 1.071777
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.113662,
+   0.102796,
+   0.095052
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.50907,
+   0.302416,
+   0.296593
+  ],
+  "out": [
+   0.673414,
+   0.144769,
+   0.196704
+  ],
+  "maxShading": 1.296191
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.648624,
+   0.430166,
+   0.337517
+  ],
+  "maxShading": 1.071777
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.104117,
+   0.093075,
+   0.086006
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.338438,
+   0.1574,
+   0.157487
+  ],
+  "out": [
+   0.625511,
+   0.081371,
+   0.161952
+  ],
+  "maxShading": 1.296191
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.492244,
+   0.318386,
+   0.262065
+  ],
+  "maxShading": 1.071777
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.091017,
+   0.082874,
+   0.078563
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 2,
+  "light": "warm",
+  "layer": "lips",
+  "camera": [
+   0.706671,
+   0.438395,
+   0.383733
+  ],
+  "out": [
+   0.737654,
+   0.186881,
+   0.210993
+  ],
+  "maxShading": 1.269238
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 2,
+  "light": "warm",
+  "layer": "cheeks",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.807586,
+   0.540345,
+   0.396674
+  ],
+  "maxShading": 1.049512
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 2,
+  "light": "warm",
+  "layer": "eyeLiner",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.118318,
+   0.102417,
+   0.088356
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 2,
+  "light": "cool",
+  "layer": "lips",
+  "camera": [
+   0.633889,
+   0.444105,
+   0.469215
+  ],
+  "out": [
+   0.695838,
+   0.18893,
+   0.23892
+  ],
+  "maxShading": 1.321094
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 2,
+  "light": "cool",
+  "layer": "cheeks",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.736938,
+   0.546843,
+   0.471623
+  ],
+  "maxShading": 1.092285
+ },
+ {
+  "recipe": "Rojo clásico",
+  "tone": 2,
+  "light": "cool",
+  "layer": "eyeLiner",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.109553,
+   0.103144,
+   0.099987
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.903172,
+   0.652832,
+   0.641015
+  ],
+  "out": [
+   0.290195,
+   0.099865,
+   0.158957
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "contour",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.750572,
+   0.651938,
+   0.586751
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.424171,
+   0.343755,
+   0.369854
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.384517,
+   0.320022,
+   0.312717
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.796575,
+   0.55644,
+   0.545826
+  ],
+  "out": [
+   0.28168,
+   0.092432,
+   0.152307
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "contour",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.703188,
+   0.57648,
+   0.499115
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.400189,
+   0.307323,
+   0.326607
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.358513,
+   0.279872,
+   0.26576
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.667978,
+   0.44157,
+   0.432725
+  ],
+  "out": [
+   0.271098,
+   0.083019,
+   0.144101
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "contour",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.630832,
+   0.489906,
+   0.406328
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.364022,
+   0.265379,
+   0.280251
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.319197,
+   0.233947,
+   0.216054
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.50907,
+   0.302416,
+   0.296593
+  ],
+  "out": [
+   0.257445,
+   0.070425,
+   0.133617
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "contour",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.524865,
+   0.387605,
+   0.313811
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.311231,
+   0.21539,
+   0.232536
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.262075,
+   0.179921,
+   0.166243
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.338438,
+   0.1574,
+   0.157487
+  ],
+  "out": [
+   0.241836,
+   0.054878,
+   0.121785
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "contour",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.387604,
+   0.286282,
+   0.243986
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.242718,
+   0.165148,
+   0.193525
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.188987,
+   0.126938,
+   0.127696
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "warm",
+  "layer": "lips",
+  "camera": [
+   0.706671,
+   0.438395,
+   0.383733
+  ],
+  "out": [
+   0.28011,
+   0.082547,
+   0.134083
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "warm",
+  "layer": "contour",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.663344,
+   0.486986,
+   0.367919
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "warm",
+  "layer": "eyeLiner",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "warm",
+  "layer": "shadow0",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.381635,
+   0.263521,
+   0.258325
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "warm",
+  "layer": "shadow1",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.336003,
+   0.232228,
+   0.196415
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "cool",
+  "layer": "lips",
+  "camera": [
+   0.633889,
+   0.444105,
+   0.469215
+  ],
+  "out": [
+   0.263201,
+   0.08339,
+   0.151423
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "cool",
+  "layer": "contour",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.6022,
+   0.492325,
+   0.434995
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "cool",
+  "layer": "eyeLiner",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "cool",
+  "layer": "shadow0",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.348552,
+   0.266857,
+   0.296631
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Gótico",
+  "tone": 2,
+  "light": "cool",
+  "layer": "shadow1",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.304425,
+   0.235311,
+   0.23077
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.903172,
+   0.652832,
+   0.641015
+  ],
+  "out": [
+   0.744691,
+   0.439134,
+   0.403434
+  ],
+  "maxShading": 1.382178
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.890825,
+   0.708246,
+   0.610596
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "highlight",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.923189,
+   0.830372,
+   0.725839
+  ],
+  "maxShading": 1.02666
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.254792,
+   0.182418,
+   0.141939
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.858314,
+   0.729867,
+   0.552449
+  ],
+  "maxShading": 1.190576
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.675308,
+   0.540839,
+   0.428529
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "shadow2",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.928609,
+   0.828471,
+   0.69331
+  ],
+  "maxShading": 1.042188
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.796575,
+   0.55644,
+   0.545826
+  ],
+  "out": [
+   0.706851,
+   0.406543,
+   0.372143
+  ],
+  "maxShading": 1.382178
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.839258,
+   0.629972,
+   0.520367
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "highlight",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.857355,
+   0.738255,
+   0.624557
+  ],
+  "maxShading": 1.02666
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.246554,
+   0.17042,
+   0.128152
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.823796,
+   0.675546,
+   0.49148
+  ],
+  "maxShading": 1.190576
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.63783,
+   0.483429,
+   0.362338
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "shadow2",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.886909,
+   0.760805,
+   0.615856
+  ],
+  "maxShading": 1.042188
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.667978,
+   0.44157,
+   0.432725
+  ],
+  "out": [
+   0.660155,
+   0.366547,
+   0.333885
+  ],
+  "maxShading": 1.382178
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.761745,
+   0.540186,
+   0.424706
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "highlight",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.763856,
+   0.63286,
+   0.517445
+  ],
+  "maxShading": 1.02666
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.234313,
+   0.156541,
+   0.113374
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.771211,
+   0.61309,
+   0.427779
+  ],
+  "maxShading": 1.190576
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.581372,
+   0.417514,
+   0.292056
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "shadow2",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.822717,
+   0.682801,
+   0.534006
+  ],
+  "maxShading": 1.042188
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.50907,
+   0.302416,
+   0.296593
+  ],
+  "out": [
+   0.600478,
+   0.315789,
+   0.285617
+  ],
+  "maxShading": 1.382178
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.648736,
+   0.43404,
+   0.32967
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "highlight",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.634248,
+   0.510429,
+   0.411178
+  ],
+  "maxShading": 1.02666
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.216341,
+   0.13986,
+   0.098522
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.69356,
+   0.538988,
+   0.366532
+  ],
+  "maxShading": 1.190576
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.498836,
+   0.339498,
+   0.222622
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "shadow2",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.727591,
+   0.589896,
+   0.452921
+  ],
+  "maxShading": 1.042188
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.338438,
+   0.1574,
+   0.157487
+  ],
+  "out": [
+   0.533099,
+   0.258922,
+   0.23206
+  ],
+  "maxShading": 1.382178
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.502429,
+   0.329217,
+   0.259801
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "highlight",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.478537,
+   0.393951,
+   0.331901
+  ],
+  "maxShading": 1.02666
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "eyeLiner",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.192511,
+   0.122933,
+   0.087588
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.59101,
+   0.465054,
+   0.324668
+  ],
+  "maxShading": 1.190576
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "shadow1",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.391495,
+   0.262274,
+   0.173677
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "shadow2",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.601725,
+   0.496524,
+   0.392852
+  ],
+  "maxShading": 1.042188
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "warm",
+  "layer": "lips",
+  "camera": [
+   0.706671,
+   0.438395,
+   0.383733
+  ],
+  "out": [
+   0.683917,
+   0.36498,
+   0.309076
+  ],
+  "maxShading": 1.353467
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "warm",
+  "layer": "cheeks",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.79811,
+   0.536734,
+   0.383536
+  ],
+  "maxShading": 1.102246
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "warm",
+  "layer": "highlight",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.800629,
+   0.630928,
+   0.47716
+  ],
+  "maxShading": 1.005273
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "warm",
+  "layer": "eyeLiner",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.243289,
+   0.155726,
+   0.104091
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "warm",
+  "layer": "shadow0",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.803098,
+   0.610163,
+   0.395763
+  ],
+  "maxShading": 1.16582
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "warm",
+  "layer": "shadow1",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.608789,
+   0.414776,
+   0.26229
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "warm",
+  "layer": "shadow2",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.858958,
+   0.679735,
+   0.492101
+  ],
+  "maxShading": 1.020508
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "cool",
+  "layer": "lips",
+  "camera": [
+   0.633889,
+   0.444105,
+   0.469215
+  ],
+  "out": [
+   0.639301,
+   0.36804,
+   0.352051
+  ],
+  "maxShading": 1.408691
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "cool",
+  "layer": "cheeks",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.729797,
+   0.543074,
+   0.455287
+  ],
+  "maxShading": 1.14707
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "cool",
+  "layer": "highlight",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.731644,
+   0.634538,
+   0.547527
+  ],
+  "maxShading": 1.046289
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "cool",
+  "layer": "eyeLiner",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.226429,
+   0.15727,
+   0.120205
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "cool",
+  "layer": "shadow0",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.743195,
+   0.615712,
+   0.451821
+  ],
+  "maxShading": 1.213428
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "cool",
+  "layer": "shadow1",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.557269,
+   0.419841,
+   0.314048
+  ],
+  "maxShading": 1.6
+ },
+ {
+  "recipe": "Glam dorado",
+  "tone": 2,
+  "light": "cool",
+  "layer": "shadow2",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.790823,
+   0.685521,
+   0.565348
+  ],
+  "maxShading": 1.062256
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.903172,
+   0.652832,
+   0.641015
+  ],
+  "out": [
+   0.898373,
+   0.485801,
+   0.560298
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.919704,
+   0.714526,
+   0.667342
+  ],
+  "maxShading": 1.04541
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 0,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.900561,
+   0.793549,
+   0.695473
+  ],
+  "out": [
+   0.894821,
+   0.753452,
+   0.696041
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.796575,
+   0.55644,
+   0.545826
+  ],
+  "out": [
+   0.849707,
+   0.444586,
+   0.519499
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.868673,
+   0.638284,
+   0.579093
+  ],
+  "maxShading": 1.04541
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 1,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.829922,
+   0.680332,
+   0.564285
+  ],
+  "out": [
+   0.845071,
+   0.676368,
+   0.606831
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.667978,
+   0.44157,
+   0.432725
+  ],
+  "out": [
+   0.789672,
+   0.393998,
+   0.46967
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.79225,
+   0.550725,
+   0.485207
+  ],
+  "maxShading": 1.04541
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 2,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.722152,
+   0.55152,
+   0.426807
+  ],
+  "out": [
+   0.769695,
+   0.588212,
+   0.512811
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.50907,
+   0.302416,
+   0.296593
+  ],
+  "out": [
+   0.712978,
+   0.329706,
+   0.406927
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.680936,
+   0.446899,
+   0.390727
+  ],
+  "maxShading": 1.04541
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 3,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.565913,
+   0.401735,
+   0.292868
+  ],
+  "out": [
+   0.659691,
+   0.484632,
+   0.419702
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "lips",
+  "camera": [
+   0.338438,
+   0.1574,
+   0.157487
+  ],
+  "out": [
+   0.626433,
+   0.257263,
+   0.337579
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "cheeks",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.536675,
+   0.343826,
+   0.318117
+  ],
+  "maxShading": 1.04541
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 4,
+  "light": "neutral",
+  "layer": "shadow0",
+  "camera": [
+   0.368712,
+   0.258135,
+   0.198023
+  ],
+  "out": [
+   0.517776,
+   0.383415,
+   0.349815
+  ],
+  "maxShading": 1.125537
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 2,
+  "light": "warm",
+  "layer": "lips",
+  "camera": [
+   0.706671,
+   0.438395,
+   0.383733
+  ],
+  "out": [
+   0.818334,
+   0.392025,
+   0.435363
+  ],
+  "maxShading": 1.102246
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 2,
+  "light": "warm",
+  "layer": "cheeks",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.829145,
+   0.547288,
+   0.442124
+  ],
+  "maxShading": 1.02373
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 2,
+  "light": "warm",
+  "layer": "shadow0",
+  "camera": [
+   0.763983,
+   0.547553,
+   0.378485
+  ],
+  "out": [
+   0.806004,
+   0.584967,
+   0.470693
+  ],
+  "maxShading": 1.102246
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 2,
+  "light": "cool",
+  "layer": "lips",
+  "camera": [
+   0.633889,
+   0.444105,
+   0.469215
+  ],
+  "out": [
+   0.764569,
+   0.395803,
+   0.494847
+  ],
+  "maxShading": 1.14707
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 2,
+  "light": "cool",
+  "layer": "cheeks",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.75986,
+   0.553576,
+   0.517282
+  ],
+  "maxShading": 1.065479
+ },
+ {
+  "recipe": "Rosado fresco",
+  "tone": 2,
+  "light": "cool",
+  "layer": "shadow0",
+  "camera": [
+   0.685299,
+   0.554686,
+   0.462798
+  ],
+  "out": [
+   0.7378,
+   0.59093,
+   0.544408
+  ],
+  "maxShading": 1.14707
+ }
+]
