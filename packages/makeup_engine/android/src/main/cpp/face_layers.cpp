@@ -1,7 +1,5 @@
 #include "face_layers.h"
 
-#include <GLES2/gl2ext.h>
-
 #include "engine_config.h"
 #include "gl_program.h"
 #include "mesh/eye_maps.h"
@@ -256,7 +254,7 @@ bool FaceLayers::buildTextures(std::string* error) {
 void FaceLayers::bindCommon(Common& program, const LayerFrame& frame) {
   glUseProgram(program.program.get());
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_EXTERNAL_OES, frame.cameraTexture);
+  glBindTexture(MAKEUP_CAMERA_TEXTURE, frame.cameraTexture);
   if (program.uploadedDisplayVersion != frame.displayVersion) {
     glUniformMatrix4fv(program.displayMatrix, 1, GL_FALSE, frame.displayMatrix);
     program.uploadedDisplayVersion = frame.displayVersion;
@@ -344,7 +342,7 @@ void FaceLayers::drawIris(const IrisUniforms& iris, const LayerFrame& frame, con
   if (!iris.any() || points == nullptr || !irisEllipses(points, irisCenters_, irisInverse_)) return;
   glUseProgram(iris_.program.get());
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_EXTERNAL_OES, frame.cameraTexture);
+  glBindTexture(MAKEUP_CAMERA_TEXTURE, frame.cameraTexture);
   if (iris_.uploadedDisplayVersion != frame.displayVersion) {
     glUniformMatrix4fv(iris_.displayMatrix, 1, GL_FALSE, frame.displayMatrix);
     iris_.uploadedDisplayVersion = frame.displayVersion;

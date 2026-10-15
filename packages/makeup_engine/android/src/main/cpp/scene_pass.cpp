@@ -1,7 +1,5 @@
 #include "scene_pass.h"
 
-#include <GLES2/gl2ext.h>
-
 #include <cstring>
 
 #include "gl_program.h"
@@ -75,7 +73,7 @@ void ScenePass::maybeIssue(GLuint quadVao, GLuint cameraTexture, const float* te
   glUniformMatrix4fv(displayMatrix_, 1, GL_FALSE, displayMatrix);
   glUniformMatrix4fv(texMatrix_, 1, GL_FALSE, texMatrix);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_EXTERNAL_OES, cameraTexture);
+  glBindTexture(MAKEUP_CAMERA_TEXTURE, cameraTexture);
   glBindVertexArray(quadVao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);

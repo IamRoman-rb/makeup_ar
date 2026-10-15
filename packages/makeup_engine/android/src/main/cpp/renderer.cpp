@@ -1,7 +1,8 @@
 #include "renderer.h"
 
+#if !defined(MAKEUP_PLATFORM_IOS)
 #include <EGL/egl.h>
-#include <GLES2/gl2ext.h>
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -68,11 +69,14 @@ GLuint Renderer::initGl() {
   }
   MAKEUP_LOGI("GL: %s", glInfo().c_str());
 
+#if !defined(MAKEUP_PLATFORM_IOS)
+  // En iOS la cámara llega como textura 2D: no hace falta la extensión.
   const char* extensions = glString(GL_EXTENSIONS);
   if (std::strstr(extensions, "GL_OES_EGL_image_external_essl3") == nullptr) {
     setError("el driver no soporta GL_OES_EGL_image_external_essl3");
     return 0;
   }
+#endif
 
   if (!buildProgram(passthrough_, shaders::k_passthrough_frag, nullptr) ||
       !buildProgram(tint_, shaders::k_tint_oklab_frag, nullptr) || !buildMeshProgram() ||
@@ -116,12 +120,12 @@ GLuint Renderer::initGl() {
   GLuint texture = 0;
   glGenTextures(1, &texture);
   cameraTexture_.reset(texture);
-  glBindTexture(GL_TEXTURE_EXTERNAL_OES, texture);
-  glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
+  glBindTexture(MAKEUP_CAMERA_TEXTURE, texture);
+  glTexParameteri(MAKEUP_CAMERA_TEXTURE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(MAKEUP_CAMERA_TEXTURE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(MAKEUP_CAMERA_TEXTURE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(MAKEUP_CAMERA_TEXTURE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glBindTexture(MAKEUP_CAMERA_TEXTURE, 0);
   MAKEUP_GL_CHECK("cameraTexture");
 
   glDisable(GL_DEPTH_TEST);
@@ -356,20 +360,25 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
         sceneLight_.update(scene_.pixels(), EngineConfig::kScenePassSize, face)) {
       adaptRecipeColors(true);
     }
-    scene_.maybeIssue(quadVao_.get(), cameraTexture_.get(), texMatrix, drawTrackerMatrix_.data(), frameStartNs);
+    scene_.maybeIssue(quadVao_.get(), cameraTexture(), texMatrix, drawTrackerMatrix_.data(), frameStartNs);
   }
 
   const float amount = tintAmount_.load(std::memory_order_relaxed);
   Program* program = amount > 0.0f && region == TintRegion::kFull ? &tint_ : &passthrough_;
 
+  // Las pasadas de recorte y de escena dejan el framebuffer 0; la salida puede
+  // ser otro (iOS: FBO sobre el CVPixelBuffer de Flutter).
+  const GLuint outputFramebuffer = outputFramebuffer_.load(std::memory_order_relaxed);
+  glBindFramebuffer(GL_FRAMEBUFFER, outputFramebuffer);
   glViewport(0, 0, width, height);
   // El quad cubre toda la superficie: en una GPU de tiles (Mali) esto evita
-  // cargar el contenido anterior del framebuffer en cada tile.
-  const GLenum colorAttachment = GL_COLOR;
+  // cargar el contenido anterior del framebuffer en cada tile. GL_COLOR solo
+  // vale para el framebuffer por defecto; en un FBO, el adjunto 0.
+  const GLenum colorAttachment = outputFramebuffer == 0 ? GL_COLOR : GL_COLOR_ATTACHMENT0;
   glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &colorAttachment);
   glUseProgram(program->program.get());
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_EXTERNAL_OES, cameraTexture_.get());
+  glBindTexture(MAKEUP_CAMERA_TEXTURE, cameraTexture());
   if (program->uploadedDisplayVersion != drawDisplayVersion_) {
     glUniformMatrix4fv(program->displayMatrix, 1, GL_FALSE, drawDisplayMatrix_.data());
     program->uploadedDisplayVersion = drawDisplayVersion_;
@@ -391,7 +400,12 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   if (wantLips && hasMesh) drawLips(landmarks, imageToClip, texMatrix, frameStartNs);
   if (showLandmarks && hasMesh) drawLandmarks(landmarks.alpha, imageToClip, width, height);
 
+#if defined(MAKEUP_PLATFORM_IOS)
+  // Flutter lee el CVPixelBuffer de salida: que la GPU lo termine de enviar.
+  glFlush();
+#else
   eglSwapBuffers(eglGetCurrentDisplay(), eglGetCurrentSurface(EGL_DRAW));
+#endif
   stats_.record(frameStartNs, monotonicNowNs(), cameraTimestampNs);
   return flags;
 }
@@ -455,7 +469,7 @@ void Renderer::runCropPass(const float* texMatrix, int width, int height,
   }
   CropRequest request;
   if (!crop_.inFlight() && tracking_->takeCropRequest(cameraTimestampNs, &request) &&
-      !crop_.issue(request, quadVao_.get(), cameraTexture_.get(), texMatrix,
+      !crop_.issue(request, quadVao_.get(), cameraTexture(), texMatrix,
                    drawTrackerMatrix_.data(), width, height, nowNs)) {
     tracking_->cropFailed();
   }
@@ -476,7 +490,7 @@ void Renderer::drawFaceLayers(const RenderLandmarks& landmarks, const float* ima
                               const float* texMatrix, int64_t frameStartNs) {
   const FaceAppearance& look = landmarks.appearance;
   LayerFrame frame;
-  frame.cameraTexture = cameraTexture_.get();
+  frame.cameraTexture = cameraTexture();
   frame.imageToClip = imageToClip;
   frame.displayMatrix = drawDisplayMatrix_.data();
   frame.displayVersion = drawDisplayVersion_;
@@ -524,7 +538,7 @@ void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToCl
 
   glUseProgram(program.program.get());
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_EXTERNAL_OES, cameraTexture_.get());
+  glBindTexture(MAKEUP_CAMERA_TEXTURE, cameraTexture());
   glActiveTexture(GL_TEXTURE0 + kLipsMapTextureUnit);
   glBindTexture(GL_TEXTURE_2D, lipsMap_.get());
   glActiveTexture(GL_TEXTURE0);
@@ -576,6 +590,10 @@ void Renderer::drawLandmarks(float alpha, const float* imageToClip, int width, i
   glBindVertexArray(0);
   glDisable(GL_BLEND);
   MAKEUP_GL_CHECK("drawLandmarks");
+}
+
+GLuint Renderer::cameraTexture() const {
+  return externalCameraTexture_ != 0 ? externalCameraTexture_ : cameraTexture_.get();
 }
 
 void Renderer::releaseGl() {

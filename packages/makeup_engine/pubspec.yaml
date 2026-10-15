@@ -1,5 +1,5 @@
 name: makeup_engine
-description: "Motor AR nativo propio (cámara -> OpenGL ES 3.0 -> Texture). Solo Android por ahora."
+description: "Motor AR nativo propio (cámara -> OpenGL ES 3.0 -> Texture). Android e iOS."
 version: 0.1.0
 publish_to: none
 
@@ -35,6 +35,9 @@ flutter:
     platforms:
       android:
         package: com.makeupar.makeup_engine
+        pluginClass: MakeupEnginePlugin
+      # Fase 4: mismo núcleo C++ sobre OpenGL ES 3 de EAGL (docs/ar_engine/IOS.md).
+      ios:
         pluginClass: MakeupEnginePlugin
 
   # To add assets to your plugin package, add an assets section, like this:

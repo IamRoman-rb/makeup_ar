@@ -45,6 +45,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Paridad del esquema de recetas: `python tools/studio/validate_recipe_cases.py` (requiere `jsonschema`). Si tocás el esquema o `test/fixtures/recipe_v2_cases.json`, corré esto y `flutter test test/features`.
 - QA automático del Studio (F5): `python tools/studio/qa_reference.py` regenera `test/fixtures/qa_render_cases.json` (`--check` verifica, `--report` muestra los valores de los presets para calibrar umbrales). Si cambia la matemática de los shaders o una constante de `engine_config.h`, regenerá y corré `flutter test test/features/studio`.
 - Modelo propio (fase 3, solo infraestructura; sin datos ni entrenamiento): `python -m unittest discover -s tools/model` (necesita `torch`, `numpy` y `opencv-python`; ver `tools/model/requirements.txt`). Protocolo de datos en `tools/model/CONSENT.md` y pasos en `docs/ar_engine/MODEL.md`. Los datos viven fuera del repo.
+- iOS (fase 4, OpenGL ES 3 de EAGL; mismo núcleo C++): si cambian las fuentes o los shaders del `CMakeLists.txt`, `python tools/ios/gen_ios_sources.py` (`--check` verifica). La rama iOS del C++ se compila sin Mac con `python tools/ios/check_ios_cpp.py` (NDK + shims; no compila Swift). Pasos en una Mac y checklist de paridad en `docs/ar_engine/IOS.md`.
 - Referencia Python de la capa de iris: `python -m unittest discover -s tools/makeup` (incluye `iris_shading.py`).
 
 ## Reglas de código (Dart)

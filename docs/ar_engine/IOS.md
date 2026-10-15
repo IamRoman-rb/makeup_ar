@@ -1,0 +1,75 @@
+# Fase 4: iOS con OpenGL ES (port del motor)
+
+Estado: **código escrito, sin compilar en Xcode ni probar en un iPhone** (se desarrolló desde Windows). El C++ de la rama iOS sí se verifica: compila con el NDK y shims de los headers de Apple. Falta que alguien con una Mac siga los pasos de abajo.
+
+Decisión (2026-10-15): OpenGL ES 3 de EAGL en lugar de Metal. Apple lo marca deprecado desde iOS 12, pero sigue funcionando. Así el núcleo C++, los shaders, el tracker y el compositor son **los mismos** que en Android; con Metal había que reescribir el compositor y los shaders en MSL. Si Apple lo retira, el plan B es ANGLE (GLES sobre Metal), que es una dependencia y hay que consultarla antes.
+
+## Arquitectura
+
+| Android | iOS |
+|---|---|
+| Camera2 → `SurfaceTexture` (textura OES) | AVFoundation (BGRA, vertical, sin espejo) → `CVOpenGLESTextureCache` (textura 2D) |
+| EGL + `SurfaceProducer` | `EAGLContext` ES3 → FBO propio → `glBlitFramebuffer` invertido a uno de 3 `CVPixelBuffer` → `FlutterTexture.copyPixelBuffer` |
+| LiteRT (GPU con caché, fallback CPU) | TensorFlowLiteSwift 2.17 (Metal, fallback CPU) |
+| JNI (`jni_bridge.cpp`) | API C (`ios/Classes/engine_c_api.{h,cpp}`), misma superficie |
+| Kotlin: `EngineSession`, `LiteRtFaceTracker`, `RecipeParams`, `StillImageAnalyzer`, `MakeupEnginePlugin` | Swift: mismos nombres en `ios/Classes/` |
+
+**Núcleo C++:** no se movió. `tools/ios/gen_ios_sources.py` genera dos cosas:
+- `ios/Classes/core/*.cpp`, un archivo por fuente de `android/src/main/cpp` que solo la incluye. CocoaPods no compila archivos fuera de la carpeta del pod, y no se usa un *unity build* porque los namespaces anónimos chocarían.
+- `ios/Classes/generated/shader_sources.h`, igual que el paso de CMake.
+
+La lista sale de `CMakeLists.txt`: si se agrega una fuente o un shader, hay que regenerar (`--check` avisa).
+
+**Diferencias de plataforma dentro del núcleo** (todas en `gl_utils.h`, `gl_program.cpp` y `renderer.cpp`, detrás de `MAKEUP_PLATFORM_IOS`):
+- **Headers y logging:** `OpenGLES/ES3` y `os_log`.
+- **Textura de cámara:** `MAKEUP_CAMERA_TEXTURE` vale `GL_TEXTURE_2D` en iOS y `GL_TEXTURE_EXTERNAL_OES` en Android.
+- **Shaders:** se quita `#extension GL_OES_EGL_image_external_essl3` y `samplerExternalOES` pasa a `sampler2D` al compilar. El GLSL sigue siendo uno solo.
+- **Framebuffer de salida:** `Renderer::setOutputFramebuffer`, porque las pasadas de recorte y de escena dejan el 0. Al invalidar un FBO se usa `GL_COLOR_ATTACHMENT0`.
+- **Cierre del frame:** `glFlush` en lugar de `eglSwapBuffers`.
+- **Textura de cámara por frame:** `Renderer::setCameraTexture`, porque la caché crea una por frame.
+
+Android no cambia de comportamiento: compila igual y pasan los tests de host, Kotlin y Flutter.
+
+**Orientación:** la cámara entrega el buffer vertical y sin espejo. La matriz de textura invierte v, como la de `SurfaceTexture`, así el recorte del tracker y la malla quedan iguales que en Android. El espejo lo hace `displayMatrix` (rotación 0). El núcleo dibuja con la fila 0 abajo, como GL, y el blit invertido la deja arriba para Flutter: Dart no cambia.
+
+**Modelos:** los mismos `.tflite` de Android. Una *script phase* del podspec los copia al bundle del pod al compilar, sin duplicarlos en el repo.
+
+**Lo que no está en iOS:** `runBenchmark` (el benchmark de modelos es del E20) responde `unsupported`.
+
+## Dependencia nueva
+
+- `TensorFlowLiteSwift` y `TensorFlowLiteSwift/Metal` 2.17 (Apache 2.0, Google). Es el mismo runtime que LiteRT en Android, publicado como CocoaPod. Solo entra en el build de iOS.
+
+## Verificación sin Mac (la corre Claude o cualquiera en Windows)
+
+```
+python tools/ios/gen_ios_sources.py --check
+python tools/ios/check_ios_cpp.py
+```
+
+`check_ios_cpp.py` compila (solo sintaxis, con los mismos `-Werror` que Android) cada fuente del núcleo y la API C con `MAKEUP_PLATFORM_IOS` y shims (`tools/ios/shims`). Detecta errores de la rama iOS del C++. **No** compila Swift ni prueba nada en un iPhone.
+
+## Pasos en una Mac (los corrés vos)
+
+1. Xcode 15 o posterior y CocoaPods (`sudo gem install cocoapods`).
+2. En la raíz del repo: `flutter pub get`, después `cd ios && pod install`. Si el `Podfile` no existe, lo crea `flutter build ios`. Hace falta `platform :ios, '13.0'` o más (Firebase ya lo pide).
+3. Abrí `ios/Runner.xcworkspace`, elegí tu equipo de firma y conectá un iPhone (el simulador no tiene cámara frontal).
+4. `flutter run --profile -t lib/main_tracker.dart -d <iphone>`: el arnés del tracker, con las líneas `TRACK` en la consola de Xcode.
+5. Si algo no compila, mandame el error de Xcode tal cual: el Swift se escribió sin compilador.
+
+## Checklist de paridad visual con Android (criterio de salida de la fase 4)
+
+Con el arnés, en el iPhone y en el E20, con la misma luz:
+- [ ] La imagen se ve derecha y espejada como en Android (levantar la mano derecha mueve la de la derecha de la pantalla).
+- [ ] Los puntos ("Ver puntos") caen sobre la cara, también al girar la cabeza. Si salen invertidos verticalmente, la matriz de textura (`EngineSession.texMatrix`) está al revés.
+- [ ] Cada preset (labial, rubor, sombras, delineado, pestañas, efectos, iris) se ve igual que en Android en la misma escena.
+- [ ] La oclusión de labios con la mano funciona (`TRACK ... occl=`).
+- [ ] "Desde foto" y "Paleta" del Studio devuelven valores parecidos a los de Android para la misma foto.
+- [ ] 30 fps estables durante 10 minutos (líneas `TRACK`), sin crecimiento de memoria (Instruments → Allocations).
+- [ ] Al salir y volver a entrar a la pantalla no queda la cámara tomada ni hay crash.
+
+## Riesgos conocidos
+
+- **OpenGL ES deprecado:** cada versión de iOS lo mantiene, pero sin mejoras. Vigilar avisos en las notas de Xcode.
+- **TensorFlowLiteSwift 2.17:** Google está migrando a "LiteRT" también en iOS. Si el pod se retira, hay que cambiar el nombre del pod; la API Swift es la misma.
+- **Swift sin compilar:** pueden aparecer errores de tipos menores (por ejemplo, cómo importa Swift los `enum` anónimos de C). Son de corrección directa.

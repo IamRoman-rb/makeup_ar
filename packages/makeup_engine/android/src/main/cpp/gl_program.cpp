@@ -10,6 +10,24 @@ namespace {
 
 constexpr char kIncludeMarker[] = "// @include color.glsl";
 
+#if defined(MAKEUP_PLATFORM_IOS)
+// iOS: la cámara es una textura 2D. Un solo GLSL para las dos plataformas: se
+// quita la extensión de textura externa y se cambia el tipo del sampler.
+// Sin el salto de línea: el checkout puede tener CRLF.
+constexpr char kExternalExtension[] = "#extension GL_OES_EGL_image_external_essl3 : require";
+constexpr char kExternalSampler[] = "samplerExternalOES";
+constexpr char kTextureSampler[] = "sampler2D";
+
+void useTexture2dCamera(std::string* source) {
+  const size_t extension = source->find(kExternalExtension);
+  if (extension != std::string::npos) source->erase(extension, std::strlen(kExternalExtension));
+  for (size_t at = source->find(kExternalSampler); at != std::string::npos;
+       at = source->find(kExternalSampler, at + std::strlen(kTextureSampler))) {
+    source->replace(at, std::strlen(kExternalSampler), kTextureSampler);
+  }
+}
+#endif
+
 // Reemplaza el marcador de include por shaders/color.glsl e inserta [defines]
 // después de la línea #version (tiene que ser la primera).
 std::string preprocess(const char* source, const char* defines) {
@@ -18,6 +36,9 @@ std::string preprocess(const char* source, const char* defines) {
   if (at != std::string::npos) {
     result.replace(at, std::strlen(kIncludeMarker), shaders::k_color_glsl);
   }
+#if defined(MAKEUP_PLATFORM_IOS)
+  useTexture2dCamera(&result);
+#endif
   if (defines != nullptr) {
     const size_t lineEnd = result.find('\n');
     result.insert(lineEnd == std::string::npos ? result.size() : lineEnd + 1, defines);

@@ -395,6 +395,17 @@ No conviene escribir tu propio runtime de redes: LiteRT (GPU delegate con fallba
 
 *(Los plazos son estimaciones de orden de magnitud, no compromisos.)*
 
+**Estado al 2026-10-15** (detalle en cada documento):
+
+| Paso | Estado |
+|---|---|
+| Fases 0–2, F1–F5 | Hechas. Las mediciones del E20 están en TRACKER.md, LIPS.md, FACE.md y STUDIO.md. |
+| Fase 3 (modelo propio) | Infraestructura lista, sin datos ni entrenamiento (MODEL.md, `tools/model/`). Falta grabar con consentimiento y entrenar. |
+| Fase 4: iris | Hecho (FACE.md §12). Usa los 10 puntos de iris de FaceMesh-V2, sin modelo nuevo; falta medir en el E20. |
+| Fase 4: iOS | Port con OpenGL ES 3 de EAGL (IOS.md). El C++ está verificado; el Swift falta compilarlo y probarlo en una Mac. |
+| Fase 4: segmentación de labios | Oclusión heurística (P8–P9). La red queda como cabezal del pipeline de la fase 3 (MODEL.md). |
+| §10.13.5: looks de usuarios | Hecho (STUDIO.md): 5 generaciones por día y hasta 30 looks guardados. Falta el deploy de functions y reglas. |
+
 ---
 
 ## 8. Riesgos y qué verificar primero

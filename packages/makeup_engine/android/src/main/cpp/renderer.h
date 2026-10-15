@@ -62,12 +62,21 @@ class Renderer {
   GLuint initGl();
 
   // Procesa un frame: termina/lanza el recorte del tracker, dibuja y hace
-  // eglSwapBuffers sobre la superficie actual. [texMatrix]: 16 floats de
+  // eglSwapBuffers sobre la superficie actual (en iOS, glFlush: la salida es
+  // el framebuffer de setOutputFramebuffer). [texMatrix]: 16 floats de
   // SurfaceTexture.getTransformMatrix(). Devuelve bits de FrameFlag.
   int drawFrame(const float* texMatrix, int width, int height, int64_t frameStartNs,
                 int64_t cameraTimestampNs);
 
   void releaseGl();
+
+  // iOS (hilo de render, antes de drawFrame): textura 2D del frame de cámara
+  // (CVOpenGLESTextureCache crea una por frame; no es dueño) y framebuffer de
+  // salida. En Android no se llaman: textura OES propia y framebuffer 0.
+  void setCameraTexture(GLuint texture) { externalCameraTexture_ = texture; }
+  void setOutputFramebuffer(GLuint framebuffer) {
+    outputFramebuffer_.store(framebuffer, std::memory_order_relaxed);
+  }
 
   // Tinte de pantalla completa (TintRegion::kFull): color sRGB [0,1] e
   // intensidad [0,1]. amount == 0 usa el shader de paso directo.
@@ -176,6 +185,7 @@ class Renderer {
                 int64_t frameStartNs);
   void drawLandmarks(float alpha, const float* imageToClip, int width, int height);
   void setError(const std::string& error);
+  GLuint cameraTexture() const;
 
   TrackingState* tracking_;
 
@@ -191,6 +201,8 @@ class Renderer {
   GlVertexArray quadVao_;
   GlBuffer quadVbo_;
   GlTexture cameraTexture_;
+  GLuint externalCameraTexture_ = 0;  // iOS; solo hilo de render
+  std::atomic<GLuint> outputFramebuffer_{0};
   // Puntos tracked (VBO dinámico) para los landmarks y, con las UV, los labios.
   GlVertexArray meshVao_;
   GlVertexArray lipsVao_;
