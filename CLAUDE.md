@@ -44,6 +44,8 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - App Check: `--dart-define=APP_CHECK=debug|playIntegrity` (por defecto debug fuera de release). Callables contra el emulador: `--dart-define=FUNCTIONS_EMULATOR=127.0.0.1:5001` + `adb reverse tcp:5001 tcp:5001`.
 - Paridad del esquema de recetas: `python tools/studio/validate_recipe_cases.py` (requiere `jsonschema`). Si tocás el esquema o `test/fixtures/recipe_v2_cases.json`, corré esto y `flutter test test/features`.
 - QA automático del Studio (F5): `python tools/studio/qa_reference.py` regenera `test/fixtures/qa_render_cases.json` (`--check` verifica, `--report` muestra los valores de los presets para calibrar umbrales). Si cambia la matemática de los shaders o una constante de `engine_config.h`, regenerá y corré `flutter test test/features/studio`.
+- Modelo propio (fase 3, solo infraestructura; sin datos ni entrenamiento): `python -m unittest discover -s tools/model` (necesita `torch`, `numpy` y `opencv-python`; ver `tools/model/requirements.txt`). Protocolo de datos en `tools/model/CONSENT.md` y pasos en `docs/ar_engine/MODEL.md`. Los datos viven fuera del repo.
+- Referencia Python de la capa de iris: `python -m unittest discover -s tools/makeup` (incluye `iris_shading.py`).
 
 ## Reglas de código (Dart)
 

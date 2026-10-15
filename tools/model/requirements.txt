@@ -1,0 +1,8 @@
+# Herramientas del modelo propio (fase 3). Solo del equipo de entrenamiento:
+# nada de esto entra en la app. Licencias verificadas al agregarlas.
+numpy>=2.0            # BSD-3
+opencv-python>=4.9    # Apache 2.0 (desde 4.5)
+torch>=2.4            # BSD-3 (CPU alcanza para los tests; entrenar real pide GPU)
+ai-edge-litert>=1.0   # Apache 2.0: correr el maestro .tflite en teacher_label.py
+# Solo para exportar (export.py), cuando haya un modelo entrenado:
+# ai-edge-torch       # Apache 2.0
