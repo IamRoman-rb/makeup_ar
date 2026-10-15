@@ -1,4 +1,5 @@
 import Foundation
+import ImageIO
 import UIKit
 
 /// Studio (F4): analiza una foto en el teléfono. Port de StillImageAnalyzer.kt.
@@ -116,13 +117,20 @@ final class StillImageAnalyzer {
   }
 
   /// JPEG/PNG/HEIC -> RGBA8 derecho (orientación EXIF aplicada, como en
-  /// Android) con el lado mayor <= [maxSide]. nil si no se puede decodificar.
+  /// Android) con el lado mayor <= [maxSide]. ImageIO decodifica ya reducido:
+  /// una foto de 12 MP no pasa por memoria entera (~48 MB). nil si no se puede.
   static func decode(_ data: Data, maxSide: Int) -> Pixels? {
-    guard let image = UIImage(data: data), image.size.width > 0, image.size.height > 0 else { return nil }
-    let longSide = max(image.size.width, image.size.height)
-    let scale = longSide <= CGFloat(maxSide) ? 1 : CGFloat(maxSide) / longSide
-    let width = max(1, Int((image.size.width * scale).rounded()))
-    let height = max(1, Int((image.size.height * scale).rounded()))
+    guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+    let options: [CFString: Any] = [
+      kCGImageSourceCreateThumbnailFromImageAlways: true,
+      kCGImageSourceCreateThumbnailWithTransform: true,  // orientación EXIF
+      kCGImageSourceThumbnailMaxPixelSize: maxSide,
+      kCGImageSourceShouldCacheImmediately: true,
+    ]
+    guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+    let width = image.width
+    let height = image.height
+    guard width > 0, height > 0 else { return nil }
     var rgba = [UInt8](repeating: 0, count: width * height * 4)
     let drawn: Bool = rgba.withUnsafeMutableBytes { bytes in
       guard let context = CGContext(
@@ -130,13 +138,8 @@ final class StillImageAnalyzer {
         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
         return false
       }
-      // UIImage.draw aplica la orientación; el contexto de CG tiene el origen
-      // abajo: se invierte para que la fila 0 sea la de arriba.
-      UIGraphicsPushContext(context)
-      context.translateBy(x: 0, y: CGFloat(height))
-      context.scaleBy(x: 1, y: -1)
-      image.draw(in: CGRect(x: 0, y: 0, width: width, height: height))
-      UIGraphicsPopContext()
+      // En un bitmap de CG, la fila 0 de memoria es la de arriba de la imagen.
+      context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
       return true
     }
     return drawn ? Pixels(rgba: rgba, width: width, height: height) : nil

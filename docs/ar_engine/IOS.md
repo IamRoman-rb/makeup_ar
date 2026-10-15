@@ -9,7 +9,7 @@ Decisión (2026-10-15): OpenGL ES 3 de EAGL en lugar de Metal. Apple lo marca de
 | Android | iOS |
 |---|---|
 | Camera2 → `SurfaceTexture` (textura OES) | AVFoundation (BGRA, vertical, sin espejo) → `CVOpenGLESTextureCache` (textura 2D) |
-| EGL + `SurfaceProducer` | `EAGLContext` ES3 → FBO propio → `glBlitFramebuffer` invertido a uno de 3 `CVPixelBuffer` → `FlutterTexture.copyPixelBuffer` |
+| EGL + `SurfaceProducer` | `EAGLContext` ES3 → FBO propio → `glBlitFramebuffer` invertido a uno de 4 `CVPixelBuffer` (publicado cuando su fence está señalada) → `FlutterTexture.copyPixelBuffer` |
 | LiteRT (GPU con caché, fallback CPU) | TensorFlowLiteSwift 2.17 (Metal, fallback CPU) |
 | JNI (`jni_bridge.cpp`) | API C (`ios/Classes/engine_c_api.{h,cpp}`), misma superficie |
 | Kotlin: `EngineSession`, `LiteRtFaceTracker`, `RecipeParams`, `StillImageAnalyzer`, `MakeupEnginePlugin` | Swift: mismos nombres en `ios/Classes/` |
@@ -25,7 +25,7 @@ La lista sale de `CMakeLists.txt`: si se agrega una fuente o un shader, hay que 
 - **Textura de cámara:** `MAKEUP_CAMERA_TEXTURE` vale `GL_TEXTURE_2D` en iOS y `GL_TEXTURE_EXTERNAL_OES` en Android.
 - **Shaders:** se quita `#extension GL_OES_EGL_image_external_essl3` y `samplerExternalOES` pasa a `sampler2D` al compilar. El GLSL sigue siendo uno solo.
 - **Framebuffer de salida:** `Renderer::setOutputFramebuffer`, porque las pasadas de recorte y de escena dejan el 0. Al invalidar un FBO se usa `GL_COLOR_ATTACHMENT0`.
-- **Cierre del frame:** `glFlush` en lugar de `eglSwapBuffers`.
+- **Cierre del frame:** en iOS el núcleo no presenta; lo hace la plataforma después del blit (fence + un solo `glFlush`).
 - **Textura de cámara por frame:** `Renderer::setCameraTexture`, porque la caché crea una por frame.
 
 Android no cambia de comportamiento: compila igual y pasan los tests de host, Kotlin y Flutter.
@@ -68,7 +68,25 @@ Con el arnés, en el iPhone y en el E20, con la misma luz:
 - [ ] 30 fps estables durante 10 minutos (líneas `TRACK`), sin crecimiento de memoria (Instruments → Allocations).
 - [ ] Al salir y volver a entrar a la pantalla no queda la cámara tomada ni hay crash.
 
+## Revisión de cierre (`perf-auditor`, 2026-10-15)
+
+Aplicado:
+- **`stop()` durante el permiso de cámara:** antes, el inicio seguía y usaba el núcleo ya destruido. Ahora se cancela, y toda la limpieza de GL (`teardownGl`) se encola detrás de un `initGl` en curso, así libera lo que se haya llegado a crear.
+- **Segundo plano:** al pasar a inactiva no se envía nada a la GPU (iOS mata la app si se hace). Se marca la pausa, el tracker se apaga, se espera el frame en curso con `glFinish` y la cámara se detiene. Al volver se reanuda. Las interrupciones y los errores de la sesión de cámara aparecen en `stats()["error"]`.
+- **Textura de cámara:** `withExtendedLifetime` la mantiene viva hasta que se envían los comandos que la leen.
+- **Buffers de salida:**
+  - un solo `glFlush` por frame;
+  - fence por buffer, y el buffer se publica al frame siguiente si ya está señalada, sin esperas;
+  - 4 buffers, sin reusar el publicado, el pendiente ni uno tomado por otro proceso (`IOSurfaceIsInUse`).
+- **Datos compartidos:** `textureId` bajo el mismo lock que `released`, una toma por frame. `textureFrameAvailable` se llama desde la cola de render, sin closure ni salto a main.
+- **Parámetros de textura:** se fijan una vez por nombre de textura de la caché.
+- **Fotos del Studio:** se decodifican con ImageIO ya reducidas, sin la foto entera en memoria.
+
+Pendiente de medir (las reglas piden números antes de optimizar): dibujar directo en el `CVPixelBuffer` con el giro vertical en las matrices, sin el blit. Si la GPU del iPhone sobra, no hace falta.
+
 ## Riesgos conocidos
+
+- **Pausa en segundo plano:** si hay una inferencia del tracker en curso en Metal al pasar a inactiva, termina igual; el tracker se apaga después.
 
 - **OpenGL ES deprecado:** cada versión de iOS lo mantiene, pero sin mejoras. Vigilar avisos en las notas de Xcode.
 - **TensorFlowLiteSwift 2.17:** Google está migrando a "LiteRT" también en iOS. Si el pod se retira, hay que cambiar el nombre del pod; la API Swift es la misma.

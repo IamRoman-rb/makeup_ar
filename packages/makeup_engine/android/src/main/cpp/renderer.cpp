@@ -400,12 +400,11 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   if (wantLips && hasMesh) drawLips(landmarks, imageToClip, texMatrix, frameStartNs);
   if (showLandmarks && hasMesh) drawLandmarks(landmarks.alpha, imageToClip, width, height);
 
-#if defined(MAKEUP_PLATFORM_IOS)
-  // Flutter lee el CVPixelBuffer de salida: que la GPU lo termine de enviar.
-  glFlush();
-#else
+#if !defined(MAKEUP_PLATFORM_IOS)
   eglSwapBuffers(eglGetCurrentDisplay(), eglGetCurrentSurface(EGL_DRAW));
 #endif
+  // En iOS presenta la plataforma: blit al CVPixelBuffer, fence y un solo
+  // glFlush (EngineSession.swift).
   stats_.record(frameStartNs, monotonicNowNs(), cameraTimestampNs);
   return flags;
 }
