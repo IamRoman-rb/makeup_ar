@@ -491,5 +491,106 @@
     "studioLayerIris": "Iris (lentes de color)",
     "@studioLayerIris": {
         "description": "Capa de color de iris de la receta (eyes.iris)."
+    },
+    "myAiLooksTitle": "Mis looks con IA",
+    "@myAiLooksTitle": {
+        "description": "Título de la pantalla de looks generados por el usuario."
+    },
+    "myAiLooksPromptHint": "Describí el look (ej.: labios rojos y delineado gráfico)",
+    "@myAiLooksPromptHint": {
+        "description": "Ayuda del campo del pedido."
+    },
+    "myAiLooksDailyLimit": "Hasta {count} por día",
+    "@myAiLooksDailyLimit": {
+        "description": "Cuota diaria de generaciones.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksGenerate": "Generar",
+    "@myAiLooksGenerate": {
+        "description": "Botón de generar."
+    },
+    "myAiLooksVariants": "Elegí una variante",
+    "@myAiLooksVariants": {
+        "description": "Título de las variantes generadas."
+    },
+    "myAiLooksSuggestion": "Sugerencia",
+    "@myAiLooksSuggestion": {
+        "description": "Título cuando se muestra un preset local en lugar de la IA."
+    },
+    "myAiLooksTry": "Probar",
+    "@myAiLooksTry": {
+        "description": "Probar el look en AR."
+    },
+    "myAiLooksSave": "Guardar",
+    "@myAiLooksSave": {
+        "description": "Guardar el look."
+    },
+    "myAiLooksSaved": "Guardado en tus looks",
+    "@myAiLooksSaved": {
+        "description": "Confirmación de guardado."
+    },
+    "myAiLooksSavedTitle": "Guardados",
+    "@myAiLooksSavedTitle": {
+        "description": "Sección de looks guardados."
+    },
+    "myAiLooksEmpty": "Todavía no guardaste looks con IA.",
+    "@myAiLooksEmpty": {
+        "description": "Lista vacía."
+    },
+    "myAiLooksDelete": "Borrar",
+    "@myAiLooksDelete": {
+        "description": "Borrar un look."
+    },
+    "myAiLooksDeleteConfirm": "¿Borrar \"{name}\"?",
+    "@myAiLooksDeleteConfirm": {
+        "description": "Confirmación de borrado.",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "myAiLooksErrorQuota": "Llegaste al límite de {count} looks por hoy. Probá mañana.",
+    "@myAiLooksErrorQuota": {
+        "description": "Cuota diaria agotada.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksErrorFull": "Ya tenés {count} looks guardados. Borrá uno para guardar otro.",
+    "@myAiLooksErrorFull": {
+        "description": "Tope de looks guardados.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksErrorLogin": "Iniciá sesión para crear looks.",
+    "@myAiLooksErrorLogin": {
+        "description": "Sin sesión."
+    },
+    "myAiLooksErrorGeneric": "No se pudo completar. Probá de nuevo.",
+    "@myAiLooksErrorGeneric": {
+        "description": "Error genérico."
+    },
+    "myAiLooksFallback": "La IA no respondió: te sugerimos un look parecido.",
+    "@myAiLooksFallback": {
+        "description": "Sin variantes de la IA; se muestra un preset."
+    },
+    "myAiLooksInvalidPrompt": "Escribí entre 1 y {max} caracteres.",
+    "@myAiLooksInvalidPrompt": {
+        "description": "Pedido vacío o largo.",
+        "placeholders": {
+            "max": {
+                "type": "int"
+            }
+        }
     }
 }

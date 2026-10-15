@@ -8,6 +8,11 @@ import 'login_screen.dart';
 import 'saved_looks_screen.dart';
 import 'account_settings_screen.dart';
 import 'language_screen.dart';
+import 'camera_screen.dart';
+import 'features/ar/presentation/test_filter_view.dart';
+import 'features/my_looks/data/firestore_ai_look_repository.dart';
+import 'features/my_looks/presentation/my_looks_screen.dart';
+import 'features/studio/data/cloud_recipe_generator.dart';
 import 'l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 
 class ProfileScreen extends StatelessWidget {
@@ -159,6 +164,28 @@ class ProfileScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 20),
+
+                    // Looks generados con IA por el usuario (functions/src/aiLooks.ts).
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.auto_awesome, color: Color(0xFFD4AF37)),
+                          label: Text(l10n.myAiLooksTitle, style: GoogleFonts.inter(color: const Color(0xFF1A1A1A), fontWeight: FontWeight.w600)),
+                          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => MyLooksScreen(
+                              repository: FirestoreAiLookRepository(uid: user.uid),
+                              generator: CloudRecipeGenerator(),
+                              onTryOn: (recipe) => Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => CameraScreen(
+                                  initialLook: TestFilterOption(id: 'ai-${recipe.name.hashCode}', label: recipe.name, recipe: recipe),
+                                ),
+                              )),
+                            ),
+                          )),
+                        ),
+                      ),
                     const SizedBox(height: 35),
 
                     Padding(

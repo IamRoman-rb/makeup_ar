@@ -235,5 +235,59 @@
     "studioQaHeavyBlush": "Blush muito grande e intenso",
     "studioQaEffects": "3 efeitos ao mesmo tempo: não medido no telefone de referência",
     "studioQaBlocked": "Corrija os itens em vermelho para publicar.",
-    "studioLayerIris": "Íris (lentes coloridas)"
+    "studioLayerIris": "Íris (lentes coloridas)",
+    "myAiLooksTitle": "Meus looks com IA",
+    "myAiLooksPromptHint": "Descreva o look (ex.: lábios vermelhos e delineado gráfico)",
+    "myAiLooksDailyLimit": "Até {count} por dia",
+    "@myAiLooksDailyLimit": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksGenerate": "Gerar",
+    "myAiLooksVariants": "Escolha uma variante",
+    "myAiLooksSuggestion": "Sugestão",
+    "myAiLooksTry": "Experimentar",
+    "myAiLooksSave": "Salvar",
+    "myAiLooksSaved": "Salvo nos seus looks",
+    "myAiLooksSavedTitle": "Salvos",
+    "myAiLooksEmpty": "Você ainda não salvou looks com IA.",
+    "myAiLooksDelete": "Excluir",
+    "myAiLooksDeleteConfirm": "Excluir \"{name}\"?",
+    "@myAiLooksDeleteConfirm": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "myAiLooksErrorQuota": "Você atingiu o limite de {count} looks hoje. Tente amanhã.",
+    "@myAiLooksErrorQuota": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksErrorFull": "Você já tem {count} looks salvos. Exclua um para salvar outro.",
+    "@myAiLooksErrorFull": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksErrorLogin": "Entre na sua conta para criar looks.",
+    "myAiLooksErrorGeneric": "Não foi possível concluir. Tente novamente.",
+    "myAiLooksFallback": "A IA não respondeu: sugerimos um look parecido.",
+    "myAiLooksInvalidPrompt": "Escreva entre 1 e {max} caracteres.",
+    "@myAiLooksInvalidPrompt": {
+        "placeholders": {
+            "max": {
+                "type": "int"
+            }
+        }
+    }
 }

@@ -2,7 +2,7 @@
 // docs/ar_engine/F2_PLAN.md). Sin dependencias de Firebase salvo HttpsError:
 // todo lo externo entra por GenerateDeps, así se testea sin emuladores.
 //
-// Flujo: auth -> admin -> entrada -> cuota (se descuenta ANTES del LLM, así
+// Flujo: auth -> entrada -> cuota según el rol (se descuenta ANTES del LLM, así
 // los errores no sirven para esquivarla) -> LLM -> cada variante validada con
 // el esquema (las inválidas se descartan, nunca se reparan) -> log sin texto.
 // App Check lo exige onCall({enforceAppCheck: true}) en index.ts.
@@ -17,8 +17,9 @@ import { isValidRecipe } from './recipeSchema';
 
 export const MAX_PROMPT_LENGTH = 300;
 export const MAX_VARIANTS = 3;
-// Generaciones por admin por día (UTC). Solo admins generan hasta F3+.
+// Generaciones por día (UTC): admins (Studio) y usuarios finales ("Mis looks").
 export const ADMIN_DAILY_QUOTA = 20;
+export const USER_DAILY_QUOTA = 5;
 // Tope del JSON de la receta base de un remix (= RecipeValidator.maxJsonLength).
 export const MAX_RECIPE_JSON = 16 * 1024;
 export const LOCALES: readonly string[] = ['es', 'en', 'pt', 'fr'];
@@ -91,9 +92,9 @@ export async function handleGenerate(
   deps: GenerateDeps,
 ): Promise<GenerateResult> {
   if (!auth) throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
-  if (!(await deps.isAdmin(auth.uid))) throw new HttpsError('permission-denied', 'Solo administradores.');
   const input = parseInput(data);
-  if (!(await deps.quota.consume(auth.uid, dayKey(deps.now()), ADMIN_DAILY_QUOTA))) {
+  const limit = (await deps.isAdmin(auth.uid)) ? ADMIN_DAILY_QUOTA : USER_DAILY_QUOTA;
+  if (!(await deps.quota.consume(auth.uid, dayKey(deps.now()), limit))) {
     throw new HttpsError('resource-exhausted', 'Se agotó la cuota diaria de generaciones.');
   }
 

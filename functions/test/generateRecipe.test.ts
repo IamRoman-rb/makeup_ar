@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { HttpsError } from 'firebase-functions/v2/https';
 
-import { ADMIN_DAILY_QUOTA, GenerateDeps, handleGenerate, validVariants } from '../src/generateRecipe';
+import { ADMIN_DAILY_QUOTA, GenerateDeps, USER_DAILY_QUOTA, handleGenerate, validVariants } from '../src/generateRecipe';
 import { LlmClient, LlmRequest, LlmUnavailableError } from '../src/llm/llmClient';
 import { QuotaStore } from '../src/quota';
 
@@ -63,10 +63,21 @@ test('sin sesión: unauthenticated', async () => {
     'unauthenticated');
 });
 
-test('no admin: permission-denied, sin gastar cuota ni llamar al modelo', async () => {
-  const { d, llm, quota } = deps(okReply, false);
-  await expectCode(handleGenerate(admin, { kind: 'prompt', prompt: 'rojo', locale: 'es' }, d), 'permission-denied');
-  assert.equal(llm.requests.length, 0);
+test(`usuario final: genera con cuota de ${USER_DAILY_QUOTA} por día`, async () => {
+  const { d, llm } = deps(okReply, false);
+  const user = { uid: 'user-1' };
+  for (let i = 0; i < USER_DAILY_QUOTA; i++) {
+    const result = await handleGenerate(user, { kind: 'prompt', prompt: 'rojo', locale: 'es' }, d);
+    assert.equal(result.variants.length, 2);
+  }
+  await expectCode(handleGenerate(user, { kind: 'prompt', prompt: 'rojo', locale: 'es' }, d), 'resource-exhausted');
+  assert.equal(llm.requests.length, USER_DAILY_QUOTA);
+});
+
+test('entrada inválida de un usuario final: no gasta cuota', async () => {
+  const { d, quota } = deps(okReply, false);
+  await expectCode(handleGenerate({ uid: 'user-1' }, { kind: 'prompt', prompt: '', locale: 'es' }, d),
+    'invalid-argument');
   assert.equal(quota.counts.size, 0);
 });
 

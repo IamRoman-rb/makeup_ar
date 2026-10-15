@@ -235,5 +235,59 @@
     "studioQaHeavyBlush": "Blush très grand et intense",
     "studioQaEffects": "3 effets à la fois : non mesuré sur le téléphone de référence",
     "studioQaBlocked": "Corrigez les points en rouge pour publier.",
-    "studioLayerIris": "Iris (lentilles de couleur)"
+    "studioLayerIris": "Iris (lentilles de couleur)",
+    "myAiLooksTitle": "Mes looks IA",
+    "myAiLooksPromptHint": "Décrivez le look (ex. : lèvres rouges et eye-liner graphique)",
+    "myAiLooksDailyLimit": "Jusqu'à {count} par jour",
+    "@myAiLooksDailyLimit": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksGenerate": "Générer",
+    "myAiLooksVariants": "Choisissez une variante",
+    "myAiLooksSuggestion": "Suggestion",
+    "myAiLooksTry": "Essayer",
+    "myAiLooksSave": "Enregistrer",
+    "myAiLooksSaved": "Enregistré dans vos looks",
+    "myAiLooksSavedTitle": "Enregistrés",
+    "myAiLooksEmpty": "Vous n'avez encore enregistré aucun look IA.",
+    "myAiLooksDelete": "Supprimer",
+    "myAiLooksDeleteConfirm": "Supprimer « {name} » ?",
+    "@myAiLooksDeleteConfirm": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "myAiLooksErrorQuota": "Vous avez atteint la limite de {count} looks pour aujourd'hui. Réessayez demain.",
+    "@myAiLooksErrorQuota": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksErrorFull": "Vous avez déjà {count} looks enregistrés. Supprimez-en un pour en ajouter un autre.",
+    "@myAiLooksErrorFull": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksErrorLogin": "Connectez-vous pour créer des looks.",
+    "myAiLooksErrorGeneric": "Impossible de terminer. Réessayez.",
+    "myAiLooksFallback": "L'IA n'a pas répondu : voici un look similaire.",
+    "myAiLooksInvalidPrompt": "Écrivez entre 1 et {max} caractères.",
+    "@myAiLooksInvalidPrompt": {
+        "placeholders": {
+            "max": {
+                "type": "int"
+            }
+        }
+    }
 }

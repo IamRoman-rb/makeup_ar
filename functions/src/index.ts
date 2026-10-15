@@ -6,6 +6,7 @@ import { logger } from 'firebase-functions';
 import { defineString } from 'firebase-functions/params';
 import { onCall } from 'firebase-functions/v2/https';
 
+import { AiLookDeps, FirestoreAiLookStore, handleDeleteAiLook, handleSaveAiLook } from './aiLooks';
 import { GenerateDeps, handleGenerate } from './generateRecipe';
 import { GeminiClient } from './llm/geminiClient';
 import { FirestoreQuotaStore } from './quota';
@@ -19,6 +20,7 @@ const geminiModel = defineString('GEMINI_MODEL', { default: 'gemini-3.5-flash' }
 const geminiLocation = defineString('GEMINI_LOCATION', { default: 'global' });
 
 let deps: GenerateDeps | undefined;
+let lookDeps: AiLookDeps | undefined;
 
 function getDeps(): GenerateDeps {
   if (deps) return deps;
@@ -33,6 +35,31 @@ function getDeps(): GenerateDeps {
   };
   return deps;
 }
+
+function getLookDeps(): AiLookDeps {
+  if (lookDeps) return lookDeps;
+  lookDeps = {
+    store: new FirestoreAiLookStore(getFirestore()),
+    now: () => new Date(),
+    log: (entry) => logger.info('aiLooks', entry),
+  };
+  return lookDeps;
+}
+
+const lookOptions = {
+  region: 'us-central1',
+  enforceAppCheck: true,
+  timeoutSeconds: 20,
+  memory: '256MiB' as const,
+  maxInstances: 3,
+};
+
+// "Mis looks" de usuarios finales: el cliente no escribe users/{uid}/ai_looks.
+export const saveAiLook = onCall(lookOptions, (request) =>
+  handleSaveAiLook(request.auth ? { uid: request.auth.uid } : undefined, request.data, getLookDeps()));
+
+export const deleteAiLook = onCall(lookOptions, (request) =>
+  handleDeleteAiLook(request.auth ? { uid: request.auth.uid } : undefined, request.data, getLookDeps()));
 
 export const generateRecipe = onCall(
   {

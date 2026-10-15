@@ -361,5 +361,59 @@
     "studioQaHeavyBlush": "Very large, intense blush",
     "studioQaEffects": "3 effects at once: not measured on the reference phone",
     "studioQaBlocked": "Fix the items in red to publish.",
-    "studioLayerIris": "Iris (colored lenses)"
+    "studioLayerIris": "Iris (colored lenses)",
+    "myAiLooksTitle": "My AI looks",
+    "myAiLooksPromptHint": "Describe the look (e.g. red lips and graphic liner)",
+    "myAiLooksDailyLimit": "Up to {count} per day",
+    "@myAiLooksDailyLimit": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksGenerate": "Generate",
+    "myAiLooksVariants": "Pick a variant",
+    "myAiLooksSuggestion": "Suggestion",
+    "myAiLooksTry": "Try on",
+    "myAiLooksSave": "Save",
+    "myAiLooksSaved": "Saved to your looks",
+    "myAiLooksSavedTitle": "Saved",
+    "myAiLooksEmpty": "You haven't saved any AI looks yet.",
+    "myAiLooksDelete": "Delete",
+    "myAiLooksDeleteConfirm": "Delete \"{name}\"?",
+    "@myAiLooksDeleteConfirm": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "myAiLooksErrorQuota": "You've reached today's limit of {count} looks. Try again tomorrow.",
+    "@myAiLooksErrorQuota": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksErrorFull": "You already have {count} saved looks. Delete one to save another.",
+    "@myAiLooksErrorFull": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myAiLooksErrorLogin": "Sign in to create looks.",
+    "myAiLooksErrorGeneric": "Couldn't complete. Please try again.",
+    "myAiLooksFallback": "The AI didn't respond: here's a similar look.",
+    "myAiLooksInvalidPrompt": "Write between 1 and {max} characters.",
+    "@myAiLooksInvalidPrompt": {
+        "placeholders": {
+            "max": {
+                "type": "int"
+            }
+        }
+    }
 }

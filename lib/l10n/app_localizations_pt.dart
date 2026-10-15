@@ -579,4 +579,74 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get studioLayerIris => 'Íris (lentes coloridas)';
+
+  @override
+  String get myAiLooksTitle => 'Meus looks com IA';
+
+  @override
+  String get myAiLooksPromptHint =>
+      'Descreva o look (ex.: lábios vermelhos e delineado gráfico)';
+
+  @override
+  String myAiLooksDailyLimit(int count) {
+    return 'Até $count por dia';
+  }
+
+  @override
+  String get myAiLooksGenerate => 'Gerar';
+
+  @override
+  String get myAiLooksVariants => 'Escolha uma variante';
+
+  @override
+  String get myAiLooksSuggestion => 'Sugestão';
+
+  @override
+  String get myAiLooksTry => 'Experimentar';
+
+  @override
+  String get myAiLooksSave => 'Salvar';
+
+  @override
+  String get myAiLooksSaved => 'Salvo nos seus looks';
+
+  @override
+  String get myAiLooksSavedTitle => 'Salvos';
+
+  @override
+  String get myAiLooksEmpty => 'Você ainda não salvou looks com IA.';
+
+  @override
+  String get myAiLooksDelete => 'Excluir';
+
+  @override
+  String myAiLooksDeleteConfirm(String name) {
+    return 'Excluir \"$name\"?';
+  }
+
+  @override
+  String myAiLooksErrorQuota(int count) {
+    return 'Você atingiu o limite de $count looks hoje. Tente amanhã.';
+  }
+
+  @override
+  String myAiLooksErrorFull(int count) {
+    return 'Você já tem $count looks salvos. Exclua um para salvar outro.';
+  }
+
+  @override
+  String get myAiLooksErrorLogin => 'Entre na sua conta para criar looks.';
+
+  @override
+  String get myAiLooksErrorGeneric =>
+      'Não foi possível concluir. Tente novamente.';
+
+  @override
+  String get myAiLooksFallback =>
+      'A IA não respondeu: sugerimos um look parecido.';
+
+  @override
+  String myAiLooksInvalidPrompt(int max) {
+    return 'Escreva entre 1 e $max caracteres.';
+  }
 }

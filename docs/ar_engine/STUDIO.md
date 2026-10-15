@@ -93,3 +93,22 @@ Los umbrales son iniciales, calibrados para que pasen todos los presets (`python
 - **Calibrar F4** con 20 fotos en el E20 (F4_PLAN.md, "Para probarlo en el E20").
 - **Usuarios finales que generan sus propios looks:** hoy solo admins.
 - La imagen del catálogo es una URL opcional; todavía no se sube desde el Studio.
+
+## Looks generados por usuarios ("Mis looks con IA", §10.13.5)
+
+Versión reducida del Studio para cualquier usuario con sesión: Perfil → "Mis looks con IA" → pedido → 3 variantes → **Probar** (abre el espejo AR con esa receta) → **Guardar**. Los guardados se vuelven a probar con un toque o se borran.
+
+**Servidor (`functions/src`):**
+- `generateRecipe` ya no exige admin: la cuota diaria depende del rol, `ADMIN_DAILY_QUOTA` 20 y `USER_DAILY_QUOTA` 5 (UTC, descontada antes del LLM, igual que antes). Costo máximo: 5 llamadas al LLM por usuario y por día.
+- `saveAiLook({recipe, source})`: valida la receta con el mismo esquema (Ajv) y la guarda en `users/{uid}/ai_looks/{id}` con `{recipe, recipeSchema, name, source: {type}, createdAt}`. **No guarda el texto del pedido** (minimización). Tope de `MAX_AI_LOOKS` = 30 por usuario, contado y escrito en una transacción.
+- `deleteAiLook({id})`: borra solo looks propios (`not-found` si no existe).
+- Lógica en `aiLooks.ts` con deps inyectadas; tests en `functions/test/aiLooks.test.ts`.
+
+**Reglas (`firestore.rules`):** `users/{uid}/ai_looks/{id}`: lectura solo del dueño, escritura denegada al cliente (todo pasa por las callables). Probado con el emulador (`firestore-tests/rules.test.mjs`).
+
+**App (`lib/features/my_looks`):** `IAiLookRepository` (lee Firestore, escribe por callables), `MyLooksScreen` (reusa `CloudRecipeGenerator`; si la IA no responde muestra el preset local más cercano como "Sugerencia") y tests de widget con fakes. Cada receta se vuelve a validar al leerla.
+
+**Para activarlo (lo corrés vos):**
+```
+firebase deploy --only functions,firestore:rules --project armakeupapp
+```

@@ -63,5 +63,14 @@ service cloud.firestore {
         && request.resource.data.get('is_admin', false) == resource.data.get('is_admin', false);
       allow delete: if isOwner(userId);
     }
+
+    // Looks generados por usuarios finales ("Mis looks"; motor_ar_propio.md
+    // §10.12): el dueño los lee; los escriben y borran solo las callables
+    // saveAiLook/deleteAiLook (Admin SDK), que validan la receta con el esquema
+    // y ponen el tope por usuario. users/{uid}/usage sigue sin regla: sin acceso.
+    match /users/{userId}/ai_looks/{lookId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
   }
 }

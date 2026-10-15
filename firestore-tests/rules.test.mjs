@@ -190,3 +190,22 @@ test('looks: el admin publica con receta; los viejos sin receta siguen valiendo'
   assert.equal(await update('looks/look1', 'admin', { name: 'Rojo 2' }), OK);
   assert.equal(await set('looks/otro', 'alice', { ...DRAFT }), DENIED);
 });
+
+// --- Looks de usuarios finales (ai_looks) ---------------------------------------
+
+test('ai_looks: el dueño lee y lista los suyos; otros no', async () => {
+  await set('users/alice/ai_looks/l1', 'owner', { name: 'Rojo', recipe: { schema: 'makeup-recipe/2', name: 'Rojo' } });
+  assert.equal(await read('users/alice/ai_looks/l1', 'alice'), OK);
+  assert.equal(await read('users/alice/ai_looks', 'alice'), OK);
+  assert.equal(await read('users/alice/ai_looks/l1', 'admin'), DENIED);
+  assert.equal(await read('users/alice/ai_looks', 'admin'), DENIED);
+  assert.equal(await read('users/alice/ai_looks/l1', null), DENIED);
+});
+
+test('ai_looks: nadie escribe ni borra desde el cliente (solo las callables)', async () => {
+  await set('users/alice/ai_looks/l1', 'owner', { name: 'Rojo' });
+  assert.equal(await set('users/alice/ai_looks/l2', 'alice', { name: 'Nuevo' }), DENIED);
+  assert.equal(await update('users/alice/ai_looks/l1', 'alice', { name: 'Cambiado' }), DENIED);
+  assert.equal(await remove('users/alice/ai_looks/l1', 'alice'), DENIED);
+  assert.equal(await set('users/alice/ai_looks/l3', 'admin', { name: 'Admin' }), DENIED);
+});

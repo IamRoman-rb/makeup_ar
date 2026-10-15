@@ -1163,6 +1163,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Iris (colored lenses)'**
   String get studioLayerIris;
+
+  /// No description provided for @myAiLooksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My AI looks'**
+  String get myAiLooksTitle;
+
+  /// No description provided for @myAiLooksPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the look (e.g. red lips and graphic liner)'**
+  String get myAiLooksPromptHint;
+
+  /// No description provided for @myAiLooksDailyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {count} per day'**
+  String myAiLooksDailyLimit(int count);
+
+  /// No description provided for @myAiLooksGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get myAiLooksGenerate;
+
+  /// No description provided for @myAiLooksVariants.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a variant'**
+  String get myAiLooksVariants;
+
+  /// No description provided for @myAiLooksSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion'**
+  String get myAiLooksSuggestion;
+
+  /// No description provided for @myAiLooksTry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try on'**
+  String get myAiLooksTry;
+
+  /// No description provided for @myAiLooksSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get myAiLooksSave;
+
+  /// No description provided for @myAiLooksSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to your looks'**
+  String get myAiLooksSaved;
+
+  /// No description provided for @myAiLooksSavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get myAiLooksSavedTitle;
+
+  /// No description provided for @myAiLooksEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t saved any AI looks yet.'**
+  String get myAiLooksEmpty;
+
+  /// No description provided for @myAiLooksDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get myAiLooksDelete;
+
+  /// No description provided for @myAiLooksDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?'**
+  String myAiLooksDeleteConfirm(String name);
+
+  /// No description provided for @myAiLooksErrorQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached today\'s limit of {count} looks. Try again tomorrow.'**
+  String myAiLooksErrorQuota(int count);
+
+  /// No description provided for @myAiLooksErrorFull.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have {count} saved looks. Delete one to save another.'**
+  String myAiLooksErrorFull(int count);
+
+  /// No description provided for @myAiLooksErrorLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to create looks.'**
+  String get myAiLooksErrorLogin;
+
+  /// No description provided for @myAiLooksErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t complete. Please try again.'**
+  String get myAiLooksErrorGeneric;
+
+  /// No description provided for @myAiLooksFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI didn\'t respond: here\'s a similar look.'**
+  String get myAiLooksFallback;
+
+  /// No description provided for @myAiLooksInvalidPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Write between 1 and {max} characters.'**
+  String myAiLooksInvalidPrompt(int max);
 }
 
 class _AppLocalizationsDelegate
