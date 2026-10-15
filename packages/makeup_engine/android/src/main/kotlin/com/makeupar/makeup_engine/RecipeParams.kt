@@ -260,6 +260,7 @@ internal data class EyesParams(
     val shadows: List<ShadowParams>,
     val liner: LinerParams,
     val lashes: LashParams = LashParams.DISABLED,
+    val iris: ColorParams = ColorParams.DISABLED,
 ) {
     companion object {
         val DISABLED = EyesParams(List(NativeBridge.MAX_EYE_SHADOWS) { ShadowParams.DISABLED }, LinerParams.DISABLED)
@@ -272,6 +273,7 @@ internal data class EyesParams(
                 shadows,
                 LinerParams.fromMap(eyes["liner"] as? Map<*, *>),
                 LashParams.fromMap(eyes["lashes"] as? Map<*, *>),
+                ColorParams.fromMap(eyes["iris"] as? Map<*, *>, "opacity"),
             )
         }
     }

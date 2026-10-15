@@ -258,7 +258,7 @@ final class LashesSpec {
 
 final class EyesSpec {
   /// [shadow] se copia a una lista inmodificable.
-  EyesSpec({List<EyeShadowLayer>? shadow, this.liner, this.lashes})
+  EyesSpec({List<EyeShadowLayer>? shadow, this.liner, this.lashes, this.iris})
       : shadow = shadow == null ? null : List.unmodifiable(shadow);
 
   /// Máximo [RecipeLimits.maxShadowLayers] capas; null si no vino en el JSON.
@@ -266,10 +266,15 @@ final class EyesSpec {
   final EyeLinerSpec? liner;
   final LashesSpec? lashes;
 
+  /// Color de iris (lentes de contacto): se pinta dentro de la abertura del
+  /// ojo, sin la pupila.
+  final ColorLayer? iris;
+
   Map<String, Object?> toJson() => {
         if (shadow != null) 'shadow': [for (final layer in shadow ?? const <EyeShadowLayer>[]) layer.toJson()],
         if (liner != null) 'liner': liner?.toJson(),
         if (lashes != null) 'lashes': lashes?.toJson(),
+        if (iris != null) 'iris': iris?.toJson(),
       };
 }
 

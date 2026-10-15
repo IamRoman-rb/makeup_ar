@@ -208,6 +208,9 @@ internal object NativeBridge {
     /** Pestañas: opacidad, largo y volumen [0,1]. */
     @JvmStatic external fun nativeSetLashes(handle: Long, enabled: Boolean, opacity: Float, length: Float, volume: Float)
 
+    /** Color de iris (lentes de contacto), sRGB [0,1] y opacidad. */
+    @JvmStatic external fun nativeSetIris(handle: Long, enabled: Boolean, r: Float, g: Float, b: Float, opacity: Float)
+
     /** Efecto [slot] (0..MAX_EFFECTS-1): tipo EFFECT_*, intensidad [0,1], región EFFECT_REGION_*. */
     @JvmStatic external fun nativeSetEffect(handle: Long, slot: Int, enabled: Boolean, type: Int, intensity: Float, region: Int)
 

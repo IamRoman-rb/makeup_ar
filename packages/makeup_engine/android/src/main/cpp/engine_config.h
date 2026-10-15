@@ -199,6 +199,49 @@ struct EngineConfig {
   static constexpr float kLashRootMax = 0.7f;
   static constexpr float kLowerLashOpacity = 0.45f;
 
+  // --- Iris (fase 4; iris.frag, docs/ar_engine/FACE.md §iris) ---
+  // Landmarks de FaceMesh-V2: centro y 4 puntos del anillo de cada iris.
+  static constexpr int kIrisFirstCenter = 468;
+  static constexpr int kIrisSecondCenter = 473;
+  static constexpr int kIrisRingPoints = 4;
+  // Radio mínimo (px; media geométrica de los semiejes de la elipse) para
+  // dibujar: con el ojo muy lejos o el anillo degenerado no se pinta.
+  static constexpr float kIrisMinRadiusPx = 2.0f;
+  // Máscara en radios del iris: pupila sin color hasta kIrisPupil (con un
+  // borde de kIrisPupilFeather), borde exterior con kIrisEdgeFeather. El iris
+  // real tapa ~0,3-0,5 de radio con la pupila según la luz.
+  static constexpr float kIrisPupil = 0.38f;
+  static constexpr float kIrisPupilFeather = 0.08f;
+  static constexpr float kIrisEdgeFeather = 0.1f;
+  // Anillo limbal: desde kIrisLimbalStart el color se oscurece hasta
+  // kIrisLimbalDarken en el borde (los lentes de color lo imitan).
+  static constexpr float kIrisLimbalStart = 0.72f;
+  static constexpr float kIrisLimbalDarken = 0.35f;
+  // Sombreado: s = L del píxel / kIrisRefL (L típica de un iris medio), con
+  // un piso suave max(s, kIrisShadingMin + kIrisShadingSlope · s) y tope: un
+  // iris oscuro sube para que el color se vea, pero las fibras más oscuras
+  // siguen siendo más oscuras (un clamp duro lo dejaba plano).
+  static constexpr float kIrisRefL = 0.42f;
+  static constexpr float kIrisShadingMin = 0.45f;
+  static constexpr float kIrisShadingSlope = 0.5f;
+  static constexpr float kIrisShadingMax = 1.5f;
+  // Pupila y sombras muy oscuras (L del píxel < kIrisDarkHigh): el color se
+  // apaga hasta kIrisDarkLow, simétrico al freno de los reflejos. L es OKLab
+  // (raíz cúbica): una pupila sRGB ~0,03 da L ~0,08; un iris castaño oscuro a
+  // la sombra del párpado, L ~0,16-0,21, no se toca.
+  static constexpr float kIrisDarkLow = 0.08f;
+  static constexpr float kIrisDarkHigh = 0.14f;
+  // Bordes de la máscara: al menos este ancho en px de pantalla (en fwidth),
+  // con iris chicos (~5 px de radio) un borde de 0,1 radios titilaba.
+  static constexpr float kIrisMinFeatherPx = 1.5f;
+  // Reflejos de la luz (L alta): no se tapan.
+  static constexpr float kIrisSpecularLow = 0.72f;
+  static constexpr float kIrisSpecularHigh = 0.86f;
+  // smoothstep con bordes iguales no está definido en GLSL.
+  static_assert(kIrisPupilFeather > 0.0f && kIrisEdgeFeather > 0.0f, "bordes del iris");
+  static_assert(kIrisLimbalStart < 1.0f, "anillo limbal");
+  static_assert(kIrisSpecularLow < kIrisSpecularHigh && kIrisDarkLow < kIrisDarkHigh, "frenos del iris");
+
   // --- Efectos procedurales (P6; face.frag/eyes.frag/lips.frag) ---
   // Glitter: brillo de cada destello con intensity 1 y probabilidad de que una
   // celda brille con intensity 0 y 1.

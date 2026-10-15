@@ -76,6 +76,15 @@
             "length": { "$ref": "#/$defs/unit" },
             "volume": { "$ref": "#/$defs/unit" }
           }
+        },
+        "iris": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "opacity"],
+          "properties": {
+            "color": { "$ref": "#/$defs/hex" },
+            "opacity": { "$ref": "#/$defs/unit" }
+          }
         }
       }
     },

@@ -55,7 +55,8 @@ void uploadTexture(GlTexture& out, GLenum internalFormat, GLenum format, int wid
 bool FaceLayers::init(GLuint pointVbo, GLuint uvVbo, GLuint normalVbo, std::string* error) {
   return buildFaceProgram(face_, nullptr, error) && buildFaceProgram(faceEffects_, kEffectsDefines, error) &&
          buildEyesProgram(eyes_, nullptr, error) &&
-         buildEyesProgram(eyesShimmer_, kShimmerDefines, error) && buildGeometry(pointVbo, uvVbo, normalVbo) &&
+         buildEyesProgram(eyesShimmer_, kShimmerDefines, error) && buildIrisProgram(error) &&
+         buildGeometry(pointVbo, uvVbo, normalVbo) &&
          buildTextures(error);
 }
 
@@ -64,10 +65,13 @@ void FaceLayers::release() {
   faceEffects_.program.reset();
   eyes_.program.reset();
   eyesShimmer_.program.reset();
+  iris_.program.reset();
   faceVao_.reset();
   eyesVao_.reset();
+  irisVao_.reset();
   faceIbo_.reset();
   eyesIbo_.reset();
+  irisIbo_.reset();
   faceMap_.reset();
   eyeMapA_.reset();
   eyeMapB_.reset();
@@ -154,17 +158,54 @@ bool FaceLayers::buildEyesProgram(EyesProgram& out, const char* defines, std::st
   return true;
 }
 
-// VAOs de cara y ojos sobre los VBOs del Renderer (puntos dinámicos, UV y
-// normales estáticas) con su IBO estático cada uno.
+// Iris: mismos atributos que las otras pasadas; los parámetros de la máscara
+// y del tono son constantes de la sesión (engine_config.h).
+bool FaceLayers::buildIrisProgram(std::string* error) {
+  const char* attributes[] = {"aPoint", "aUv", "aNormal"};
+  GlProgram program = buildGlProgram(shaders::k_iris_vert, shaders::k_iris_frag, attributes, 3, error);
+  if (!program) return false;
+  const GLuint id = program.get();
+  iris_.imageToClip = glGetUniformLocation(id, "uImageToClip");
+  iris_.displayMatrix = glGetUniformLocation(id, "uDisplayMatrix");
+  iris_.texMatrix = glGetUniformLocation(id, "uTexMatrix");
+  iris_.view = glGetUniformLocation(id, "uView");
+  iris_.irisCenter = glGetUniformLocation(id, "uIrisCenter[0]");
+  iris_.irisShape = glGetUniformLocation(id, "uIrisShape[0]");
+  iris_.irisLab = glGetUniformLocation(id, "uIrisLab");
+  iris_.irisAmount = glGetUniformLocation(id, "uIrisAmount");
+  glUseProgram(id);
+  glUniform1i(glGetUniformLocation(id, "uCamera"), 0);
+  glUniform2f(glGetUniformLocation(id, "uFacingFade"), EngineConfig::kFaceFacingFadeStart,
+              EngineConfig::kFaceFacingFadeEnd);
+  glUniform4f(glGetUniformLocation(id, "uIrisMask"), EngineConfig::kIrisPupil, EngineConfig::kIrisPupilFeather,
+              EngineConfig::kIrisEdgeFeather, EngineConfig::kIrisLimbalStart);
+  glUniform4f(glGetUniformLocation(id, "uIrisTone"), EngineConfig::kIrisLimbalDarken, 1.0f / EngineConfig::kIrisRefL,
+              EngineConfig::kIrisShadingMin, EngineConfig::kIrisShadingMax);
+  glUniform2f(glGetUniformLocation(id, "uIrisFloor"), EngineConfig::kIrisShadingSlope,
+              EngineConfig::kIrisMinFeatherPx);
+  glUniform2f(glGetUniformLocation(id, "uIrisDark"), EngineConfig::kIrisDarkLow, EngineConfig::kIrisDarkHigh);
+  glUniform2f(glGetUniformLocation(id, "uIrisSpecular"), EngineConfig::kIrisSpecularLow,
+              EngineConfig::kIrisSpecularHigh);
+  glUseProgram(0);
+  iris_.uploadedDisplayVersion = 0;
+  iris_.program = std::move(program);
+  MAKEUP_GL_CHECK("buildIrisProgram");
+  return true;
+}
+
+// VAOs de cara, ojos e iris sobre los VBOs del Renderer (puntos dinámicos, UV
+// y normales estáticas) con su IBO estático cada uno.
 bool FaceLayers::buildGeometry(GLuint pointVbo, GLuint uvVbo, GLuint normalVbo) {
-  GLuint vaos[2] = {0, 0};
-  glGenVertexArrays(2, vaos);
+  GLuint vaos[3] = {0, 0, 0};
+  glGenVertexArrays(3, vaos);
   faceVao_.reset(vaos[0]);
   eyesVao_.reset(vaos[1]);
-  GLuint buffers[2] = {0, 0};
-  glGenBuffers(2, buffers);
+  irisVao_.reset(vaos[2]);
+  GLuint buffers[3] = {0, 0, 0};
+  glGenBuffers(3, buffers);
   faceIbo_.reset(buffers[0]);
   eyesIbo_.reset(buffers[1]);
+  irisIbo_.reset(buffers[2]);
 
   struct Zone {
     GLuint vao;
@@ -172,9 +213,10 @@ bool FaceLayers::buildGeometry(GLuint pointVbo, GLuint uvVbo, GLuint normalVbo) 
     const uint16_t* indices;
     size_t bytes;
   };
-  const Zone zones[2] = {
+  const Zone zones[3] = {
       {faceVao_.get(), faceIbo_.get(), mesh::kFaceRegionTriangles, sizeof(mesh::kFaceRegionTriangles)},
       {eyesVao_.get(), eyesIbo_.get(), mesh::kEyeRegionTriangles, sizeof(mesh::kEyeRegionTriangles)},
+      {irisVao_.get(), irisIbo_.get(), mesh::kEyeOpeningTriangles, sizeof(mesh::kEyeOpeningTriangles)},
   };
   for (const Zone& zone : zones) {
     glBindVertexArray(zone.vao);
@@ -295,6 +337,33 @@ void FaceLayers::drawEyes(const EyeUniforms& eyes, const LayerFrame& frame) {
   glBindVertexArray(0);
   glDisable(GL_BLEND);
   MAKEUP_GL_CHECK("drawEyes");
+}
+
+// Encima de las sombras y el delineado: solo cubre la abertura del ojo.
+void FaceLayers::drawIris(const IrisUniforms& iris, const LayerFrame& frame, const float* points) {
+  if (!iris.any() || points == nullptr || !irisEllipses(points, irisCenters_, irisInverse_)) return;
+  glUseProgram(iris_.program.get());
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_EXTERNAL_OES, frame.cameraTexture);
+  if (iris_.uploadedDisplayVersion != frame.displayVersion) {
+    glUniformMatrix4fv(iris_.displayMatrix, 1, GL_FALSE, frame.displayMatrix);
+    iris_.uploadedDisplayVersion = frame.displayVersion;
+  }
+  glUniformMatrix4fv(iris_.texMatrix, 1, GL_FALSE, frame.texMatrix);
+  glUniform4fv(iris_.imageToClip, 1, frame.imageToClip);
+  glUniform3fv(iris_.view, 1, frame.view);
+  glUniform2fv(iris_.irisCenter, 2, irisCenters_);
+  glUniformMatrix2fv(iris_.irisShape, 2, GL_FALSE, irisInverse_);
+  glUniform3fv(iris_.irisLab, 1, iris.lab);
+  glUniform1f(iris_.irisAmount, iris.amount * frame.alpha);
+
+  glEnable(GL_BLEND);
+  glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+  glBindVertexArray(irisVao_.get());
+  glDrawElements(GL_TRIANGLES, mesh::kEyeOpeningTriangleCount * 3, GL_UNSIGNED_SHORT, nullptr);
+  glBindVertexArray(0);
+  glDisable(GL_BLEND);
+  MAKEUP_GL_CHECK("drawIris");
 }
 
 }  // namespace makeup

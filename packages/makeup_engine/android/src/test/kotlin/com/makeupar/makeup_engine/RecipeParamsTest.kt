@@ -132,6 +132,18 @@ class RecipeParamsTest {
     }
 
     @Test
+    fun `iris con color y opacidad`() {
+        val eyes = RecipeParams.fromMap(
+            mapOf("eyes" to mapOf("iris" to mapOf("color" to "#3A7BD5", "opacity" to 0.6))),
+        ).eyes
+        assertTrue(eyes.iris.enabled)
+        assertNear(0x3A / 255f, eyes.iris.r)
+        assertNear(0.6f, eyes.iris.amount)
+        assertFalse(RecipeParams.fromMap(mapOf("eyes" to mapOf("iris" to mapOf("color" to "#3A7BD5")))).eyes.iris.enabled)
+        assertFalse(RecipeParams.fromMap(mapOf("eyes" to emptyMap<String, Any>())).eyes.iris.enabled)
+    }
+
+    @Test
     fun `efectos con región por defecto según el tipo`() {
         val params = RecipeParams.fromMap(
             mapOf(

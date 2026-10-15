@@ -487,5 +487,9 @@
     "studioQaBlocked": "Corregí lo marcado en rojo para publicar.",
     "@studioQaBlocked": {
         "description": "El QA bloquea la publicación."
+    },
+    "studioLayerIris": "Iris (lentes de color)",
+    "@studioLayerIris": {
+        "description": "Capa de color de iris de la receta (eyes.iris)."
     }
 }

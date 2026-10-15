@@ -40,6 +40,15 @@ void main() {
     expect(half.cheeks?.opacity, closeTo(0.125, 1e-9));
     expect(half.eyes?.liner?.opacity, closeTo(0.45, 1e-9));
     expect(half.eyes?.lashes?.opacity, closeTo(0.4, 1e-9));
+    // El iris se conserva y escala como las demás capas.
+    final blue = MakeupRecipe(
+      name: 'Iris',
+      eyes: EyesSpec(iris: const ColorLayer(color: RecipeColor(0x3A7BD5), opacity: 0.6)),
+    );
+    final blueHalf = adjustRecipe(blue, intensity: 0.5);
+    expect(blueHalf.eyes?.iris?.opacity, closeTo(0.3, 1e-9));
+    expect(blueHalf.eyes?.iris?.color, const RecipeColor(0x3A7BD5));
+    expect(adjustRecipe(blue, zone: MakeupZone.lips).eyes, isNull);
     // Lo que no es opacidad no cambia.
     expect(half.eyes?.liner?.wing, red.eyes?.liner?.wing);
     expect(half.lips?.lumaFollow, red.lips?.lumaFollow);

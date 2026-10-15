@@ -38,6 +38,35 @@ bool FaceUniforms::effects() const {
   return std::any_of(std::begin(effectAmount), std::end(effectAmount), [](float a) { return a > 0.0f; });
 }
 
+bool irisEllipses(const float* points, float centers[4], float inverse[8]) {
+  static_assert(EngineConfig::kIrisRingPoints == 4, "el anillo del iris tiene 4 puntos opuestos de a pares");
+  const int first[2] = {EngineConfig::kIrisFirstCenter, EngineConfig::kIrisSecondCenter};
+  for (int eye = 0; eye < 2; ++eye) {
+    const float* c = points + first[eye] * 3;
+    const float* p1 = points + (first[eye] + 1) * 3;
+    const float* p2 = points + (first[eye] + 2) * 3;
+    const float* p3 = points + (first[eye] + 3) * 3;
+    const float* p4 = points + (first[eye] + 4) * 3;
+    const float ux = 0.5f * (p1[0] - p3[0]);
+    const float uy = 0.5f * (p1[1] - p3[1]);
+    const float vx = 0.5f * (p2[0] - p4[0]);
+    const float vy = 0.5f * (p2[1] - p4[1]);
+    const float det = ux * vy - vx * uy;
+    const float minArea = EngineConfig::kIrisMinRadiusPx * EngineConfig::kIrisMinRadiusPx;
+    if (!std::isfinite(det) || !std::isfinite(c[0]) || !std::isfinite(c[1]) || std::fabs(det) < minArea) {
+      return false;
+    }
+    centers[eye * 2] = c[0];
+    centers[eye * 2 + 1] = c[1];
+    float* m = inverse + eye * 4;
+    m[0] = vy / det;
+    m[1] = -uy / det;
+    m[2] = -vx / det;
+    m[3] = ux / det;
+  }
+  return true;
+}
+
 bool EyeUniforms::any() const {
   return linerAmount > 0.0f || lashAmount > 0.0f || glitter > 0.0f || sheen > 0.0f ||
          std::any_of(std::begin(shadowAmount), std::end(shadowAmount), [](float a) { return a > 0.0f; });

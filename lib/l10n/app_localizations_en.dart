@@ -573,4 +573,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get studioQaBlocked => 'Fix the items in red to publish.';
+
+  @override
+  String get studioLayerIris => 'Iris (colored lenses)';
 }

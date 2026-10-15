@@ -234,5 +234,6 @@
     "studioQaMaskFoundation": "Base muito pesada (efeito máscara)",
     "studioQaHeavyBlush": "Blush muito grande e intenso",
     "studioQaEffects": "3 efeitos ao mesmo tempo: não medido no telefone de referência",
-    "studioQaBlocked": "Corrija os itens em vermelho para publicar."
+    "studioQaBlocked": "Corrija os itens em vermelho para publicar.",
+    "studioLayerIris": "Íris (lentes coloridas)"
 }

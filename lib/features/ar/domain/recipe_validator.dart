@@ -61,7 +61,7 @@ final class RecipeValidator {
   static const _lipsKeys = {'color', 'opacity', 'finish', 'gloss', 'lumaFollow', 'liner'};
   static const _colorLayerKeys = {'color', 'opacity'};
   static const _cheeksKeys = {'color', 'opacity', 'spread', 'placement'};
-  static const _eyesKeys = {'shadow', 'liner', 'lashes'};
+  static const _eyesKeys = {'shadow', 'liner', 'lashes', 'iris'};
   static const _shadowKeys = {'color', 'opacity', 'region', 'finish'};
   static const _eyeLinerKeys = {'color', 'opacity', 'thickness', 'wing'};
   static const _lashesKeys = {'opacity', 'length', 'volume'};
@@ -155,7 +155,8 @@ final class RecipeValidator {
         : null;
     final liner = map.containsKey('liner') ? _parseEyeLiner(ctx, map['liner'], '$path.liner') : null;
     final lashes = map.containsKey('lashes') ? _parseLashes(ctx, map['lashes'], '$path.lashes') : null;
-    return EyesSpec(shadow: shadow, liner: liner, lashes: lashes);
+    final iris = map.containsKey('iris') ? _parseColorLayer(ctx, map['iris'], '$path.iris') : null;
+    return EyesSpec(shadow: shadow, liner: liner, lashes: lashes, iris: iris);
   }
 
   EyeShadowLayer? _parseShadow(_Context ctx, Object? json, String path) {

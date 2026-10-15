@@ -360,5 +360,6 @@
     "studioQaMaskFoundation": "Very heavy foundation (mask effect)",
     "studioQaHeavyBlush": "Very large, intense blush",
     "studioQaEffects": "3 effects at once: not measured on the reference phone",
-    "studioQaBlocked": "Fix the items in red to publish."
+    "studioQaBlocked": "Fix the items in red to publish.",
+    "studioLayerIris": "Iris (colored lenses)"
 }

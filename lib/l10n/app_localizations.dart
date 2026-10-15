@@ -1157,6 +1157,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fix the items in red to publish.'**
   String get studioQaBlocked;
+
+  /// No description provided for @studioLayerIris.
+  ///
+  /// In en, this message translates to:
+  /// **'Iris (colored lenses)'**
+  String get studioLayerIris;
 }
 
 class _AppLocalizationsDelegate

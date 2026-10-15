@@ -315,6 +315,7 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
     baseLips_ = lipUniforms_;
     baseFace_ = faceUniforms_;
     baseEyes_ = eyeUniforms_;
+    baseIris_ = irisUniforms_;
     drawRecipeVersion_ = recipeVersion;
     adapt = true;
   }
@@ -330,7 +331,8 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   const bool showLandmarks = showLandmarks_.load(std::memory_order_relaxed);
   const auto region = static_cast<TintRegion>(region_.load(std::memory_order_relaxed));
   const bool wantLips = region == TintRegion::kMakeup && drawLips_.enabled && drawLips_.opacity > 0.0f;
-  const bool wantFace = region == TintRegion::kMakeup && (drawFace_.any() || drawEyes_.any());
+  const bool wantFace =
+      region == TintRegion::kMakeup && (drawFace_.any() || drawEyes_.any() || drawIris_.any());
   float frameDt = lastFrameStartNs_ > 0
                       ? static_cast<float>(frameStartNs - lastFrameStartNs_) / kNsPerSecond
                       : 0.0f;
@@ -384,7 +386,7 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   MAKEUP_GL_CHECK("drawFrame");
 
   // Sin cara no hay maquillaje: queda el paso directo. Orden de las capas:
-  // cara (base, contorno, rubor, iluminador), ojos, labios.
+  // cara (base, contorno, rubor, iluminador), ojos, iris, labios.
   if (wantFace && hasMesh) drawFaceLayers(landmarks, imageToClip, texMatrix, frameStartNs);
   if (wantLips && hasMesh) drawLips(landmarks, imageToClip, texMatrix, frameStartNs);
   if (showLandmarks && hasMesh) drawLandmarks(landmarks.alpha, imageToClip, width, height);
@@ -422,6 +424,7 @@ void Renderer::adaptRecipeColors(bool enabled) {
   drawLips_ = baseLips_;
   drawFace_ = baseFace_;
   drawEyes_ = baseEyes_;
+  drawIris_ = baseIris_;
   drawLightAdapted_ = enabled;
   if (!enabled) return;
   const Vec3& gain = sceneLight_.gain();
@@ -431,6 +434,7 @@ void Renderer::adaptRecipeColors(bool enabled) {
   for (auto& lab : drawEyes_.shadowLab) adaptOklab(lab, gain);
   adaptOklab(drawEyes_.linerLab, gain);
   adaptOklab(drawEyes_.lashLab, gain);
+  adaptOklab(drawIris_.lab, gain);
 }
 
 void Renderer::runCropPass(const float* texMatrix, int width, int height,
@@ -489,6 +493,7 @@ void Renderer::drawFaceLayers(const RenderLandmarks& landmarks, const float* ima
       static_cast<float>(std::fmod(static_cast<double>(frameStartNs) / 1.0e9, kTimeWrapSeconds));
   faceLayers_.drawFace(drawFace_, frame);
   faceLayers_.drawEyes(drawEyes_, frame);
+  faceLayers_.drawIris(drawIris_, frame, landmarks.points);
 }
 
 // Triángulos de la zona de labios encima de lo ya dibujado (cámara y capas de
@@ -669,6 +674,11 @@ void Renderer::setLashes(const LashStyle& style) {
   pendingLashes_ = style;
 }
 
+void Renderer::setIris(const ColorLayer& style) {
+  std::lock_guard<std::mutex> lock(configMutex_);
+  pendingIris_ = style;
+}
+
 void Renderer::setEffect(int slot, const EffectStyle& style) {
   if (slot < 0 || slot >= kMaxEffects) return;
   std::lock_guard<std::mutex> lock(configMutex_);
@@ -680,6 +690,7 @@ void Renderer::commitRecipe() {
   lipUniforms_ = pendingLips_;
   faceUniforms_ = resolveFace(pendingSkin_, pendingCheek_);
   eyeUniforms_ = resolveEyes(pendingShadows_, pendingLiner_, pendingLashes_);
+  resolveColorLayer(pendingIris_, irisUniforms_.lab, &irisUniforms_.amount);
   LipEffects lipEffects;
   applyEffects(pendingEffects_, &faceUniforms_, &eyeUniforms_, &lipEffects);
   // Delineado de labios (face_style: mismo recorte que las otras capas).

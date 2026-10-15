@@ -85,6 +85,8 @@ class Renderer {
   void setEyeShadow(int slot, const EyeShadowStyle& style);
   void setLiner(const LinerStyle& style);
   void setLashes(const LashStyle& style);
+  // Color de iris (lentes de contacto).
+  void setIris(const ColorLayer& style);
   // [slot] en [0, kMaxEffects).
   void setEffect(int slot, const EffectStyle& style);
   void commitRecipe();
@@ -218,10 +220,12 @@ class Renderer {
   EyeShadowStyle pendingShadows_[kMaxEyeShadows];
   LinerStyle pendingLiner_;
   LashStyle pendingLashes_;
+  ColorLayer pendingIris_;
   EffectStyle pendingEffects_[kMaxEffects];
   LipUniforms lipUniforms_;
   FaceUniforms faceUniforms_;
   EyeUniforms eyeUniforms_;
+  IrisUniforms irisUniforms_;
   // Se incrementan al cambiar la geometría o publicar una receta: el hilo de
   // render solo toma el mutex cuando cambian, no en cada frame.
   std::atomic<uint32_t> displayVersion_{1};
@@ -235,12 +239,14 @@ class Renderer {
   LipUniforms drawLips_;
   FaceUniforms drawFace_;
   EyeUniforms drawEyes_;
+  IrisUniforms drawIris_;
   uint32_t drawRecipeVersion_ = 0;
   // Colores de la receta sin adaptar (draw*_ son las copias adaptadas a la
   // luz de la escena; scene_light.h). Solo hilo de render.
   LipUniforms baseLips_;
   FaceUniforms baseFace_;
   EyeUniforms baseEyes_;
+  IrisUniforms baseIris_;
   bool drawLightAdapted_ = false;
   std::atomic<bool> lightAdaptation_{true};
   std::array<float, EngineConfig::kLandmarkCount * 2> meshPoints_{};

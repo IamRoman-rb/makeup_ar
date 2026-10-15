@@ -223,3 +223,15 @@ TEST(caraMapas_zonaDeEfectos) {
   CHECK(face(0.4f, 0.8f, 3) < 0.1f);    // frente
   CHECK(face(0.5f, 0.2f, 3) < 0.1f);    // mentón
 }
+
+TEST(ojosMapas_aberturasParaElIris) {
+  CHECK(mesh::kEyeOpeningTriangleCount == 28);
+  // Solo puntos del contorno de los ojos (FACEMESH_LEFT_EYE / RIGHT_EYE).
+  const int contour[] = {33,  7,   163, 144, 145, 153, 154, 155, 133, 246, 161, 160, 159, 158, 157, 173,
+                         263, 249, 390, 373, 374, 380, 381, 382, 362, 466, 388, 387, 386, 385, 384, 398};
+  for (int i = 0; i < mesh::kEyeOpeningTriangleCount * 3; ++i) {
+    bool found = false;
+    for (int c : contour) found = found || mesh::kEyeOpeningTriangles[i] == c;
+    CHECK(found);
+  }
+}

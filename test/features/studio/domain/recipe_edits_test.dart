@@ -92,6 +92,19 @@ void main() {
     expect(liner.eyes?.liner?.color, color);
   });
 
+  test('iris: se agrega, se edita y se quita', () {
+    const blue = RecipeColor(0x3A7BD5);
+    final base = MakeupRecipe(name: 'x');
+    final withIris = RecipeEdits.withColorOrAdd(base, RecipeLayer.iris, blue);
+    expect(withIris.eyes?.iris?.color, blue);
+    expect(withIris.eyes?.iris?.opacity, 0.6);
+    expect(RecipeEdits.layersOf(withIris), [RecipeLayer.iris]);
+    final softer = RecipeEdits.withAmount(withIris, RecipeLayer.iris, 0.3);
+    expect(softer.eyes?.iris?.opacity, 0.3);
+    final removed = RecipeEdits.without(softer, RecipeLayer.iris);
+    expect(removed.eyes, isNull);
+  });
+
   test('acabado y nombre', () {
     final matte = RecipeEdits.withLipFinish(red, LipFinish.matte);
     expect(matte.lips?.finish, LipFinish.matte);

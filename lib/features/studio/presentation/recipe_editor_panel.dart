@@ -27,6 +27,7 @@ class RecipeEditorPanel extends StatelessWidget {
         RecipeLayer.shadow1 => l10n.studioLayerShadow(2),
         RecipeLayer.shadow2 => l10n.studioLayerShadow(3),
         RecipeLayer.shadow3 => l10n.studioLayerShadow(4),
+        RecipeLayer.iris => l10n.studioLayerIris,
       };
 
   @override

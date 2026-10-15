@@ -25,7 +25,9 @@ enum RecipeLayer {
   shadow0(['eyes', 'shadow', 0]),
   shadow1(['eyes', 'shadow', 1]),
   shadow2(['eyes', 'shadow', 2]),
-  shadow3(['eyes', 'shadow', 3]);
+  shadow3(['eyes', 'shadow', 3]),
+  // Lentes de contacto de color (fase 4).
+  iris(['eyes', 'iris']);
 
   const RecipeLayer(this.path, {this.amountKey = 'opacity', this.hasColor = true});
 
@@ -112,6 +114,8 @@ abstract final class RecipeEdits {
           ...shadows,
           {'color': hex, 'opacity': 0.5, 'region': free.wireName, 'finish': ShadowFinish.matte.wireName},
         ];
+      case RecipeLayer.iris:
+        region('eyes')['iris'] = {'color': hex, 'opacity': 0.6};
       case RecipeLayer.lashes:
         return recipe;
     }

@@ -1,7 +1,7 @@
 // System prompts de generateRecipe (motor_ar_propio.md §10.4 y §10.7). En
 // inglés porque suele ser más estable; el usuario escribe en cualquier idioma.
 // Van con el esquema completo: así el modelo conoce todas las claves (cheeks.
-// placement, eyes.lashes, effects...). El contrato igual lo impone Ajv.
+// placement, eyes.lashes, eyes.iris, effects...). El contrato igual lo impone Ajv.
 import { recipeSchema } from './recipeSchema';
 
 const RULES = `- Use only the keys defined in the schema. Never add keys. Omit regions the user did not mention unless the
@@ -10,6 +10,8 @@ const RULES = `- Use only the keys defined in the schema. Never add keys. Omit r
 - lips.finish: matte|satin|gloss|shimmer. eyes.shadow[].finish: matte|satin|shimmer.
 - Typical ranges: lips.opacity 0.6-0.95; cheeks.opacity 0.15-0.45; shadow opacity 0.25-0.7;
   liner opacity 0.7-1; foundation coverage 0.2-0.6.
+- eyes.iris recolors the iris (colored contact lenses). Use it ONLY if the user asks for eye/iris/lens color;
+  opacity 0.4-0.8.
 - Vocabulary: "nude" = low-chroma warm browns/pinks; "gothic" = near-black plum or burgundy lips, strong liner,
   cool tones; "glossy" = finish gloss with gloss >= 0.5; "matte" = finish matte with gloss 0;
   "natural"/"no-makeup" = low opacities everywhere.

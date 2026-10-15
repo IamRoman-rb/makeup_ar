@@ -20,7 +20,9 @@ set(SHADER_FILES
     ${SHADER_DIR}/lips.frag
     ${SHADER_DIR}/face.vert
     ${SHADER_DIR}/face.frag
-    ${SHADER_DIR}/eyes.frag)
+    ${SHADER_DIR}/eyes.frag
+    ${SHADER_DIR}/iris.vert
+    ${SHADER_DIR}/iris.frag)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${SHADER_FILES})
 
 set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)

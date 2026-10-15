@@ -189,6 +189,17 @@ class Geometry:
                     crossing.add(index)
         return crossing, counts
 
+    def eye_openings(self):
+        """Triángulos que tapan las aberturas de los ojos (la capa de iris se
+        dibuja solo sobre ellos: los párpados la recortan solos)."""
+        polygons = [self.eye_opening, self.left_eye_opening]
+        out = []
+        for tri in self.triangles:
+            centroid = self.uv[list(tri)].mean(axis=0)
+            if any(mesh.point_in_polygon(centroid[0], centroid[1], [tuple(p) for p in poly]) for poly in polygons):
+                out.append(tri)
+        return out
+
 
 def build_face(params: dict, geo: Geometry):
     fm = params["faceMap"]
@@ -384,7 +395,7 @@ def face_header(params, rgb, rect, cheeks, face, counts) -> str:
     ])
 
 
-def eye_header(params, a8, b8, c8, rect, max_distance, wing_length, wing_direction, eyes) -> str:
+def eye_header(params, a8, b8, c8, rect, max_distance, wing_length, wing_direction, eyes, openings) -> str:
     height, width, _ = a8.shape
     return "\n".join([
         "// Generado por tools/uv_masks/gen_face_maps.py desde tools/uv_masks/face.json.",
@@ -424,6 +435,10 @@ def eye_header(params, a8, b8, c8, rect, max_distance, wing_length, wing_directi
         f"inline constexpr int kEyeRegionTriangleCount = {len(eyes)};",
         "",
         mesh.c_array("kEyeRegionTriangles", "uint16_t", [i for t in eyes for i in t], 15, str),
+        "// Triángulos de las aberturas de los dos ojos (capa de iris).",
+        f"inline constexpr int kEyeOpeningTriangleCount = {len(openings)};",
+        "",
+        mesh.c_array("kEyeOpeningTriangles", "uint16_t", [i for t in openings for i in t], 15, str),
         mesh.c_array("kEyeMapA", "uint8_t", a8.ravel().tolist(), 32, str),
         mesh.c_array("kEyeMapB", "uint8_t", b8.ravel().tolist(), 32, str),
         mesh.c_array("kEyeMapC", "uint8_t", c8.ravel().tolist(), 32, str),
@@ -479,7 +494,7 @@ def main() -> int:
     outputs = {
         FACE_HEADER: face_header(params, rgb, face_rect, cheeks, face, counts).encode("utf-8"),
         EYE_HEADER: eye_header(params, a8, b8, c8, eye_rect, max_distance, wing_length, wing_direction,
-                               eyes).encode("utf-8"),
+                               eyes, geo.eye_openings()).encode("utf-8"),
         FACE_PREVIEW: face_preview(rgb),
         EYE_PREVIEW: eye_preview(a8, b8, c8),
     }

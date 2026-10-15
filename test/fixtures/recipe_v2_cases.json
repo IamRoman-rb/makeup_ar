@@ -2019,6 +2019,121 @@
           }
         }
       }
+    },
+    {
+      "id": "iris_ok",
+      "group": "extra",
+      "valid": true,
+      "description": "eyes.iris",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          },
+          "lashes": {
+            "opacity": 0.7,
+            "length": 0.5,
+            "volume": 0.5
+          },
+          "iris": {
+            "color": "#3A7BD5",
+            "opacity": 0.6
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
+    },
+    {
+      "id": "iris_clave_extra",
+      "group": "extra",
+      "valid": false,
+      "description": "eyes.iris con una clave fuera del esquema",
+      "recipe": {
+        "schema": "makeup-recipe/2",
+        "name": "Rojo clásico",
+        "lips": {
+          "color": "#B3122D",
+          "opacity": 0.85,
+          "finish": "gloss",
+          "gloss": 0.6,
+          "lumaFollow": 0.35
+        },
+        "cheeks": {
+          "color": "#E8837A",
+          "opacity": 0.28,
+          "spread": 0.7
+        },
+        "eyes": {
+          "shadow": [
+            {
+              "color": "#5B3A29",
+              "opacity": 0.4,
+              "region": "lid"
+            },
+            {
+              "color": "#2B1B17",
+              "opacity": 0.5,
+              "region": "outer_v"
+            }
+          ],
+          "liner": {
+            "color": "#111111",
+            "opacity": 0.9,
+            "thickness": 0.5,
+            "wing": 0.3
+          },
+          "lashes": {
+            "opacity": 0.7,
+            "length": 0.5,
+            "volume": 0.5
+          },
+          "iris": {
+            "color": "#3A7BD5",
+            "opacity": 0.6,
+            "pupil": 0.4
+          }
+        },
+        "skin": {
+          "foundation": {
+            "color": "#D9A98B",
+            "coverage": 0.35
+          }
+        }
+      }
     }
   ]
 }

@@ -576,4 +576,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get studioQaBlocked => 'Corrija os itens em vermelho para publicar.';
+
+  @override
+  String get studioLayerIris => 'Íris (lentes coloridas)';
 }

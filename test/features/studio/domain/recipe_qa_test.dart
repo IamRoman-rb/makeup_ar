@@ -110,6 +110,16 @@ void main() {
     expect(report.levelOf(QaCheckKind.cost), QaLevel.warn);
   });
 
+  test('el iris no entra en los chequeos de piel', () {
+    final report = RecipeQa.check(recipe({
+      'eyes': {
+        'iris': {'color': '#3A7BD5', 'opacity': 0.02},
+      },
+    }));
+    expect(report.issues.where((i) => i.layer == RecipeLayer.iris), isEmpty);
+    expect(report.blocksPublish, isFalse);
+  });
+
   test('una receta normal pasa todo', () {
     final report = RecipeQa.check(RecipePresets.byId('classic_red').recipe);
     for (final kind in QaCheckKind.values) {

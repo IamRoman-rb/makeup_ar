@@ -88,6 +88,7 @@ EyesSpec _scaleEyes(EyesSpec eyes, double Function(double) scale) {
   final shadow = eyes.shadow;
   final liner = eyes.liner;
   final lashes = eyes.lashes;
+  final iris = eyes.iris;
   return EyesSpec(
     shadow: shadow == null
         ? null
@@ -99,5 +100,6 @@ EyesSpec _scaleEyes(EyesSpec eyes, double Function(double) scale) {
         ? null
         : EyeLinerSpec(color: liner.color, opacity: scale(liner.opacity), thickness: liner.thickness, wing: liner.wing),
     lashes: lashes == null ? null : LashesSpec(opacity: scale(lashes.opacity), length: lashes.length, volume: lashes.volume),
+    iris: iris == null ? null : ColorLayer(color: iris.color, opacity: scale(iris.opacity)),
   );
 }

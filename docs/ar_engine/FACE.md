@@ -345,3 +345,29 @@ El motor ya adaptaba la luminosidad: el sombreado es relativo a la L medida del 
   - al cambiar la receta, los colores se adaptan antes de decidir qué se dibuja (antes había un frame de atraso).
 
 **Sin cambios, hasta tener números del E20:** el costo de las hebras (~60 ALU por píxel de pestaña, menos del 1 % del frame) y el de la oclusión (~15 ALU, solo con la compuerta prendida).
+
+## 12. Iris: lentes de contacto de color (fase 4)
+
+Receta: `eyes.iris: {color, opacity}`, opcional (cambio aditivo al esquema; las recetas viejas siguen valiendo). El LLM lo usa solo si se pide color de ojos o de lentes (`functions/src/prompt.ts`).
+
+**Sin modelo nuevo.** FaceMesh-V2 ya devuelve 478 puntos: los 10 últimos son el iris (centros 468 y 473, cada uno con 4 puntos del anillo). El tracker los filtra igual que el resto.
+
+**Geometría y párpados.** La pasada dibuja solo los 28 triángulos de la malla canónica que tapan las aberturas de los ojos (`mesh::kEyeOpeningTriangles`, generados por `gen_face_maps.py`). Lo que queda fuera de la abertura no se toca: los párpados recortan el iris solos, también al parpadear (los triángulos colapsan).
+
+**Por frame:** `irisEllipses` (`face_style.cpp`) arma en CPU la elipse de cada iris con los semiejes del anillo, u = (p1 − p3)/2 y v = (p2 − p4)/2, y sube su centro y la inversa de [u v] (`mat2`). Con el ojo girado el iris se ve achatado y con la cabeza inclinada, rotado: un círculo de radio medio teñía una franja de esclera a los costados (revisión de shaders). Si la media geométrica de los semiejes es menor que `kIrisMinRadiusPx` o algo no es finito, no se dibuja. Sin allocations ni cruces JNI.
+
+**Sombreado (`iris.frag`, referencia `tools/makeup/iris_shading.py`):**
+- r = |inversa · (p − centro)|: 1 en el anillo (el iris más cercano de los dos).
+- Máscara: sin color en la pupila (r < `kIrisPupil` 0,38, con borde) ni fuera del iris (borde de ±0,1 radios). Los bordes miden al menos 1,5 px de pantalla (`fwidth`): con iris de ~5 px de radio titilaban.
+- El color sigue la textura de la cámara: `s = min(max(L/kIrisRefL, 0,45 + 0,5 · L/kIrisRefL), 1,5)`. El piso es suave: un iris oscuro sube para que el color se note, pero una fibra más oscura sigue siendo más oscura (con un `clamp` duro quedaba plano, como un sticker).
+- Pupila y sombras muy oscuras (L OKLab < 0,08–0,14): el color se apaga. Un iris castaño oscuro a la sombra del párpado (L ~0,16–0,21) se tiñe igual.
+- Anillo limbal: desde r = 0,72 la L baja hasta un 35 % en el borde, como en los lentes reales.
+- Reflejos (L del píxel > 0,72–0,86): se conservan.
+- Mezcla en OKLab y `layerOver`, como las demás capas; se adapta a la luz de la escena (P7).
+- 1 lectura de textura, y solo dentro del disco (la esclera sale antes).
+
+**Revisiones de cierre (2026-10-15):** `perf-auditor` sin hallazgos (sin allocations ni JNI por frame; 28 triángulos, 1 lectura). `shader-reviewer`: elipse en lugar de círculo, freno por oscuridad y piso suave, borde mínimo en px, precisión y documentación de uniforms y `static_assert` de los bordes; todo aplicado. No se cambió el `fragColor = vec4(0)` de la salida temprana por `discard` (en Mali puede apagar early-Z).
+
+**Studio:** capa "Iris (lentes de color)" en el editor (`RecipeLayer.iris`). El QA no la evalúa: no va sobre la piel. El análisis "Desde foto" no la mide (las fotos de referencia casi nunca tienen lentes).
+
+**Para probar en el E20:** arnés del tracker → opción "Iris azul". Revisar que el color no se salga de la abertura al mirar a los costados, al parpadear y con la cabeza girada, y que el reflejo de la luz quede blanco.

@@ -45,7 +45,7 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
   bool _inFlight = false;
   bool? _granted;
   final EngineImageAnalyzer _analyzer = EngineImageAnalyzer();
-  late List<TestFilterOption> _extraOptions = [_lipLinerOption()];
+  late List<TestFilterOption> _extraOptions = [_lipLinerOption(), _irisOption()];
   bool _analyzing = false;
 
   @override
@@ -126,6 +126,7 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
       setState(() {
         _extraOptions = [
           _lipLinerOption(),
+          _irisOption(),
           for (var i = 0; i < variants.length; i++)
             TestFilterOption(id: 'photo-${_clock.elapsedMilliseconds}-$i', label: variants[i].name, recipe: variants[i]),
         ];
@@ -183,6 +184,19 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
       skin: red.skin,
     );
     return TestFilterOption(id: 'lip_liner_test', label: recipe.name, recipe: recipe);
+  }
+
+  /// Receta de prueba del iris (fase 4): ningún preset lo usa. Lentes azules
+  /// con un delineado suave, para ver la oclusión por los párpados.
+  static TestFilterOption _irisOption() {
+    final recipe = MakeupRecipe(
+      name: 'Iris azul',
+      eyes: EyesSpec(
+        liner: const EyeLinerSpec(color: RecipeColor(0x1A1414), opacity: 0.8, thickness: 0.4),
+        iris: const ColorLayer(color: RecipeColor(0x3A7BD5), opacity: 0.65),
+      ),
+    );
+    return TestFilterOption(id: 'iris_test', label: recipe.name, recipe: recipe);
   }
 
   static String _f(double? value, [int digits = 1]) => value == null ? '-' : value.toStringAsFixed(digits);

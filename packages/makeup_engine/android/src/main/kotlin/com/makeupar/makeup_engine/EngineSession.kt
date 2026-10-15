@@ -370,6 +370,8 @@ internal class EngineSession(
         NativeBridge.nativeSetLiner(handle, ink.enabled, ink.r, ink.g, ink.b, ink.amount, liner.thickness, liner.wing)
         val lashes = params.eyes.lashes
         NativeBridge.nativeSetLashes(handle, lashes.enabled, lashes.opacity, lashes.length, lashes.volume)
+        val iris = params.eyes.iris
+        NativeBridge.nativeSetIris(handle, iris.enabled, iris.r, iris.g, iris.b, iris.amount)
         params.effects.forEachIndexed { slot, effect ->
             NativeBridge.nativeSetEffect(handle, slot, effect.enabled, effect.type, effect.intensity, effect.region)
         }

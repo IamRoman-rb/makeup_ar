@@ -232,6 +232,11 @@ void nativeSetLashes(JNIEnv*, jclass, jlong handle, jboolean enabled, jfloat opa
   fromHandle(handle)->renderer.setLashes(style);
 }
 
+void nativeSetIris(JNIEnv*, jclass, jlong handle, jboolean enabled, jfloat r, jfloat g, jfloat b,
+                   jfloat opacity) {
+  fromHandle(handle)->renderer.setIris(colorLayer(enabled, r, g, b, opacity));
+}
+
 void nativeSetEffect(JNIEnv*, jclass, jlong handle, jint slot, jboolean enabled, jint type, jfloat intensity,
                      jint region) {
   makeup::EffectStyle style;
@@ -422,6 +427,7 @@ const JNINativeMethod kMethods[] = {
     {"nativeSetEyeShadow", "(JIZFFFFII)V", reinterpret_cast<void*>(nativeSetEyeShadow)},
     {"nativeSetLiner", "(JZFFFFFF)V", reinterpret_cast<void*>(nativeSetLiner)},
     {"nativeSetLashes", "(JZFFF)V", reinterpret_cast<void*>(nativeSetLashes)},
+    {"nativeSetIris", "(JZFFFF)V", reinterpret_cast<void*>(nativeSetIris)},
     {"nativeSetEffect", "(JIZIFI)V", reinterpret_cast<void*>(nativeSetEffect)},
     {"nativeCommitRecipe", "(J)V", reinterpret_cast<void*>(nativeCommitRecipe)},
     {"nativeDrawFrame", "(J[FIIJJ)I", reinterpret_cast<void*>(nativeDrawFrame)},

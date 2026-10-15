@@ -61,6 +61,23 @@ struct LinerStyle {
   float wing = 0.0f;       // [0,1]: largo del wing (0 = sin wing)
 };
 
+// Uniforms de iris.frag (color de los lentes; 0 = sin capa).
+struct IrisUniforms {
+  float lab[3] = {0.0f, 0.0f, 0.0f};
+  float amount = 0.0f;
+
+  bool any() const { return amount > 0.0f; }
+};
+
+// Elipse de cada iris en px de imagen, en el orden de los landmarks (468 y
+// 473): semiejes u = (p1 - p3) / 2 y v = (p2 - p4) / 2 del anillo, así un ojo
+// girado (iris achatado) o una cabeza inclinada quedan bien. [centers]: (x, y)
+// × 2; [inverse]: la inversa de [u v] (mat2 column-major) × 2, que lleva un
+// punto p a la unidad: r = |inverse · (p - centro)| (r = 1 en el anillo).
+// [points]: kLandmarkCount × (x, y, z). Devuelve false si alguna es más chica
+// que kIrisMinRadiusPx o no es finita (no se dibuja).
+bool irisEllipses(const float* points, float centers[4], float inverse[8]);
+
 // Uniforms de face.frag. Capas en orden de mezcla: base, contorno, rubor,
 // iluminador (ver kFace*).
 inline constexpr int kFaceFoundation = 0;

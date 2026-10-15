@@ -578,4 +578,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get studioQaBlocked => 'Corregí lo marcado en rojo para publicar.';
+
+  @override
+  String get studioLayerIris => 'Iris (lentes de color)';
 }
