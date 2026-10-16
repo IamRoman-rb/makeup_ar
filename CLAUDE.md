@@ -24,6 +24,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 
 - `flutter pub get` · `flutter analyze` · `flutter test`
 - Medir rendimiento siempre en profile: `flutter run --profile -d <id>`. Nunca en debug.
+- Arranque de la app: líneas `STARTUP <etapa> <ms>` en logcat (`lib/startup_trace.dart`); protocolo de arranque en frío con `adb shell am start -W` en `docs/ar_engine/STARTUP.md`.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
 - Benchmark del tracker (LiteRT, GPU vs CPU; imagen sintética): `flutter run --profile -t lib/main_benchmark.dart -d <id>`. Resultados en pantalla y en logcat (`makeup_bench`).
 - Renderer de maquillaje: `--dart-define=AR_RENDERER=native|painter` (por defecto native; `painter` = respaldo sin maquillaje, muestra el espejo con un aviso). Contrato en `lib/features/ar/domain/i_makeup_renderer.dart`.

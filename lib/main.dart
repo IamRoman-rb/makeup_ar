@@ -4,17 +4,23 @@ import 'features/studio/data/app_check_setup.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'splash_screen.dart';
+import 'startup_trace.dart';
 import 'vip/vip_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  StartupTrace.start();
+  final binding = WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  StartupTrace.mark('firebase');
   // Antes de cualquier Cloud Function (generateRecipe exige App Check).
   await activateAppCheck();
+  StartupTrace.mark('app_check');
   await VipService.configure();
+  StartupTrace.mark('revenuecat');
   runApp(const ARMakeupApp());
+  binding.waitUntilFirstFrameRasterized.then((_) => StartupTrace.mark('first_frame'));
 }
 
 class ARMakeupApp extends StatefulWidget {

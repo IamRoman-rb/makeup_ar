@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
 import 'catalog_screen.dart';
+import 'startup_trace.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -37,6 +38,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     // Magia de Firebase: Verificamos si ya hay una sesión activa
     final user = FirebaseAuth.instance.currentUser;
+    StartupTrace.mark(user != null ? 'splash_done_catalog' : 'splash_done_login');
 
     // Navegación con transición suave (Fade)
     Navigator.pushReplacement(
