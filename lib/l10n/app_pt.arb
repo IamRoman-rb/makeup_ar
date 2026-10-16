@@ -352,5 +352,6 @@
     "vipNothingToRestore": "Não encontramos compras para restaurar.",
     "vipRestore": "Restaurar compras",
     "vipNoPlans": "Ainda não há nenhum plano VIP configurado.",
-    "vipHeadline": "Desbloqueie os vídeos de todos os tutoriais"
+    "vipHeadline": "Desbloqueie os vídeos de todos os tutoriais",
+    "signupPhotoFailed": "Sua conta foi criada, mas não conseguimos enviar a foto. Você pode adicioná-la depois no seu perfil."
 }

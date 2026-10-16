@@ -1655,6 +1655,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlock the videos of every tutorial'**
   String get vipHeadline;
+
+  /// No description provided for @signupPhotoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account was created, but we couldn\'t upload the photo. You can add it later from your profile.'**
+  String get signupPhotoFailed;
 }
 
 class _AppLocalizationsDelegate

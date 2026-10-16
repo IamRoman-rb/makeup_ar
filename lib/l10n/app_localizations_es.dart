@@ -867,4 +867,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get vipHeadline => 'Desbloquea los videos de todos los tutoriales';
+
+  @override
+  String get signupPhotoFailed =>
+      'Tu cuenta se creó, pero no pudimos subir la foto. Puedes agregarla después desde tu perfil.';
 }

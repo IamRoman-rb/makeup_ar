@@ -83,12 +83,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
         password: _passwordController.text.trim(),
       );
 
-      // Subir la imagen a Firebase Storage
+      // Subir la imagen a Firebase Storage. Si falla (Storage sin Blaze, red),
+      // la cuenta se crea igual sin foto: antes la excepción cortaba el
+      // registro y quedaba el usuario de Auth sin documento en users/{uid}.
       String? imageUrl;
-      if (_imageFile != null) {
-        final ref = FirebaseStorage.instance.ref().child('profile_pictures/${userCredential.user!.uid}.jpg');
-        await ref.putFile(_imageFile!);
-        imageUrl = await ref.getDownloadURL();
+      var photoFailed = false;
+      final imageFile = _imageFile;
+      if (imageFile != null) {
+        try {
+          final ref = FirebaseStorage.instance.ref().child('profile_pictures/${userCredential.user!.uid}.jpg');
+          await ref.putFile(imageFile);
+          imageUrl = await ref.getDownloadURL();
+        } on FirebaseException catch (e) {
+          debugPrint('Foto de perfil no subida: ${e.code}');
+          photoFailed = true;
+        }
       }
 
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
@@ -104,11 +113,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
       });
 
       if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
         Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const CatalogScreen()), (route) => false);
+        if (photoFailed) messenger.showSnackBar(SnackBar(content: Text(l10n.signupPhotoFailed)));
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? l10n.registrationError)));
+    } on FirebaseException catch (e) {
+      // Firestore u otro servicio: antes se perdía sin aviso.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.registrationError}: ${e.message ?? e.code}')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
