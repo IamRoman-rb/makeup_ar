@@ -4,7 +4,7 @@ Diseño del tracker (informe §5.2–5.3) tal como quedó implementado, la desvi
 
 ## 1. Qué hace
 
-En el Espejo → **Filtro de prueba**:
+En el arnés del tracker (`lib/main_tracker.dart`, con todos los presets; desde 2026-10-16 la app ya no tiene el botón "Filtro de prueba" en el Espejo):
 
 - **Solo labios** (por defecto): el labial de la receta sobre la malla tracked. Desde P4 es el labial fotorrealista (máscara UV, brillo, acabados): ver `LIPS.md`; desde P5, el look completo (cara y ojos): ver `FACE.md`. La máscara de pantalla provisional de P3 ya no existe.
 - **Ver puntos**: dibuja los 478 landmarks (depuración).
@@ -147,3 +147,12 @@ La pestaña Espejo es `TestFilterView(mirrorOnly: true)` sobre la misma sesión 
 - **Para verificar en el E20:**
   - al alternar no tienen que aparecer `Opening CameraId` ni `Closing Camera`;
   - en Espejo, el tracker figura apagado en las métricas.
+
+**Cambio del 2026-10-16 (recorrido catálogo → filtro → tutorial):** el Espejo de la barra quedó solo cámara, sin el botón "Filtro de prueba" ni presets. El tracker se prende solo cuando se entra con un look:
+- desde el catálogo, el paso a paso o "Mis looks", con `CameraScreen(initialLook:)`;
+- se ve únicamente ese look, con intensidad y comparar (`TestFilterControls.intensity`);
+- "Ver tutorial" (`onOpenTutorial`):
+  - desde el catálogo hace `pushReplacement` al paso a paso, así la cámara se cierra antes de que arranque el video;
+  - desde el paso a paso vuelve atrás.
+
+Los presets se prueban en el arnés `main_tracker.dart`.

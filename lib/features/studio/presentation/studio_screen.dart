@@ -78,6 +78,15 @@ class _StudioScreenState extends State<StudioScreen> {
   /// de las opciones cambian y la vista previa vuelve a la primera.
   int _generation = 0;
   List<TestFilterOption>? _options;
+
+  /// Lo que dibuja la vista previa: la variante elegida, o null (sin nada).
+  List<TestFilterOption>? _preview;
+
+  /// Antes de generar: la cámara sin maquillaje. Una sola lista (la vista
+  /// compara por identidad).
+  late final List<TestFilterOption> _noPreview = [
+    TestFilterOption(id: 'none', label: AppLocalizations.of(context)!.testFilterNone, recipe: null),
+  ];
   LookSourceType _sourceType = LookSourceType.manual;
   String? _sourcePrompt;
   String? _model;
@@ -105,17 +114,26 @@ class _StudioScreenState extends State<StudioScreen> {
     return const {'es', 'en', 'pt', 'fr'}.contains(code) ? code : 'es';
   }
 
-  /// Opciones para la vista previa. Lista nueva en cada cambio: la vista la
+  /// Opciones de las variantes. Objetos nuevos en cada cambio: la vista los
   /// compara por identidad y vuelve a mandar la receta elegida. [fresh]: un
   /// juego nuevo (generación, remix, borrador), no una edición.
   void _setVariants(List<MakeupRecipe> variants, {int selected = 0, bool fresh = true}) {
     if (fresh) _generation++;
     _variants = List.unmodifiable(variants);
-    _selected = variants.isEmpty ? 0 : selected.clamp(0, variants.length - 1);
     _options = [
       for (var i = 0; i < variants.length; i++)
         TestFilterOption(id: _optionId(i), label: variants[i].name, recipe: variants[i]),
     ];
+    _selectVariant(selected);
+  }
+
+  /// La vista previa recibe solo la variante elegida (sin chips sobre la
+  /// cámara): al cambiar de variante o editarla, la lista nueva hace que la
+  /// vista mande la receta. Se llama dentro de setState.
+  void _selectVariant(int index) {
+    final options = _options ?? const [];
+    _selected = options.isEmpty ? 0 : index.clamp(0, options.length - 1);
+    _preview = options.isEmpty ? null : [options[_selected]];
   }
 
   String _optionId(int index) => 'g$_generation-v$index';
@@ -432,114 +450,153 @@ class _StudioScreenState extends State<StudioScreen> {
           IconButton(tooltip: l10n.studioDrafts, icon: const Icon(Icons.folder_open), onPressed: _openDrafts),
         ],
       ),
-      body: Column(
+      // Cámara a pantalla completa y, encima, el panel que se arrastra: abajo
+      // del todo (minChildSize) se ve casi toda la cara.
+      body: Stack(
         children: [
-          Expanded(
-            flex: 5,
+          Positioned.fill(
             child: ColoredBox(
               color: Colors.black,
               child: TestFilterView(
                 labels: _labels(l10n),
                 renderer: widget.renderer,
-                options: _options ?? [TestFilterOption(id: 'none', label: l10n.testFilterNone, recipe: null)],
+                options: _preview ?? _noPreview,
                 initialOptionId: _optionId(_selected),
-                onOptionSelected: (option) {
-                  final index = _options?.indexWhere((o) => o.id == option.id) ?? -1;
-                  if (index >= 0) setState(() => _selected = index);
-                },
+                controls: TestFilterControls.none,
               ),
             ),
           ),
-          Expanded(
-            flex: 4,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _prompt,
-                        maxLength: 300,
-                        minLines: 1,
-                        maxLines: 3,
-                        decoration: InputDecoration(hintText: l10n.studioPromptHint, counterText: ''),
-                        onSubmitted: (_) => _generate(),
-                      ),
+          DraggableScrollableSheet(
+            initialChildSize: 0.3,
+            minChildSize: 0.12,
+            maxChildSize: 0.9,
+            snap: true,
+            builder: (context, scrollController) => Material(
+              elevation: 8,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              clipBehavior: Clip.antiAlias,
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                children: [
+                  const _SheetHandle(),
+                  if (_options case final options? when options.length > 1)
+                    Wrap(
+                      spacing: 6,
+                      children: [
+                        for (var i = 0; i < options.length; i++)
+                          ChoiceChip(
+                            key: ValueKey('studio-variant-$i'),
+                            label: Text(options[i].label),
+                            selected: i == _selected,
+                            onSelected: (_) => setState(() => _selectVariant(i)),
+                          ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: _busy ? null : _generate,
-                      child: _busy
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text(l10n.studioGenerate),
-                    ),
-                  ],
-                ),
-                if (widget.imageAnalyzer != null)
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _busy || _picking ? null : _fromPhoto,
-                        icon: const Icon(Icons.photo_outlined, size: 18),
-                        label: Text(l10n.studioFromPhoto),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _busy || _picking || current == null ? null : _fromPalette,
-                        icon: const Icon(Icons.palette_outlined, size: 18),
-                        label: Text(l10n.studioPalette),
-                      ),
-                    ],
-                  ),
-                if (_message case final message?)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                  ),
-                if (current == null)
-                  Padding(padding: const EdgeInsets.only(top: 16), child: Text(l10n.studioEmpty, textAlign: TextAlign.center))
-                else ...[
-                  const SizedBox(height: 8),
-                  Text(current.name, style: Theme.of(context).textTheme.titleMedium),
-                  if (_report.isNotEmpty) _reportView(l10n),
-                  RecipeEditorPanel(recipe: current, onChanged: _edit),
-                  if (qa != null) QaPanel(report: qa),
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
-                          controller: _remix,
+                          controller: _prompt,
                           maxLength: 300,
-                          decoration: InputDecoration(hintText: l10n.studioRemixHint, counterText: ''),
-                          onSubmitted: (_) => _remixCurrent(),
+                          minLines: 1,
+                          maxLines: 3,
+                          decoration: InputDecoration(hintText: l10n.studioPromptHint, counterText: ''),
+                          onSubmitted: (_) => _generate(),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      OutlinedButton(onPressed: _busy ? null : _remixCurrent, child: Text(l10n.studioRemix)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(child: OutlinedButton(onPressed: _saveDraft, child: Text(l10n.studioSaveDraft))),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: qa?.blocksPublish ?? true ? null : _publish,
-                          child: Text(l10n.studioPublish),
-                        ),
+                      FilledButton(
+                        onPressed: _busy ? null : _generate,
+                        child: _busy
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            : Text(l10n.studioGenerate),
                       ),
                     ],
                   ),
+                  if (widget.imageAnalyzer != null)
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _busy || _picking ? null : _fromPhoto,
+                          icon: const Icon(Icons.photo_outlined, size: 18),
+                          label: Text(l10n.studioFromPhoto),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _busy || _picking || current == null ? null : _fromPalette,
+                          icon: const Icon(Icons.palette_outlined, size: 18),
+                          label: Text(l10n.studioPalette),
+                        ),
+                      ],
+                    ),
+                  if (_message case final message?)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                    ),
+                  if (current == null)
+                    Padding(padding: const EdgeInsets.only(top: 16), child: Text(l10n.studioEmpty, textAlign: TextAlign.center))
+                  else ...[
+                    const SizedBox(height: 8),
+                    Text(current.name, style: Theme.of(context).textTheme.titleMedium),
+                    if (_report.isNotEmpty) _reportView(l10n),
+                    RecipeEditorPanel(recipe: current, onChanged: _edit),
+                    if (qa != null) QaPanel(report: qa),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _remix,
+                            maxLength: 300,
+                            decoration: InputDecoration(hintText: l10n.studioRemixHint, counterText: ''),
+                            onSubmitted: (_) => _remixCurrent(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton(onPressed: _busy ? null : _remixCurrent, child: Text(l10n.studioRemix)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: OutlinedButton(onPressed: _saveDraft, child: Text(l10n.studioSaveDraft))),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: qa?.blocksPublish ?? true ? null : _publish,
+                            child: Text(l10n.studioPublish),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Manija del panel: indica que se puede arrastrar.
+class _SheetHandle extends StatelessWidget {
+  const _SheetHandle();
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Container(
+          width: 40,
+          height: 4,
+          margin: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      );
 }
 
 /// Nombre, categoría e imagen antes de publicar.

@@ -67,7 +67,7 @@
     "explore": "Explorer",
     "profile": "Profil",
     "mirror": "Miroir",
-    "testFilter": "Filtre de test",
+    "viewTutorial": "Voir le tutoriel",
     "testFilterNone": "Sans filtre",
     "testFilterIntensity": "Intensité",
     "testFilterNote": "Nouveau moteur (bêta) : chaque look est appliqué en entier avec le suivi du visage. La première fois, le chargement prend quelques secondes.",

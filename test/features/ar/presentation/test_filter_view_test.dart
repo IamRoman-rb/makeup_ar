@@ -112,6 +112,50 @@ void main() {
     expect(renderer.stops, 0);
   });
 
+  testWidgets('controls: intensity muestra solo el slider, sin otros filtros ni zonas', (tester) async {
+    final renderer = FakeRenderer();
+    final red = RecipePresets.byId('classic_red').recipe;
+    final look = TestFilterOption(id: 'look-1', label: 'Mi look', recipe: red);
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: TestFilterView(
+          labels: labels,
+          renderer: renderer,
+          options: [look],
+          initialOptionId: look.id,
+          controls: TestFilterControls.intensity,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(renderer.recipes.last?.lips?.color.toHex(), '#B3122D');
+    expect(find.byType(Slider), findsOneWidget);
+    expect(find.text('Comparar'), findsOneWidget);
+    expect(find.text('Mi look'), findsNothing);
+    expect(find.text('Sin filtro'), findsNothing);
+    expect(find.text('Labios'), findsNothing);
+    expect(find.text('Ver puntos'), findsNothing);
+    expect(find.text('Mate'), findsNothing);
+
+    // El slider sigue escalando el look.
+    tester.widget<Slider>(find.byType(Slider)).onChanged?.call(0.5);
+    await tester.pumpAndSettle();
+    expect(renderer.recipes.last?.lips?.opacity, closeTo((red.lips?.opacity ?? 0) * 0.5, 1e-9));
+  });
+
+  testWidgets('controls: none no muestra controles abajo; comparar sigue', (tester) async {
+    final renderer = FakeRenderer();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: TestFilterView(labels: labels, renderer: renderer, controls: TestFilterControls.none)),
+    ));
+    await tester.pumpAndSettle();
+    expect(renderer.recipes.last, isNotNull);
+    expect(find.byType(Slider), findsNothing);
+    expect(find.text('Sin filtro'), findsNothing);
+    expect(find.text('Labios'), findsNothing);
+    expect(find.text('Comparar'), findsOneWidget);
+  });
+
   test('las opciones son "sin filtro" + los presets, con su color', () {
     final options = TestFilterOption.fromPresets('Sin filtro');
     expect(options.first.color, isNull);

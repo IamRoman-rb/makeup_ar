@@ -67,7 +67,7 @@
     "explore": "Explore",
     "profile": "Profile",
     "mirror": "Mirror",
-    "testFilter": "Test filter",
+    "viewTutorial": "View tutorial",
     "testFilterNone": "No filter",
     "testFilterIntensity": "Intensity",
     "testFilterNote": "New engine (beta): each look is applied in full with face tracking. The first time it takes a few seconds to load.",

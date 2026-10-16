@@ -9,24 +9,24 @@ import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
 import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
 
-/// Espejo: cámara frontal en vivo. El botón de la barra alterna al filtro de
-/// prueba del motor AR nativo (`TestFilterView`).
+/// Espejo: cámara frontal en vivo con el motor AR nativo (`TestFilterView`).
 ///
-/// Espejo y filtro usan la misma sesión del motor: el Espejo es
-/// `TestFilterView(mirrorOnly: true)` (cámara sola, sin tracker ni modelos) y
-/// alternar solo prende el tracker y aplica el look, sin cerrar ni reabrir la
-/// cámara. Antes el Espejo abría la cámara con el plugin `camera` y cada cambio
-/// la cerraba y la volvía a abrir (~0,5 s de CameraX más la carga de modelos).
+/// - Sin [initialLook] (barra de abajo): solo la cámara, sin maquillaje,
+///   tracker ni modelos (`mirrorOnly`).
+/// - Con [initialLook] (un look del catálogo o de "Mis looks"): ese look
+///   puesto, sin los demás filtros; solo intensidad y comparar.
 ///
 /// Si el motor no puede dibujar en este equipo (o `AR_RENDERER=painter`), queda
-/// el espejo de respaldo con `CameraController`, sin filtro.
-///
-/// Con [initialLook] ("Probar en AR" de un look del catálogo) arranca
-/// directamente en el filtro con ese look elegido.
+/// el espejo de respaldo con `CameraController`, sin maquillaje.
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({super.key, this.initialLook, this.renderer});
+  const CameraScreen({super.key, this.initialLook, this.onOpenTutorial, this.renderer});
 
   final TestFilterOption? initialLook;
+
+  /// Botón "Ver tutorial" en la barra (null = sin botón). Es un callback para
+  /// que la feature `ar` no dependa del catálogo; quien lo pasa decide si
+  /// reemplaza esta pantalla (la cámara se cierra antes del video) o vuelve.
+  final VoidCallback? onOpenTutorial;
 
   /// Inyectable para tests; por defecto, el de `AR_RENDERER`.
   final IMakeupRenderer? renderer;
@@ -36,9 +36,6 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver {
-  /// true = filtro con maquillaje; false = Espejo (misma sesión del motor).
-  late bool _filterOn = widget.initialLook != null;
-
   /// El motor no está disponible: espejo de respaldo con el plugin `camera`.
   bool _fallbackMirror = false;
   CameraController? _cameraController;
@@ -47,9 +44,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   /// false mientras la app no está en primer plano: no se usa la cámara.
   bool _inForeground = true;
 
-  /// La lista se crea una vez: si fuera nueva en cada build, TestFilterView
-  /// reconstruiría sus opciones en cada cambio de modo.
-  late final List<TestFilterOption> _extraOptions = [?widget.initialLook];
+  /// Solo el look elegido. La lista se crea una vez: si fuera nueva en cada
+  /// build, TestFilterView reconstruiría sus opciones y reenviaría la receta.
+  late final List<TestFilterOption>? _lookOptions = switch (widget.initialLook) {
+    final look? => [look],
+    null => null,
+  };
 
   @override
   void initState() {
@@ -104,19 +104,13 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     }
   }
 
-  /// Solo cambia el modo de la vista del motor: la cámara sigue abierta.
-  void _toggleFilter() => setState(() => _filterOn = !_filterOn);
-
   /// El motor no puede dibujar en este equipo (o es el respaldo,
   /// AR_RENDERER=painter): espejo de respaldo con el plugin camera. El aviso
-  /// solo se muestra si se había pedido el filtro.
+  /// solo se muestra si se había pedido un look.
   void _onEngineUnavailable(String message) {
     if (!mounted || _fallbackMirror) return;
-    if (_filterOn) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-    setState(() {
-      _fallbackMirror = true;
-      _filterOn = false;
-    });
+    if (widget.initialLook != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    setState(() => _fallbackMirror = true);
     if (_inForeground) unawaited(_initializeFallbackCamera());
   }
 
@@ -127,10 +121,31 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     super.dispose();
   }
 
+  TestFilterLabels _labels(AppLocalizations l10n) => TestFilterLabels(
+        noFilter: l10n.testFilterNone,
+        intensity: l10n.testFilterIntensity,
+        note: l10n.testFilterNote,
+        showPoints: l10n.testFilterShowPoints,
+        compare: l10n.testFilterCompare,
+        matte: l10n.testFilterFinishMatte,
+        satin: l10n.testFilterFinishSatin,
+        gloss: l10n.testFilterFinishGloss,
+        shimmer: l10n.testFilterFinishShimmer,
+        zoneAll: l10n.testFilterZoneAll,
+        zoneLips: l10n.testFilterZoneLips,
+        zoneEyes: l10n.testFilterZoneEyes,
+        zoneCheeks: l10n.testFilterZoneCheeks,
+        zoneSkin: l10n.testFilterZoneSkin,
+        unavailable: l10n.testFilterUnavailable,
+      );
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final controller = _cameraController;
+    final look = widget.initialLook;
+    final lookOptions = _lookOptions;
+    final onOpenTutorial = widget.onOpenTutorial;
 
     final Widget body;
     if (!_inForeground) {
@@ -138,27 +153,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     } else if (!_fallbackMirror) {
       body = TestFilterView(
         renderer: widget.renderer,
-        mirrorOnly: !_filterOn,
-        labels: TestFilterLabels(
-          noFilter: l10n.testFilterNone,
-          intensity: l10n.testFilterIntensity,
-          note: l10n.testFilterNote,
-          showPoints: l10n.testFilterShowPoints,
-          compare: l10n.testFilterCompare,
-          matte: l10n.testFilterFinishMatte,
-          satin: l10n.testFilterFinishSatin,
-          gloss: l10n.testFilterFinishGloss,
-          shimmer: l10n.testFilterFinishShimmer,
-          zoneAll: l10n.testFilterZoneAll,
-          zoneLips: l10n.testFilterZoneLips,
-          zoneEyes: l10n.testFilterZoneEyes,
-          zoneCheeks: l10n.testFilterZoneCheeks,
-          zoneSkin: l10n.testFilterZoneSkin,
-          unavailable: l10n.testFilterUnavailable,
-        ),
+        mirrorOnly: lookOptions == null,
+        options: lookOptions,
+        initialOptionId: look?.id,
+        controls: TestFilterControls.intensity,
+        labels: _labels(l10n),
         onUnavailable: () => _onEngineUnavailable(l10n.testFilterUnavailable),
-        extraOptions: _extraOptions,
-        initialOptionId: widget.initialLook?.id,
       );
     } else if (_isCameraInitialized && controller != null) {
       body = Transform(
@@ -174,24 +174,23 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
         elevation: 0,
-        title: Text(l10n.mirror, style: const TextStyle(color: Colors.white)),
+        title: Text(look?.label ?? l10n.mirror, style: const TextStyle(color: Colors.white)),
         actions: [
-          // Sin motor no hay filtro que mostrar.
-          if (!_fallbackMirror)
-            // Con texto: solo el ícono pasaba desapercibido en el teléfono.
+          if (onOpenTutorial != null)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: TextButton.icon(
-                key: const ValueKey('camera-filter-toggle'),
-                onPressed: _toggleFilter,
+                key: const ValueKey('camera-open-tutorial'),
+                onPressed: onOpenTutorial,
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.white,
-                  backgroundColor: _filterOn ? Colors.pink : Colors.white12,
+                  backgroundColor: Colors.pink,
                   shape: const StadiumBorder(),
                 ),
-                icon: const Icon(Icons.auto_awesome, size: 18),
-                label: Text(l10n.testFilter),
+                icon: const Icon(Icons.menu_book_outlined, size: 18),
+                label: Text(l10n.viewTutorial),
               ),
             ),
         ],

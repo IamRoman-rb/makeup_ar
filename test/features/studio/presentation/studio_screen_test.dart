@@ -1,6 +1,7 @@
 import 'package:ar_makeup_app/features/ar/domain/i_makeup_renderer.dart';
 import 'package:ar_makeup_app/features/ar/domain/makeup_recipe.dart';
 import 'package:ar_makeup_app/features/ar/domain/recipe_presets.dart';
+import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:ar_makeup_app/features/studio/domain/image_look.dart';
 import 'package:ar_makeup_app/features/studio/domain/oklab.dart';
 import 'package:ar_makeup_app/features/studio/domain/recipe_generator.dart';
@@ -112,9 +113,17 @@ LookRegion region(Oklab color, {double gloss = 0}) => LookRegion(valid: true, co
 /// Receta con los labios de un preset y otro nombre.
 MakeupRecipe named(String preset, String name) => MakeupRecipe(name: name, lips: RecipePresets.byId(preset).recipe.lips);
 
+/// Panel del Studio: arrastra la manija hasta arriba para que todo el
+/// contenido quede a la vista (empieza en un 30 % de la pantalla).
+Future<void> expandStudioPanel(WidgetTester tester) async {
+  final panel = find.descendant(of: find.byType(DraggableScrollableSheet), matching: find.byType(Material)).first;
+  await tester.dragFrom(tester.getTopLeft(panel) + const Offset(200, 10), const Offset(0, -1500));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   Future<void> pumpStudio(WidgetTester tester, FakeGenerator generator, MemoryRepository repository,
-      FakeRenderer renderer, {IImageLookAnalyzer? analyzer}) async {
+      FakeRenderer renderer, {IImageLookAnalyzer? analyzer, bool expandPanel = true}) async {
     tester.view.physicalSize = const Size(900, 2000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -131,6 +140,7 @@ void main() {
       ),
     ));
     await tester.pumpAndSettle();
+    if (expandPanel) await expandStudioPanel(tester);
   }
 
   testWidgets('genera, elige, edita, guarda y publica', (tester) async {
@@ -280,6 +290,31 @@ void main() {
     final shadows = renderer.recipes.last?.eyes?.shadow ?? const [];
     expect(shadows.single.color, plum);
     expect(renderer.recipes.last?.lips, isNotNull);
+  });
+
+  testWidgets('cámara a pantalla completa; el panel arranca bajo y se arrastra', (tester) async {
+    final renderer = FakeRenderer();
+    await pumpStudio(tester, FakeGenerator(GenerationResult(variants: [named('classic_red', 'Rojo')])), MemoryRepository(),
+        renderer, expandPanel: false);
+    final body = tester.getSize(find.byType(Scaffold));
+    final preview = tester.getSize(find.byType(TestFilterView));
+    expect(preview.width, body.width);
+    expect(preview.height, greaterThan(body.height * 0.9));
+    // Sin chips de presets sobre la cámara.
+    expect(find.text('Sin filtro'), findsNothing);
+
+    final panel = find.descendant(of: find.byType(DraggableScrollableSheet), matching: find.byType(Material)).first;
+    final collapsedTop = tester.getTopLeft(panel).dy;
+    expect(collapsedTop, greaterThan(body.height * 0.6));
+    await expandStudioPanel(tester);
+    expect(tester.getTopLeft(panel).dy, lessThan(collapsedTop));
+
+    // Con una sola variante no hay fila de variantes: está en la vista previa.
+    await tester.enterText(find.byType(TextField).first, 'rojo');
+    await tester.tap(find.text('Generar'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('studio-variant-0')), findsNothing);
+    expect(renderer.recipes.last?.name, 'Rojo');
   });
 
   testWidgets('QA: una capa invisible bloquea Publicar y se ve el motivo', (tester) async {

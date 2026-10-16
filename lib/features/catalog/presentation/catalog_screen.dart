@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ar_makeup_app/features/ar/domain/makeup_recipe.dart';
 import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:ar_makeup_app/features/studio/data/cloud_recipe_generator.dart';
@@ -59,6 +60,26 @@ class _CatalogScreenState extends State<CatalogScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Tocar un look: con receta, el espejo con ese look puesto y el botón
+  /// "Ver tutorial"; sin receta (looks viejos), el tutorial directo.
+  void _openLook(BuildContext context, String lookId, MakeupRecipe? recipe) {
+    final navigator = Navigator.of(context);
+    if (recipe == null) {
+      navigator.push(MaterialPageRoute<void>(builder: (_) => StepByStepScreen(lookId: lookId)));
+      return;
+    }
+    navigator.push(MaterialPageRoute<void>(
+      builder: (camera) => CameraScreen(
+        initialLook: TestFilterOption(id: 'look-$lookId', label: recipe.name, recipe: recipe),
+        // Reemplaza la cámara: se cierra antes de que arranque el video del
+        // tutorial (cámara, motor y video juntos no entran en el E20).
+        onOpenTutorial: () => Navigator.of(camera).pushReplacement(
+          MaterialPageRoute<void>(builder: (_) => StepByStepScreen(lookId: lookId)),
+        ),
+      ),
+    ));
   }
 
   /// Admin: crear un look con IA (Studio) o editar los pasos de un tutorial.
@@ -262,11 +283,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                               final recipe = lookRecipe(data);
 
                               return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(
-                                    builder: (context) => StepByStepScreen(lookId: doc.id),
-                                  ));
-                                },
+                                onTap: () => _openLook(context, doc.id, recipe),
                                 child: Container(
                                   margin: const EdgeInsets.only(bottom: 30),
                                   child: Column(
@@ -329,19 +346,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                       Text(name, style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A1A))),
                                       const SizedBox(height: 5),
                                       Text(lookCategoryLabel(l10n, category), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37), letterSpacing: 1.2)),
-                                      if (recipe != null)
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 8),
-                                          child: OutlinedButton.icon(
-                                            icon: const Icon(Icons.auto_awesome, size: 18),
-                                            label: Text(l10n.tryOnAr),
-                                            onPressed: () => Navigator.push(context, MaterialPageRoute(
-                                              builder: (_) => CameraScreen(
-                                                initialLook: TestFilterOption(id: 'look-${doc.id}', label: recipe.name, recipe: recipe),
-                                              ),
-                                            )),
-                                          ),
-                                        ),
                                     ],
                                   ),
                                 ),

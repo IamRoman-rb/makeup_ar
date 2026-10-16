@@ -8,12 +8,14 @@ Los filtros del catálogo se crean con IA desde la app. Un admin escribe un pedi
 Catálogo (admin) -> "Crear con IA (Studio)"
   prompt -> generateRecipe (Cloud Function, Gemini en Vertex AI; F2_PLAN.md)
          -> 3 variantes validadas en el servidor (Ajv) y en la app (RecipeValidator)
-  vista previa en vivo con el motor (TestFilterView con las variantes)
+  vista previa en vivo con el motor: cámara a pantalla completa (TestFilterView, controls: none, solo la
+  variante elegida) y encima un panel deslizable con las variantes, el prompt, el editor, QA y Publicar
   editor: color HEX y cantidad por capa, acabado del labial, quitar capas (RecipeEdits)
   remix: "más natural", "tonos más cálidos"... sobre la variante elegida
   Guardar borrador -> look_drafts/{id}
   Publicar         -> looks/{id} (con recipe, recipeSchema, minEngine y source)
-Catálogo y paso a paso -> "Probar en AR" -> espejo con el motor y ese look puesto
+Catálogo: tocar el look -> espejo con el motor y solo ese look puesto -> "Ver tutorial" -> paso a paso
+Paso a paso: ícono de cámara -> el mismo espejo; "Ver tutorial" vuelve atrás
 
 F4 (en el teléfono, sin LLM; F4_PLAN.md):
   "Desde foto": aviso de privacidad -> galería -> landmarks + rectificación a UV + muestreo
@@ -35,7 +37,7 @@ F4 (en el teléfono, sin LLM; F4_PLAN.md):
 | Presentación | `lib/features/studio/presentation/studio_screen.dart` | Pantalla, diálogo de publicación y lista de borradores. |
 | | `recipe_editor_panel.dart` | Editor de capas. |
 | Vista previa | `TestFilterView(options:, initialOptionId:, onOptionSelected:)` | Si cambian las opciones, conserva la elegida por id y vuelve a mandar su receta. Así cada edición se ve en vivo. |
-| Entrada | `lib/features/catalog/presentation/` (`catalog_screen.dart`, `step_by_step_screen.dart`) y `CameraScreen(initialLook:)` (`lib/features/ar/presentation/camera_screen.dart`) | Menú de admin y botones "Probar en AR". |
+| Entrada | `lib/features/catalog/presentation/` (`catalog_screen.dart`, `step_by_step_screen.dart`) y `CameraScreen(initialLook:)` (`lib/features/ar/presentation/camera_screen.dart`) | Menú de admin, tocar el look y el ícono de cámara del paso a paso. |
 | F4: dominio | `image_look.dart`, `image_recipe.dart`, `oklab.dart` | Medidas de la foto, `IImageLookAnalyzer` e `ImageRecipeBuilder`: inversión del sombreado del motor, presencia, confianza, error de ajuste y variantes. |
 | F4: datos | `engine_image_analyzer.dart` | El analizador del motor (`MakeupEngine.analyzeFaceImage`/`extractPalette`). |
 
@@ -62,7 +64,7 @@ Si la IA no devuelve variantes válidas (caída, cuota, App Check o sin deploy),
   - lectura pública, como antes;
   - escritura solo para admins;
   - si vienen, se valida el tipo de `recipe` (map), `minEngine` (int) y `recipeSchema`.
-  - Los looks viejos, sin receta, siguen iguales y no muestran "Probar en AR".
+  - Los looks viejos, sin receta, siguen iguales: tocarlos abre el tutorial directo.
 - **Tests:** `firestore-tests/rules.test.mjs` (19).
 
 ## Versionado
@@ -81,7 +83,7 @@ Hace falta haber hecho primero el deploy de F2 (`F2_PLAN.md`, "Para desplegar"),
 1. Tu usuario tiene que tener `is_admin: true` en `users/{uid}`. Se pone desde la consola de Firebase.
 2. Para usar el motor en vivo, instalá la app completa. En profile, App Check usa el proveedor debug, así que hay que registrar el token que aparece en logcat.
 3. Catálogo → botón + → "Crear con IA (Studio)" → escribir un pedido → Generar → elegir y ajustar → Publicar.
-4. En el catálogo aparece el look con "Probar en AR".
+4. En el catálogo aparece el look; tocarlo abre el espejo con el look puesto.
 
 ## QA automático (F5)
 

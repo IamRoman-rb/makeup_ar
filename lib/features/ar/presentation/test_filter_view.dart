@@ -99,6 +99,19 @@ final class TestFilterLabels {
       };
 }
 
+/// Controles de abajo de [TestFilterView]. El badge de FPS y el botón de
+/// comparar se ven siempre (salvo en el Espejo).
+enum TestFilterControls {
+  /// Opciones, zonas, puntos, acabado e intensidad (arnés del tracker).
+  full,
+
+  /// Solo el slider de intensidad: un look del catálogo, sin otros filtros.
+  intensity,
+
+  /// Nada: quien la monta pone sus propios controles (Studio).
+  none,
+}
+
 /// Filtro de prueba del motor de maquillaje para el Espejo.
 ///
 /// Cada preset se aplica completo (labios, rubor, piel y ojos; ver
@@ -124,6 +137,7 @@ class TestFilterView extends StatefulWidget {
     this.initialOptionId,
     this.onOptionSelected,
     this.mirrorOnly = false,
+    this.controls = TestFilterControls.full,
   });
 
   final TestFilterLabels labels;
@@ -153,6 +167,9 @@ class TestFilterView extends StatefulWidget {
   /// no reinicia el renderer (la cámara sigue abierta) y conserva el look
   /// elegido para cuando se vuelve al filtro.
   final bool mirrorOnly;
+
+  /// Qué controles se ven abajo.
+  final TestFilterControls controls;
 
   @override
   State<TestFilterView> createState() => _TestFilterViewState();
@@ -350,7 +367,7 @@ class _TestFilterViewState extends State<TestFilterView> {
         if (!widget.mirrorOnly) ...[
           Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
           Positioned(top: 8, right: 8, child: _buildCompareButton()),
-          Positioned(left: 0, right: 0, bottom: 0, child: _buildControls()),
+          if (_buildControls() case final controls?) Positioned(left: 0, right: 0, bottom: 0, child: controls),
         ],
       ],
     );
@@ -381,7 +398,44 @@ class _TestFilterViewState extends State<TestFilterView> {
     );
   }
 
-  Widget _buildControls() {
+  /// Slider que escala todas las opacidades del look elegido.
+  Widget _buildIntensity() => Row(
+        children: [
+          Text(widget.labels.intensity, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          Expanded(
+            child: Slider(
+              value: _intensity,
+              max: kMaxRecipeIntensity,
+              activeColor: Colors.pink,
+              onChanged: (value) {
+                setState(() => _intensity = value);
+                unawaited(_applyLook());
+              },
+            ),
+          ),
+        ],
+      );
+
+  /// null = sin controles abajo ([TestFilterControls.none], o solo intensidad
+  /// sin receta).
+  Widget? _buildControls() {
+    final recipe = _selected.recipe;
+    switch (widget.controls) {
+      case TestFilterControls.none:
+        return null;
+      case TestFilterControls.intensity:
+        if (recipe == null) return null;
+        return Container(
+          color: Colors.black54,
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          child: _buildIntensity(),
+        );
+      case TestFilterControls.full:
+        return _buildFullControls();
+    }
+  }
+
+  Widget _buildFullControls() {
     final labels = widget.labels;
     final recipe = _selected.recipe;
     final lips = _selected.lips;
@@ -451,23 +505,7 @@ class _TestFilterViewState extends State<TestFilterView> {
               ],
             ),
           ],
-          if (recipe != null)
-            Row(
-              children: [
-                Text(labels.intensity, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                Expanded(
-                  child: Slider(
-                    value: _intensity,
-                    max: kMaxRecipeIntensity,
-                    activeColor: Colors.pink,
-                    onChanged: (value) {
-                      setState(() => _intensity = value);
-                      unawaited(_applyLook());
-                    },
-                  ),
-                ),
-              ],
-            ),
+          if (recipe != null) _buildIntensity(),
         ],
       ),
     );

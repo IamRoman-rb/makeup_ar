@@ -100,10 +100,12 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
                       // El video no compite con la cámara y el motor AR.
                       _videoKey.currentState?.pause();
                       Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => CameraScreen(
+                        builder: (camera) => CameraScreen(
                           initialLook: recipe == null
                               ? null
                               : TestFilterOption(id: 'look-${widget.lookId}', label: recipe.name, recipe: recipe),
+                          // Ya venimos del tutorial: "Ver tutorial" vuelve atrás.
+                          onOpenTutorial: recipe == null ? null : () => Navigator.of(camera).pop(),
                         ),
                       ));
                     },

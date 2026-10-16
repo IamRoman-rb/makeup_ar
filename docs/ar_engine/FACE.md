@@ -8,7 +8,7 @@ También cubre la API Dart que queda estable, cómo regenerar los datos y cómo 
 
 ## 1. Qué hace
 
-En Espejo → **Filtro de prueba**, cada look se aplica completo.
+En el arnés del tracker (`lib/main_tracker.dart`, con todos los presets; desde 2026-10-16 la app ya no tiene el botón "Filtro de prueba" en el Espejo), cada look se aplica completo.
 
 **Controles:**
 - **Zona** (Todo / Labios / Ojos / Mejillas / Piel): muestra una sola región, para comparar o capturar.

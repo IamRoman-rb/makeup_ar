@@ -67,7 +67,7 @@
     "explore": "Explorar",
     "profile": "Perfil",
     "mirror": "Espelho",
-    "testFilter": "Filtro de teste",
+    "viewTutorial": "Ver tutorial",
     "testFilterNone": "Sem filtro",
     "testFilterIntensity": "Intensidade",
     "testFilterNote": "Motor novo (beta): cada look é aplicado por completo com rastreamento facial. Na primeira vez leva alguns segundos para carregar.",

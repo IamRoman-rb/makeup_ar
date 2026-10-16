@@ -510,11 +510,11 @@ abstract class AppLocalizations {
   /// **'Mirror'**
   String get mirror;
 
-  /// No description provided for @testFilter.
+  /// No description provided for @viewTutorial.
   ///
   /// In en, this message translates to:
-  /// **'Test filter'**
-  String get testFilter;
+  /// **'View tutorial'**
+  String get viewTutorial;
 
   /// No description provided for @testFilterNone.
   ///

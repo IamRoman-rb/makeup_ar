@@ -221,7 +221,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get mirror => 'Espejo';
 
   @override
-  String get testFilter => 'Filtro de prueba';
+  String get viewTutorial => 'Ver tutorial';
 
   @override
   String get testFilterNone => 'Sin filtro';

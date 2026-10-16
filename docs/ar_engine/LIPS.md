@@ -4,7 +4,7 @@ Diseño del labial (informe §5.4–5.5) tal como quedó implementado, cómo reg
 
 ## 1. Qué hace
 
-En Espejo → **Filtro de prueba**, con **Solo labios**, cada look pinta su labial completo de la receta: color, opacidad, acabado, brillo y `lumaFollow`.
+En el arnés del tracker (`lib/main_tracker.dart`, con todos los presets; desde 2026-10-16 la app ya no tiene el botón "Filtro de prueba" en el Espejo), con **Solo labios**, cada look pinta su labial completo de la receta: color, opacidad, acabado, brillo y `lumaFollow`.
 
 - **Acabado:** Mate / Satinado / Brillo / Shimmer, para comparar el mismo color.
 - **Intensidad:** la opacidad del labial.
