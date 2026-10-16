@@ -46,6 +46,14 @@ void main() {
     expect(result.fallback?.name, RecipePresets.closestTo('labios góticos').recipe.name);
   });
 
+  test('IA caída: el respaldo respeta los colores del prompt', () async {
+    final generator = CloudRecipeGenerator(callable: (_) async => throw const RecipeCallException('unavailable'));
+    final result = await generator.generate(prompt: 'labios azules', locale: 'es');
+    expect(result.failure, GenerationFailure.unavailable);
+    expect(result.fallback?.lips?.color.toHex(), '#1F4FB0');
+    expect(result.fallback?.name, 'Labios azules');
+  });
+
   test('errores de la función: motivo y preset; respuesta rara sin romper', () async {
     for (final (code, failure) in [
       ('unauthenticated', GenerationFailure.unauthenticated),

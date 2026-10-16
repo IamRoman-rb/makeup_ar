@@ -28,7 +28,8 @@ F4 (en el teléfono, sin LLM; F4_PLAN.md):
 | Dominio | `lib/features/studio/domain/recipe_generator.dart` | Contrato `IRecipeGenerator` y motivos de falla. |
 | | `studio_look.dart` | `StudioLook`, categorías, `lookRecipe()` (solo recetas válidas con `minEngine` <= `kMakeupEngineVersion`) e `ILookRepository`. |
 | | `recipe_edits.dart` | Ediciones que nunca producen una receta inválida: pasan por el JSON y vuelven por `RecipeValidator(clampOutOfRange: true)`. |
-| Datos | `lib/features/studio/data/cloud_recipe_generator.dart` | Callable con revalidación y respaldo al preset más cercano. |
+| | `prompt_fallback.dart` | Respaldo sin IA: el preset más cercano (`RecipePresets.closestTo`) con los colores que pide el texto encima. Ver "Respaldo local" abajo. |
+| Datos | `lib/features/studio/data/cloud_recipe_generator.dart` | Callable con revalidación y respaldo local (`PromptFallback`). |
 | | `firestore_look_repository.dart` | Borradores y publicación. Publicar escribe el look y borra el borrador en un batch. |
 | | `app_check_setup.dart` | Proveedor de App Check. |
 | Presentación | `lib/features/studio/presentation/studio_screen.dart` | Pantalla, diálogo de publicación y lista de borradores. |
@@ -37,6 +38,19 @@ F4 (en el teléfono, sin LLM; F4_PLAN.md):
 | Entrada | `catalog_screen.dart`, `step_by_step_screen.dart` y `CameraScreen(initialLook:)` | Menú de admin y botones "Probar en AR". |
 | F4: dominio | `image_look.dart`, `image_recipe.dart`, `oklab.dart` | Medidas de la foto, `IImageLookAnalyzer` e `ImageRecipeBuilder`: inversión del sombreado del motor, presencia, confianza, error de ajuste y variantes. |
 | F4: datos | `engine_image_analyzer.dart` | El analizador del motor (`MakeupEngine.analyzeFaceImage`/`extractPalette`). |
+
+## Respaldo local (2026-10-16)
+
+Si la IA no devuelve variantes válidas (caída, cuota, App Check o sin deploy), `PromptFallback.recipeFor(prompt)`:
+1. **Base:** parte del preset más cercano por palabras de estilo.
+2. **Colores:** reconoce 13 colores y 5 zonas (labios, sombra, delineado, mejillas, iris) en es, en, pt y fr. Cada color va a la zona nombrada más cerca; sin zona, a los labios.
+3. **Opacidad:** sube la del color pedido a un mínimo, para que se vea.
+4. **Acabado:** también reconoce el acabado del labial.
+5. **Nombre:** si cambió algo, el nombre es el texto del usuario.
+
+"Ojos azules" se toma como sombra; el iris solo se toca si el texto dice iris, lentes o contactos.
+
+**No entiende:** cantidades, comparativos ("más oscuro"), negaciones ("sin rubor") ni zonas fuera de la lista. Para eso está la IA.
 
 ## Datos y reglas
 
@@ -106,7 +120,7 @@ Versión reducida del Studio para cualquier usuario con sesión: Perfil → "Mis
 
 **Reglas (`firestore.rules`):** `users/{uid}/ai_looks/{id}`: lectura solo del dueño, escritura denegada al cliente (todo pasa por las callables). Probado con el emulador (`firestore-tests/rules.test.mjs`).
 
-**App (`lib/features/my_looks`):** `IAiLookRepository` (lee Firestore, escribe por callables), `MyLooksScreen` (reusa `CloudRecipeGenerator`; si la IA no responde muestra el preset local más cercano como "Sugerencia") y tests de widget con fakes. Cada receta se vuelve a validar al leerla.
+**App (`lib/features/my_looks`):** `IAiLookRepository` (lee Firestore, escribe por callables), `MyLooksScreen` (reusa `CloudRecipeGenerator`; si la IA no responde muestra el respaldo local como "Sugerencia") y tests de widget con fakes. Cada receta se vuelve a validar al leerla.
 
 **Para activarlo (lo corrés vos):**
 ```

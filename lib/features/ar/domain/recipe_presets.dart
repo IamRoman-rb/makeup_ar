@@ -36,7 +36,7 @@ abstract final class RecipePresets {
   /// Una palabra clave simple coincide si alguna palabra del prompt empieza
   /// con ella ("gotico" → "góticos"); una con espacios, si aparece tal cual.
   static RecipePreset closestTo(String prompt) {
-    final normalized = _normalize(prompt);
+    final normalized = normalize(prompt);
     final words = normalized.split(_nonLetters).where((w) => w.isNotEmpty).toList(growable: false);
     RecipePreset? best;
     var bestScore = 0;
@@ -76,7 +76,8 @@ abstract final class RecipePresets {
     'ç': 'c', 'ñ': 'n',
   };
 
-  static String _normalize(String text) {
+  /// Minúsculas y sin acentos (también lo usa el respaldo del Studio).
+  static String normalize(String text) {
     final buffer = StringBuffer();
     for (final char in text.toLowerCase().split('')) {
       buffer.write(_accents[char] ?? char);

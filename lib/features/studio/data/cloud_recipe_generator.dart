@@ -2,8 +2,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../ar/domain/makeup_recipe.dart';
-import '../../ar/domain/recipe_presets.dart';
 import '../../ar/domain/recipe_validator.dart';
+import '../domain/prompt_fallback.dart';
 import '../domain/recipe_generator.dart';
 
 /// Llamada a la callable: recibe el payload y devuelve `result.data`, o tira
@@ -24,7 +24,8 @@ final class RecipeCallException implements Exception {
 ///
 /// Defensa en profundidad: el servidor ya valida con el esquema, pero cada
 /// variante se vuelve a validar acá con [RecipeValidator] (estricto). Si no
-/// queda ninguna, un prompt cae al preset local más cercano.
+/// queda ninguna, un prompt cae al respaldo local ([PromptFallback]: el preset
+/// más cercano con los colores que pide el texto).
 final class CloudRecipeGenerator implements IRecipeGenerator {
   CloudRecipeGenerator({RecipeCallable? callable}) : _callable = callable ?? _firebaseCallable();
 
@@ -69,7 +70,7 @@ final class CloudRecipeGenerator implements IRecipeGenerator {
       _call({'kind': 'remix', 'prompt': instruction, 'locale': locale, 'baseRecipe': base.toJson()});
 
   Future<GenerationResult> _call(Map<String, Object?> payload, {String? fallbackFor}) async {
-    MakeupRecipe? fallback() => fallbackFor == null ? null : RecipePresets.closestTo(fallbackFor).recipe;
+    MakeupRecipe? fallback() => fallbackFor == null ? null : PromptFallback.recipeFor(fallbackFor);
     final Object? data;
     try {
       data = await _callable(payload);
