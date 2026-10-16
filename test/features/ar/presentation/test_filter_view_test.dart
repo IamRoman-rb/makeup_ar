@@ -14,6 +14,7 @@ final class FakeRenderer implements IMakeupRenderer {
   final List<MakeupRecipe?> recipes = [];
   final List<bool> landmarks = [];
   final List<bool> lightAdaptation = [];
+  final List<bool> tracking = [];
   int starts = 0;
   int stops = 0;
 
@@ -34,6 +35,9 @@ final class FakeRenderer implements IMakeupRenderer {
 
   @override
   Future<void> setLightAdaptation(bool enabled) async => lightAdaptation.add(enabled);
+
+  @override
+  Future<void> setTrackingEnabled(bool enabled) async => tracking.add(enabled);
 
   @override
   Future<MakeupRendererStats> stats() async =>
@@ -65,6 +69,48 @@ void main() {
   Widget app(IMakeupRenderer renderer, {VoidCallback? onUnavailable}) => MaterialApp(
         home: Scaffold(body: TestFilterView(labels: labels, renderer: renderer, onUnavailable: onUnavailable)),
       );
+
+  Widget mirrorApp(IMakeupRenderer renderer, {required bool mirrorOnly}) => MaterialApp(
+        home: Scaffold(body: TestFilterView(labels: labels, renderer: renderer, mirrorOnly: mirrorOnly)),
+      );
+
+  testWidgets('Espejo: sin tracker desde antes de abrir la cámara, sin receta ni controles', (tester) async {
+    final renderer = FakeRenderer();
+    await tester.pumpWidget(mirrorApp(renderer, mirrorOnly: true));
+    await tester.pumpAndSettle();
+
+    expect(renderer.starts, 1);
+    expect(renderer.tracking, [false]);
+    expect(renderer.recipes, isNotEmpty);
+    expect(renderer.recipes.every((r) => r == null), isTrue);
+    expect(find.byType(Texture), findsOneWidget);
+    expect(find.text('Comparar'), findsNothing);
+    expect(find.text('Intensidad'), findsNothing);
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.textContaining('fps'), findsNothing);
+  });
+
+  testWidgets('Espejo -> filtro -> Espejo: misma sesión, conserva el look elegido', (tester) async {
+    final renderer = FakeRenderer();
+    await tester.pumpWidget(mirrorApp(renderer, mirrorOnly: false));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rojo clásico'));
+    await tester.pumpAndSettle();
+    expect(renderer.recipes.last?.lips?.color.toHex(), '#B3122D');
+
+    await tester.pumpWidget(mirrorApp(renderer, mirrorOnly: true));
+    await tester.pumpAndSettle();
+    expect(renderer.tracking.last, isFalse);
+    expect(renderer.recipes.last, isNull);
+    expect(find.text('Rojo clásico'), findsNothing);
+
+    await tester.pumpWidget(mirrorApp(renderer, mirrorOnly: false));
+    await tester.pumpAndSettle();
+    expect(renderer.tracking.last, isTrue);
+    expect(renderer.recipes.last?.lips?.color.toHex(), '#B3122D');
+    expect(renderer.starts, 1, reason: 'alternar no reabre la cámara');
+    expect(renderer.stops, 0);
+  });
 
   test('las opciones son "sin filtro" + los presets, con su color', () {
     final options = TestFilterOption.fromPresets('Sin filtro');
@@ -267,3 +313,4 @@ void main() {
     expect(MakeupZone.values.map(labels.zone).toSet().length, MakeupZone.values.length);
   });
 }
+

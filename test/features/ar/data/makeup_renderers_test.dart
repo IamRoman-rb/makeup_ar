@@ -62,6 +62,15 @@ void main() {
     // Apagar la luz adaptada conserva los puntos.
     await renderer.setLightAdaptation(false);
     expect(calls.last.arguments, {'showLandmarks': true, 'region': TintRegion.makeup.index, 'lightAdaptation': false});
+
+    // Espejo: región full (passthrough, sin tracker) conservando el resto; y vuelta.
+    await renderer.setTrackingEnabled(false);
+    expect(calls.last.arguments, {'showLandmarks': true, 'region': TintRegion.full.index, 'lightAdaptation': false});
+    final count = calls.length;
+    await renderer.setTrackingEnabled(false);
+    expect(calls.length, count, reason: 'sin cambios no se llama al motor');
+    await renderer.setTrackingEnabled(true);
+    expect(calls.last.arguments, {'showLandmarks': true, 'region': TintRegion.makeup.index, 'lightAdaptation': false});
   });
 
   test('nativo: si el motor no inicia, start devuelve null con el motivo', () async {

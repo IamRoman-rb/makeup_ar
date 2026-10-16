@@ -18,6 +18,10 @@ final class NativeGpuMakeupRenderer implements IMakeupRenderer {
   final MakeupEngine _engine;
   bool _showLandmarks = false;
   bool _lightAdaptation = true;
+  bool _trackingEnabled = true;
+  // Antes de start (o después de stop) no se habla con el motor: las opciones
+  // se mandan al arrancar.
+  bool _started = false;
   String? _unavailableReason;
 
   @override
@@ -27,6 +31,7 @@ final class NativeGpuMakeupRenderer implements IMakeupRenderer {
   Future<MakeupSurface?> start() async {
     try {
       final info = await _engine.start();
+      _started = true;
       await _applyRenderOptions();
       return MakeupSurface(textureId: info.textureId, width: info.width, height: info.height);
     } on MakeupEngineException catch (e) {
@@ -57,6 +62,13 @@ final class NativeGpuMakeupRenderer implements IMakeupRenderer {
   }
 
   @override
+  Future<void> setTrackingEnabled(bool enabled) async {
+    if (_trackingEnabled == enabled) return;
+    _trackingEnabled = enabled;
+    if (_started) await _applyRenderOptions();
+  }
+
+  @override
   Future<MakeupRendererStats> stats() async {
     try {
       return toRendererStats(await _engine.getStats());
@@ -67,14 +79,19 @@ final class NativeGpuMakeupRenderer implements IMakeupRenderer {
   }
 
   @override
-  Future<void> stop() => _engine.stop();
+  Future<void> stop() {
+    _started = false;
+    return _engine.stop();
+  }
 
   Future<void> _applyRenderOptions() async {
     try {
-      // El maquillaje de la receta siempre va sobre la malla tracked.
+      // El maquillaje de la receta va sobre la malla tracked. Sin tracking
+      // (Espejo): región full con el tinte en 0 = passthrough de la cámara, y
+      // el motor apaga el tracker (salvo que se pidan los puntos).
       await _engine.setRenderOptions(
         showLandmarks: _showLandmarks,
-        region: TintRegion.makeup,
+        region: _trackingEnabled ? TintRegion.makeup : TintRegion.full,
         lightAdaptation: _lightAdaptation,
       );
     } on PlatformException catch (e) {

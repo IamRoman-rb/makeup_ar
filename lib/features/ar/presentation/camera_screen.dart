@@ -4,67 +4,83 @@ import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import 'package:ar_makeup_app/features/ar/domain/i_makeup_renderer.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
 import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
 
-/// Espejo: cámara frontal en vivo. Con el botón de la barra se alterna al
-/// filtro de prueba del motor AR nativo (`TestFilterView`).
+/// Espejo: cámara frontal en vivo. El botón de la barra alterna al filtro de
+/// prueba del motor AR nativo (`TestFilterView`).
+///
+/// Espejo y filtro usan la misma sesión del motor: el Espejo es
+/// `TestFilterView(mirrorOnly: true)` (cámara sola, sin tracker ni modelos) y
+/// alternar solo prende el tracker y aplica el look, sin cerrar ni reabrir la
+/// cámara. Antes el Espejo abría la cámara con el plugin `camera` y cada cambio
+/// la cerraba y la volvía a abrir (~0,5 s de CameraX más la carga de modelos).
+///
+/// Si el motor no puede dibujar en este equipo (o `AR_RENDERER=painter`), queda
+/// el espejo de respaldo con `CameraController`, sin filtro.
 ///
 /// Con [initialLook] ("Probar en AR" de un look del catálogo) arranca
-/// directamente en el motor con ese look elegido.
+/// directamente en el filtro con ese look elegido.
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({super.key, this.initialLook});
+  const CameraScreen({super.key, this.initialLook, this.renderer});
 
   final TestFilterOption? initialLook;
+
+  /// Inyectable para tests; por defecto, el de `AR_RENDERER`.
+  final IMakeupRenderer? renderer;
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
 }
 
 class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver {
+  /// true = filtro con maquillaje; false = Espejo (misma sesión del motor).
+  late bool _filterOn = widget.initialLook != null;
+
+  /// El motor no está disponible: espejo de respaldo con el plugin `camera`.
+  bool _fallbackMirror = false;
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
 
-  /// true = se muestra el motor nativo en lugar de CameraPreview.
-  late bool _useNativeEngine = widget.initialLook != null;
-
-  /// Evita alternar de nuevo mientras se libera o se abre la cámara.
-  bool _switching = false;
-
   /// false mientras la app no está en primer plano: no se usa la cámara.
   bool _inForeground = true;
+
+  /// La lista se crea una vez: si fuera nueva en cada build, TestFilterView
+  /// reconstruiría sus opciones en cada cambio de modo.
+  late final List<TestFilterOption> _extraOptions = [?widget.initialLook];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // En modo motor la cámara es del motor: no se abre CameraController.
-    if (!_useNativeEngine) _initializeCamera();
   }
 
-  /// Como pide la documentación del plugin camera: la cámara se libera al
-  /// pasar a segundo plano y se vuelve a abrir al regresar. Sin esto, al salir
-  /// con "atrás" la cámara seguía mandando frames a un FlutterEngine ya
-  /// desacoplado y la app crasheaba ("FlutterJNI is not attached to native").
-  /// En modo motor, desmontar TestFilterView detiene el motor nativo.
+  /// Fuera de primer plano no se monta nada: TestFilterView se desmonta (el
+  /// motor se detiene en su dispose) y el CameraController de respaldo se
+  /// libera, como pide la documentación del plugin camera. Sin esto la cámara
+  /// seguía mandando frames a un FlutterEngine ya desacoplado ("FlutterJNI is
+  /// not attached to native").
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
       if (!_inForeground) return;
-      _inForeground = false;
       final controller = _cameraController;
       _cameraController = null;
-      setState(() => _isCameraInitialized = false);
+      setState(() {
+        _inForeground = false;
+        _isCameraInitialized = false;
+      });
       controller?.dispose();
     } else if (state == AppLifecycleState.resumed) {
       if (_inForeground) return;
       setState(() => _inForeground = true);
-      if (!_useNativeEngine) _initializeCamera();
+      if (_fallbackMirror) _initializeFallbackCamera();
     }
   }
 
-  Future<void> _initializeCamera() async {
+  Future<void> _initializeFallbackCamera() async {
     try {
       final cameras = await availableCameras();
       final frontCamera = cameras.firstWhere(
@@ -75,9 +91,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       final controller = CameraController(frontCamera, ResolutionPreset.high, enableAudio: false);
       _cameraController = controller;
       await controller.initialize();
-      // Si mientras se abría se pasó al motor, a segundo plano o se cerró la
-      // pantalla, este controller ya no corresponde.
-      if (!mounted || _useNativeEngine || !_inForeground || _cameraController != controller) {
+      // Si mientras se abría se pasó a segundo plano o se cerró la pantalla,
+      // este controller ya no corresponde.
+      if (!mounted || !_inForeground || _cameraController != controller) {
         if (_cameraController == controller) _cameraController = null;
         await controller.dispose();
         return;
@@ -88,35 +104,20 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     }
   }
 
-  /// La cámara la puede usar un solo dueño a la vez: antes de montar el motor
-  /// se libera CameraController, y al volver se abre de nuevo (el motor se
-  /// detiene en el dispose de TestFilterView).
-  Future<void> _toggleNativeEngine() async {
-    if (_switching) return;
-    _switching = true;
-    try {
-      if (!_useNativeEngine) {
-        final controller = _cameraController;
-        _cameraController = null;
-        setState(() => _isCameraInitialized = false);
-        await controller?.dispose();
-        if (!mounted) return;
-        setState(() => _useNativeEngine = true);
-      } else {
-        setState(() => _useNativeEngine = false);
-        if (_inForeground) await _initializeCamera();
-      }
-    } finally {
-      _switching = false;
-    }
-  }
+  /// Solo cambia el modo de la vista del motor: la cámara sigue abierta.
+  void _toggleFilter() => setState(() => _filterOn = !_filterOn);
 
   /// El motor no puede dibujar en este equipo (o es el respaldo,
-  /// AR_RENDERER=painter): se vuelve al espejo normal con un aviso.
+  /// AR_RENDERER=painter): espejo de respaldo con el plugin camera. El aviso
+  /// solo se muestra si se había pedido el filtro.
   void _onEngineUnavailable(String message) {
-    if (!mounted || !_useNativeEngine) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-    unawaited(_toggleNativeEngine());
+    if (!mounted || _fallbackMirror) return;
+    if (_filterOn) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    setState(() {
+      _fallbackMirror = true;
+      _filterOn = false;
+    });
+    if (_inForeground) unawaited(_initializeFallbackCamera());
   }
 
   @override
@@ -132,8 +133,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     final controller = _cameraController;
 
     final Widget body;
-    if (_useNativeEngine && _inForeground) {
+    if (!_inForeground) {
+      body = const SizedBox.expand();
+    } else if (!_fallbackMirror) {
       body = TestFilterView(
+        renderer: widget.renderer,
+        mirrorOnly: !_filterOn,
         labels: TestFilterLabels(
           noFilter: l10n.testFilterNone,
           intensity: l10n.testFilterIntensity,
@@ -152,19 +157,14 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           unavailable: l10n.testFilterUnavailable,
         ),
         onUnavailable: () => _onEngineUnavailable(l10n.testFilterUnavailable),
-        extraOptions: [?widget.initialLook],
+        extraOptions: _extraOptions,
         initialOptionId: widget.initialLook?.id,
       );
     } else if (_isCameraInitialized && controller != null) {
-      body = Stack(
-        fit: StackFit.expand,
-        children: [
-          Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.rotationY(math.pi),
-            child: CameraPreview(controller),
-          ),
-        ],
+      body = Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.rotationY(math.pi),
+        child: CameraPreview(controller),
       );
     } else {
       body = const Center(child: CircularProgressIndicator(color: Colors.pink));
@@ -177,20 +177,23 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         elevation: 0,
         title: Text(l10n.mirror, style: const TextStyle(color: Colors.white)),
         actions: [
-          // Con texto: solo el ícono pasaba desapercibido en el teléfono.
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: TextButton.icon(
-              onPressed: _toggleNativeEngine,
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: _useNativeEngine ? Colors.pink : Colors.white12,
-                shape: const StadiumBorder(),
+          // Sin motor no hay filtro que mostrar.
+          if (!_fallbackMirror)
+            // Con texto: solo el ícono pasaba desapercibido en el teléfono.
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton.icon(
+                key: const ValueKey('camera-filter-toggle'),
+                onPressed: _toggleFilter,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: _filterOn ? Colors.pink : Colors.white12,
+                  shape: const StadiumBorder(),
+                ),
+                icon: const Icon(Icons.auto_awesome, size: 18),
+                label: Text(l10n.testFilter),
               ),
-              icon: const Icon(Icons.auto_awesome, size: 18),
-              label: Text(l10n.testFilter),
             ),
-          ),
         ],
       ),
       body: body,

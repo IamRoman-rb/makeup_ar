@@ -123,6 +123,7 @@ class TestFilterView extends StatefulWidget {
     this.options,
     this.initialOptionId,
     this.onOptionSelected,
+    this.mirrorOnly = false,
   });
 
   final TestFilterLabels labels;
@@ -147,6 +148,11 @@ class TestFilterView extends StatefulWidget {
 
   /// El usuario eligió otra opción.
   final ValueChanged<TestFilterOption>? onOptionSelected;
+
+  /// Espejo: la cámara sola, sin maquillaje, tracker ni controles. Cambiarlo
+  /// no reinicia el renderer (la cámara sigue abierta) y conserva el look
+  /// elegido para cuando se vuelve al filtro.
+  final bool mirrorOnly;
 
   @override
   State<TestFilterView> createState() => _TestFilterViewState();
@@ -196,6 +202,7 @@ class _TestFilterViewState extends State<TestFilterView> {
   @override
   void didUpdateWidget(TestFilterView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.mirrorOnly != oldWidget.mirrorOnly) unawaited(_syncMirror());
     if (identical(widget.options, oldWidget.options) && identical(widget.extraOptions, oldWidget.extraOptions)) {
       return;
     }
@@ -215,7 +222,16 @@ class _TestFilterViewState extends State<TestFilterView> {
     super.dispose();
   }
 
+  /// Prende o apaga el tracker según [TestFilterView.mirrorOnly] y manda el
+  /// look (null en el Espejo). Antes de start solo queda guardado.
+  Future<void> _syncMirror() async {
+    await _renderer.setTrackingEnabled(!widget.mirrorOnly);
+    if (mounted) await _applyLook();
+  }
+
   Future<void> _start() async {
+    // Antes de abrir la cámara: un Espejo no llega a cargar los modelos.
+    if (widget.mirrorOnly) await _renderer.setTrackingEnabled(false);
     final surface = await _renderer.start();
     if (!mounted) {
       await _renderer.stop();
@@ -236,7 +252,8 @@ class _TestFilterViewState extends State<TestFilterView> {
 
   /// Nunca hay más de un pedido de métricas en vuelo: los demás se descartan.
   Future<void> _pollStats() async {
-    if (_statsInFlight) return;
+    // En el Espejo no hay indicador que actualizar.
+    if (_statsInFlight || widget.mirrorOnly) return;
     _statsInFlight = true;
     try {
       final stats = await _renderer.stats();
@@ -257,7 +274,7 @@ class _TestFilterViewState extends State<TestFilterView> {
         _lookDirty = false;
         final recipe = _selected.recipe;
         await _renderer.applyRecipe(
-          recipe == null || _comparing
+          recipe == null || _comparing || widget.mirrorOnly
               ? null
               : adjustRecipe(recipe, zone: _zone, intensity: _intensity, lipFinish: _finish),
         );
@@ -330,9 +347,11 @@ class _TestFilterViewState extends State<TestFilterView> {
               ),
             ),
           ),
-        Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
-        Positioned(top: 8, right: 8, child: _buildCompareButton()),
-        Positioned(left: 0, right: 0, bottom: 0, child: _buildControls()),
+        if (!widget.mirrorOnly) ...[
+          Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
+          Positioned(top: 8, right: 8, child: _buildCompareButton()),
+          Positioned(left: 0, right: 0, bottom: 0, child: _buildControls()),
+        ],
       ],
     );
   }

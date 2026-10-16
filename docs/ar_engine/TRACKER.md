@@ -138,3 +138,12 @@ Sigue pendiente:
 - Watchdog si el delegado GPU se cuelga en `run()`.
 
 No se va a hacer: el protocolo completo de 10 minutos (jitter, memoria, térmica). Lo decidió el responsable del proyecto el 2026-10-12. Las mediciones del E20 quedan como las del badge en las capturas (§6 y `LIPS.md` §6).
+
+## 8. Espejo con el motor, sin tracker (2026-10-16)
+
+La pestaña Espejo es `TestFilterView(mirrorOnly: true)` sobre la misma sesión del motor.
+- **Cómo se apaga el tracker:** `IMakeupRenderer.setTrackingEnabled(false)` lo pide antes de `start()`. Queda `TintRegion.full` con el tinte en 0, que es passthrough de la cámara, y `EngineSession` deja el tracker apagado. Los modelos se cargan recién la primera vez que se pide el filtro.
+- **Al alternar:** solo se prende o se apaga el tracker y se manda la receta. Antes, el Espejo usaba el plugin `camera` y cada cambio cerraba y reabría la cámara: en el E20, CameraX tardaba 503 ms en abrir, más los 787 ms de carga de modelos.
+- **Para verificar en el E20:**
+  - al alternar no tienen que aparecer `Opening CameraId` ni `Closing Camera`;
+  - en Espejo, el tracker figura apagado en las métricas.

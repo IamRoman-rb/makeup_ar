@@ -106,6 +106,9 @@ Principios:
 1. **Render y ML desacoplados.** El render va a 30 fps con la última malla conocida + extrapolación por velocidad; la inferencia corre a 15–20 Hz en otro hilo. En un E20 esto es la diferencia entre "fluido" y "se calienta". Los números son objetivos de diseño, **no mediciones**.
 2. **Cero cruces por Dart por frame.** Dart solo manda la receta y lee métricas (FPS, latencia p95, estado de tracking).
 3. **Todo detrás de interfaces:** `IFaceTracker`, `IMakeupRenderer`, `IRecipeSource`. Cambiar el modelo de landmarks o el backend gráfico no toca UI ni IA.
+   - **`IMakeupRenderer`, cambio aprobado el 2026-10-16:** se agregó `setTrackingEnabled(bool)`.
+   - **Para qué:** el Espejo usa la misma sesión del motor, sin tracker ni receta. La cámara no se abre dos veces y no se cargan los modelos hasta que se pide el filtro.
+   - **Respaldo:** el plugin `camera` queda solo como respaldo, para cuando el motor no está disponible.
 4. **La IA (Groq) nunca genera código ni shaders**, solo parámetros validados contra un esquema (ver §5.8).
 
 ---

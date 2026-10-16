@@ -67,6 +67,11 @@ abstract interface class IMakeupRenderer {
   /// defecto sí). Apagada solo para comparar en el arnés.
   Future<void> setLightAdaptation(bool enabled);
 
+  /// false: cámara sin maquillaje ni tracker (el Espejo; no carga modelos ni
+  /// gasta GPU en inferencia). true (por defecto): tracker y receta. Cambiar
+  /// no reabre la cámara.
+  Future<void> setTrackingEnabled(bool enabled);
+
   Future<MakeupRendererStats> stats();
 
   /// Libera cámara y GPU. Seguro de llamar más de una vez.
