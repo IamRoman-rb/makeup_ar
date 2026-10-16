@@ -35,6 +35,30 @@
    - para probar en el E20 con un build de profile, registrar el **token de debug**. Aparece en logcat como `DebugAppCheckProvider` al abrir la app.
 4. Desde `functions/`, correr `npm install`. Después, desde la raíz: `firebase deploy --only functions,firestore:rules --project armakeupapp`.
 
+**Probar sin deploy (emulador, sin Blaze):** las funciones corren en tu PC y el resto es el proyecto real.
+- **Qué es real:**
+  - Firestore y Auth son los de producción;
+  - el emulador escribe con tus credenciales de `firebase login`, dentro de la capa gratuita;
+  - la cuota diaria corre de verdad, en `users/{uid}/usage`.
+- **Qué cambia en el emulador** (solo si existe `FUNCTIONS_EMULATOR=true`, que en Cloud Run no existe):
+  - el LLM es `FakeLlmClient` (`functions/src/llm/fakeLlmClient.ts`): 3 variantes válidas, deterministas por prompt;
+  - si el prompt contiene `#unavailable`, simula la caída del modelo (la app cae a un preset);
+  - App Check no se exige;
+  - con `USE_GEMINI_IN_EMULATOR=1` se usa Gemini real, cuando haya Blaze.
+- **Android:** `network_security_config.xml` en debug y profile permite HTTP sin TLS solo a `127.0.0.1` y `localhost`. Release no lo incluye.
+
+Pasos:
+1. Una sola vez, subir las reglas (funciona en Spark): `firebase deploy --only firestore:rules --project armakeupapp`.
+2. `cd functions && npm run build`. Después, desde la raíz: `firebase emulators:start --only functions --project armakeupapp`.
+   - Pide `GEMINI_MODEL` y `GEMINI_LOCATION`: con Enter se aceptan los valores por defecto.
+   - Si lo corrés desde el checkout principal, antes `git pull`.
+3. Con el teléfono conectado: `adb reverse tcp:5001 tcp:5001`. Después, `flutter run --profile --dart-define=FUNCTIONS_EMULATOR=127.0.0.1:5001 -d <id>`.
+4. Qué probar:
+   - Perfil → "Mis looks con IA" → crear → 3 variantes "Emulador 1..3" → guardar → aparece en la lista → borrar;
+   - un prompt con `#unavailable` cae a un preset;
+   - la 6.ª generación del día da cuota agotada;
+   - con una cuenta admin, el Studio genera variantes.
+
 ---
 
 ## Plan original (aprobado con cambios: ver arriba)

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Solo debug y profile: HTTP sin TLS hacia el emulador local de Firebase
+     (adb reverse tcp:5001 tcp:5001, docs/ar_engine/F2_PLAN.md). Release no
+     lo incluye y sigue bloqueando todo el trafico sin TLS. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>
