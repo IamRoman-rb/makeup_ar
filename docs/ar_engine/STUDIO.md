@@ -35,7 +35,7 @@ F4 (en el teléfono, sin LLM; F4_PLAN.md):
 | Presentación | `lib/features/studio/presentation/studio_screen.dart` | Pantalla, diálogo de publicación y lista de borradores. |
 | | `recipe_editor_panel.dart` | Editor de capas. |
 | Vista previa | `TestFilterView(options:, initialOptionId:, onOptionSelected:)` | Si cambian las opciones, conserva la elegida por id y vuelve a mandar su receta. Así cada edición se ve en vivo. |
-| Entrada | `catalog_screen.dart`, `step_by_step_screen.dart` y `CameraScreen(initialLook:)` | Menú de admin y botones "Probar en AR". |
+| Entrada | `lib/features/catalog/presentation/` (`catalog_screen.dart`, `step_by_step_screen.dart`) y `CameraScreen(initialLook:)` (`lib/features/ar/presentation/camera_screen.dart`) | Menú de admin y botones "Probar en AR". |
 | F4: dominio | `image_look.dart`, `image_recipe.dart`, `oklab.dart` | Medidas de la foto, `IImageLookAnalyzer` e `ImageRecipeBuilder`: inversión del sombreado del motor, presencia, confianza, error de ajuste y variantes. |
 | F4: datos | `engine_image_analyzer.dart` | El analizador del motor (`MakeupEngine.analyzeFaceImage`/`extractPalette`). |
 

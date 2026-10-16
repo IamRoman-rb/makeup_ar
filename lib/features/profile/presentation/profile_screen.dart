@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'shared_bottom_nav.dart';
-import 'edit_profile_screen.dart';
-import 'login_screen.dart';
-import 'saved_looks_screen.dart';
-import 'account_settings_screen.dart';
-import 'language_screen.dart';
-import 'camera_screen.dart';
-import 'features/ar/presentation/test_filter_view.dart';
-import 'features/my_looks/data/firestore_ai_look_repository.dart';
-import 'features/my_looks/presentation/my_looks_screen.dart';
-import 'features/studio/data/cloud_recipe_generator.dart';
-import 'l10n/app_localizations.dart'; // <-- 1. Importación del traductor
+import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
+import 'package:ar_makeup_app/features/profile/presentation/edit_profile_screen.dart';
+import 'package:ar_makeup_app/features/auth/presentation/login_screen.dart';
+import 'package:ar_makeup_app/features/catalog/presentation/saved_looks_screen.dart';
+import 'package:ar_makeup_app/features/profile/presentation/account_settings_screen.dart';
+import 'package:ar_makeup_app/features/profile/presentation/language_screen.dart';
+import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
+import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
+import 'package:ar_makeup_app/features/my_looks/data/firestore_ai_look_repository.dart';
+import 'package:ar_makeup_app/features/my_looks/presentation/my_looks_screen.dart';
+import 'package:ar_makeup_app/features/studio/data/cloud_recipe_generator.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});

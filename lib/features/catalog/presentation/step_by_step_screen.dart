@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
-import 'camera_screen.dart';
-import 'features/ar/presentation/test_filter_view.dart';
-import 'features/studio/domain/studio_look.dart';
-import 'l10n/app_localizations.dart';
-import 'vip/premium_content.dart';
-import 'vip/vip_paywall_screen.dart';
+import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
+import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
+import 'package:ar_makeup_app/features/studio/domain/studio_look.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart';
+import 'package:ar_makeup_app/features/vip/data/premium_content.dart';
+import 'package:ar_makeup_app/features/vip/presentation/vip_paywall_screen.dart';
 
 class StepByStepScreen extends StatefulWidget {
   final String lookId;
@@ -260,7 +260,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
 ///
 /// El botón "Hazte VIP" abre la pasarela de pago real (VipPaywallScreen), que
 /// necesita una cuenta de RevenueCat con al menos un producto y sus keys por
-/// --dart-define-from-file=env/revenuecat.json (lib/vip/revenue_cat_config.dart).
+/// --dart-define-from-file=env/revenuecat.json (lib/features/vip/data/revenue_cat_config.dart).
 ///
 /// La URL se pide solo si el usuario es VIP: vive en looks/{id}/premium/content,
 /// que las reglas dejan leer solo a VIP vigentes y admins (PremiumContent).

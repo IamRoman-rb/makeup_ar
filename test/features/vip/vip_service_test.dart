@@ -1,5 +1,5 @@
-import 'package:ar_makeup_app/vip/revenue_cat_config.dart';
-import 'package:ar_makeup_app/vip/vip_service.dart';
+import 'package:ar_makeup_app/features/vip/data/revenue_cat_config.dart';
+import 'package:ar_makeup_app/features/vip/data/vip_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

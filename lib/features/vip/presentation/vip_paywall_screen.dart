@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-import 'vip_service.dart';
+import 'package:ar_makeup_app/features/vip/data/vip_service.dart';
 
 /// Ventana de la pasarela de pago: muestra los planes VIP disponibles y
 /// permite comprar uno (o restaurar una compra previa).

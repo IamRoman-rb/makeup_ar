@@ -3,9 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'features/studio/data/app_check_setup.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
-import 'splash_screen.dart';
+import 'package:ar_makeup_app/features/auth/presentation/splash_screen.dart';
 import 'startup_trace.dart';
-import 'vip/vip_service.dart';
+import 'package:ar_makeup_app/features/vip/data/vip_service.dart';
 
 void main() async {
   StartupTrace.start();

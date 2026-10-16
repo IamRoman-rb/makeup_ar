@@ -6,32 +6,35 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'l10n/app_localizations.dart'; // <-- 1. Importación del traductor
+import 'package:ar_makeup_app/features/catalog/presentation/catalog_screen.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 
-class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _ageController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   DateTime? _selectedDate;
-  bool _isLoading = true;
-  bool _isSaving = false;
+  bool _obscurePassword = true;
+  bool _isLoading = false;
 
+  // Variables para la foto de perfil
   File? _imageFile;
-  String? _currentImageUrl;
   final ImagePicker _picker = ImagePicker();
 
   String _selectedSkinType = 'Combined';
   String _selectedSkinTone = 'Light';
-  Set<String> _selectedPreferences = {};
+  final Set<String> _selectedPreferences = {};
 
-  // Los valores internos se mantienen en inglés para no romper tu base de datos
+  // Valores internos que van a Firebase (no se traducen para evitar errores en BDD)
   final List<String> skinTypes = ['Combined', 'Oily', 'Dry', 'Sensitive'];
   final List<Map<String, dynamic>> skinTones = [
     {'name': 'Light', 'color': const Color(0xFFFCE5D8)},
@@ -40,43 +43,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     {'name': 'Deep', 'color': const Color(0xFF4A2F1D)},
   ];
   final List<String> preferences = ['Natural', 'Glamour', 'Minimalist', 'Bold', 'Skincare Focus'];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        final data = doc.data()!;
-        setState(() {
-          _nameController.text = data['nombre'] ?? '';
-          _ageController.text = (data['edad'] ?? '').toString();
-          _currentImageUrl = data['foto_perfil'];
-
-          if (data['fecha_nacimiento'] != null && data['fecha_nacimiento'].toString().isNotEmpty) {
-            try {
-              _selectedDate = DateFormat('yyyy-MM-dd').parse(data['fecha_nacimiento']);
-            } catch (e) {
-              debugPrint("Error parseando fecha");
-            }
-          }
-
-          _selectedSkinType = data['tipo_piel'] ?? 'Combined';
-          _selectedSkinTone = data['tono_piel'] ?? 'Light';
-
-          if (data['gustos_personales'] != null) {
-            _selectedPreferences = Set<String>.from(data['gustos_personales']);
-          }
-        });
-      }
-    }
-    setState(() => _isLoading = false);
-  }
 
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
@@ -88,76 +54,89 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _pickDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime(2000),
+      initialDate: DateTime(2000),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       builder: (context, child) {
-        return Theme(data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: Color(0xFF1A1A1A))), child: child!);
+        return Theme(
+          data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: Color(0xFF1A1A1A))),
+          child: child!,
+        );
       },
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
-  Future<void> _updateProfile() async {
-    setState(() => _isSaving = true);
-    final l10n = AppLocalizations.of(context)!; // Traductor para los mensajes de éxito/error
+  Future<void> _register() async {
+    final l10n = AppLocalizations.of(context)!; // Instancia del traductor para los errores
 
+    if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty || _selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.fillRequiredFields)));
+      return;
+    }
+
+    setState(() => _isLoading = true);
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        String? updatedImageUrl = _currentImageUrl;
-        if (_imageFile != null) {
-          final ref = FirebaseStorage.instance.ref().child('profile_pictures/${user.uid}.jpg');
-          await ref.putFile(_imageFile!);
-          updatedImageUrl = await ref.getDownloadURL();
-        }
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-          'nombre': _nameController.text.trim(),
-          'edad': int.tryParse(_ageController.text) ?? 0,
-          'fecha_nacimiento': _selectedDate != null ? DateFormat('yyyy-MM-dd').format(_selectedDate!) : null,
-          'tipo_piel': _selectedSkinType,
-          'tono_piel': _selectedSkinTone,
-          'gustos_personales': _selectedPreferences.toList(),
-          'foto_perfil': updatedImageUrl,
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.profileUpdated, style: GoogleFonts.inter())));
-          Navigator.pop(context);
-        }
+      // Subir la imagen a Firebase Storage
+      String? imageUrl;
+      if (_imageFile != null) {
+        final ref = FirebaseStorage.instance.ref().child('profile_pictures/${userCredential.user!.uid}.jpg');
+        await ref.putFile(_imageFile!);
+        imageUrl = await ref.getDownloadURL();
       }
-    } catch (e) {
+
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+        'nombre': _nameController.text.trim(),
+        'correo': _emailController.text.trim(),
+        'edad': int.tryParse(_ageController.text) ?? 0,
+        'fecha_nacimiento': DateFormat('yyyy-MM-dd').format(_selectedDate!),
+        'tipo_piel': _selectedSkinType,
+        'tono_piel': _selectedSkinTone,
+        'gustos_personales': _selectedPreferences.toList(),
+        'fecha_registro': FieldValue.serverTimestamp(),
+        'foto_perfil': imageUrl,
+      });
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${l10n.errorSaving} $e', style: GoogleFonts.inter()), backgroundColor: Colors.red),
-        );
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const CatalogScreen()), (route) => false);
       }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? l10n.registrationError)));
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Scaffold(backgroundColor: Color(0xFFFDF7F8), body: Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))));
-
     final l10n = AppLocalizations.of(context)!; // <-- 2. Instancia del traductor para la vista
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF7F8),
-      appBar: AppBar(
-        title: Text(l10n.editProfile, style: GoogleFonts.playfairDisplay(color: const Color(0xFF1A1A1A), fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent, elevation: 0, iconTheme: const IconThemeData(color: Color(0xFF1A1A1A)), centerTitle: true,
-      ),
+      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, iconTheme: const IconThemeData(color: Color(0xFF1A1A1A))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 30.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
+            Center(
+              child: Column(
+                children: [
+                  Text(l10n.createProfile, style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A1A))),
+                  const SizedBox(height: 10),
+                  Text(l10n.joinSubtitle, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
 
-            // WIDGET FOTO DE PERFIL
+            // WIDGET DE FOTO DE PERFIL
             Center(
               child: GestureDetector(
                 onTap: _pickImage,
@@ -166,14 +145,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.grey.shade300,
-                      backgroundImage: _imageFile != null
-                          ? FileImage(_imageFile!) as ImageProvider
-                          : (_currentImageUrl != null && _currentImageUrl!.isNotEmpty)
-                          ? NetworkImage(_currentImageUrl!) as ImageProvider
-                          : null,
-                      child: (_imageFile == null && (_currentImageUrl == null || _currentImageUrl!.isEmpty))
-                          ? const Icon(Icons.person, size: 50, color: Colors.white)
-                          : null,
+                      backgroundImage: _imageFile != null ? FileImage(_imageFile!) : null,
+                      child: _imageFile == null ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
                     ),
                     Positioned(
                       bottom: 0,
@@ -190,8 +163,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 30),
 
-            // CAMPOS DE TEXTO TRADUCIDOS
             _buildTextField(l10n.fullName, 'Jane Doe', _nameController),
+            const SizedBox(height: 15),
+            _buildTextField(l10n.email, 'jane@example.com', _emailController),
             const SizedBox(height: 15),
 
             Row(
@@ -203,7 +177,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     onTap: _pickDate,
                     child: InputDecorator(
                       decoration: InputDecoration(
-                        labelText: l10n.dob, // Fecha de Nacimiento traducida
+                        labelText: l10n.dob,
                         labelStyle: GoogleFonts.inter(color: Colors.grey.shade700, fontSize: 12),
                         enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
                       ),
@@ -219,25 +193,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 15),
+
+            TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: l10n.password,
+                labelStyle: GoogleFonts.inter(color: Colors.grey.shade700, fontSize: 12),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
+                focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A1A1A))),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 20),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+            ),
             const SizedBox(height: 30),
 
+            // Tipo de Piel
             Text(l10n.skinType, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
             const SizedBox(height: 10),
             Wrap(
-              spacing: 10, runSpacing: 10,
+              spacing: 10,
+              runSpacing: 10,
               children: skinTypes.map((type) {
                 final isSelected = _selectedSkinType == type;
                 return ChoiceChip(
                   label: Text(type, style: GoogleFonts.inter(color: isSelected ? const Color(0xFF1A1A1A) : Colors.grey.shade600, fontSize: 12)),
                   selected: isSelected,
                   onSelected: (selected) => setState(() => _selectedSkinType = type),
-                  backgroundColor: Colors.transparent, selectedColor: Colors.white,
+                  backgroundColor: Colors.transparent,
+                  selectedColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSelected ? const Color(0xFF1A1A1A) : Colors.grey.shade300)),
                 );
               }).toList(),
             ),
             const SizedBox(height: 25),
 
+            // Tono de Piel
             Text(l10n.skinTone, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
             const SizedBox(height: 15),
             Row(
@@ -248,7 +242,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   onTap: () => setState(() => _selectedSkinTone = tone['name']),
                   child: Column(
                     children: [
-                      Container(width: 50, height: 50, decoration: BoxDecoration(color: tone['color'], shape: BoxShape.circle, border: Border.all(color: isSelected ? const Color(0xFF1A1A1A) : Colors.transparent, width: 2))),
+                      Container(
+                        width: 50, height: 50,
+                        decoration: BoxDecoration(color: tone['color'], shape: BoxShape.circle, border: Border.all(color: isSelected ? const Color(0xFF1A1A1A) : Colors.transparent, width: 2)),
+                      ),
                       const SizedBox(height: 8),
                       Text(tone['name'], style: GoogleFonts.inter(fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                     ],
@@ -258,17 +255,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 25),
 
+            // Gustos Personales
             Text(l10n.personalTastes, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
             const SizedBox(height: 10),
             Wrap(
-              spacing: 10, runSpacing: 10,
+              spacing: 10,
+              runSpacing: 10,
               children: preferences.map((pref) {
                 final isSelected = _selectedPreferences.contains(pref);
                 return FilterChip(
                   label: Text(pref, style: GoogleFonts.inter(color: isSelected ? const Color(0xFF1A1A1A) : Colors.grey.shade600, fontSize: 12)),
                   selected: isSelected,
-                  onSelected: (selected) { setState(() { selected ? _selectedPreferences.add(pref) : _selectedPreferences.remove(pref); }); },
-                  backgroundColor: Colors.transparent, selectedColor: Colors.white,
+                  onSelected: (selected) {
+                    setState(() {
+                      selected ? _selectedPreferences.add(pref) : _selectedPreferences.remove(pref);
+                    });
+                  },
+                  backgroundColor: Colors.transparent,
+                  selectedColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSelected ? const Color(0xFF1A1A1A) : Colors.grey.shade300)),
                 );
               }).toList(),
@@ -276,20 +280,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 40),
 
             SizedBox(
-              width: double.infinity, height: 55,
+              width: double.infinity,
+              height: 55,
               child: ElevatedButton(
-                onPressed: _isSaving ? null : _updateProfile,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A1A1A), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
-                child: _isSaving
+                onPressed: _isLoading ? null : _register,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A1A1A),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                ),
+                child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(l10n.updateProfile, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.check, color: Colors.white, size: 20)
-                ]),
+                    : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(l10n.createAccount, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 10),
+                    const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -301,8 +312,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       controller: controller,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
       decoration: InputDecoration(
-        labelText: label, labelStyle: GoogleFonts.inter(color: Colors.grey.shade700, fontSize: 12),
-        hintText: hint, hintStyle: GoogleFonts.inter(color: Colors.grey.shade300),
+        labelText: label,
+        labelStyle: GoogleFonts.inter(color: Colors.grey.shade700, fontSize: 12),
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(color: Colors.grey.shade300),
         enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
         focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A1A1A))),
         floatingLabelBehavior: FloatingLabelBehavior.always,

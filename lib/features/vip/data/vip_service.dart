@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-import 'revenue_cat_config.dart';
+import 'package:ar_makeup_app/features/vip/data/revenue_cat_config.dart';
 
 /// Wrapper sobre el SDK de RevenueCat para la suscripción VIP que
 /// desbloquea los videos de los tutoriales.

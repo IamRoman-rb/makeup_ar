@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'vip/premium_content.dart';
+import 'package:ar_makeup_app/features/vip/data/premium_content.dart';
 
 const List<String> kFilterCategories = ['Lips', 'Eyes', 'Complexion'];
 

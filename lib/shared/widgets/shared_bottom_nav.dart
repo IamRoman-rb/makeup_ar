@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'camera_screen.dart';
-import 'catalog_screen.dart';
-import 'profile_screen.dart';
-import 'l10n/app_localizations.dart'; // <-- 1. Importación del traductor
+import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
+import 'package:ar_makeup_app/features/catalog/presentation/catalog_screen.dart';
+import 'package:ar_makeup_app/features/profile/presentation/profile_screen.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 
 class SharedBottomNav extends StatelessWidget {
   final int currentIndex;

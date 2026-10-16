@@ -58,6 +58,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Cancelá en `dispose()` todo `StreamSubscription`, `Timer`, controller e `Isolate`.
 - Los frames se descartan con una bandera tipo `_frameInFlight`; nunca se encolan.
 - Arquitectura limpia, feature-first: `lib/features/<feature>/{domain,data,presentation}`. El dominio no depende de Flutter ni de Firebase.
+  Features: `ar` (motor y espejo), `studio`, `my_looks`, `auth`, `catalog` (catálogo, tutoriales, editor admin), `profile`, `vip`. Widgets compartidos en `lib/shared/widgets/`. En `lib/` solo quedan los `main*.dart`, `firebase_options.dart` y `startup_trace.dart`.
 - Código nuevo con tests. `flutter analyze` sin warnings antes de dar algo por terminado.
 
 ## Reglas del motor nativo y shaders

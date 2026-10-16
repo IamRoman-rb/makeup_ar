@@ -1,4 +1,4 @@
-import 'package:ar_makeup_app/vip/premium_content.dart';
+import 'package:ar_makeup_app/features/vip/data/premium_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 

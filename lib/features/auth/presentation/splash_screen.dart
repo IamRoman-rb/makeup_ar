@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'login_screen.dart';
-import 'catalog_screen.dart';
-import 'startup_trace.dart';
+import 'package:ar_makeup_app/features/auth/presentation/login_screen.dart';
+import 'package:ar_makeup_app/features/catalog/presentation/catalog_screen.dart';
+import 'package:ar_makeup_app/startup_trace.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

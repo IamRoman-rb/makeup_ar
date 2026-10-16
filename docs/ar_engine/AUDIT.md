@@ -146,7 +146,7 @@ Diagnóstico original:
 ### 5.3 Compilación y tests
 
 - **Hallazgo 4, resuelto el 2026-10-16:**
-  - Las keys entran por `--dart-define-from-file=env/revenuecat.json` (`lib/vip/revenue_cat_config.dart`).
+  - Las keys entran por `--dart-define-from-file=env/revenuecat.json` (`lib/features/vip/data/revenue_cat_config.dart`).
   - Sin key, la app compila y el VIP queda desactivado.
   - `revenue_cat_keys.dart` ya no se usa.
 

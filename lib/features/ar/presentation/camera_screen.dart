@@ -4,9 +4,9 @@ import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
-import 'features/ar/presentation/test_filter_view.dart';
-import 'l10n/app_localizations.dart';
-import 'shared_bottom_nav.dart';
+import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart';
+import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
 
 /// Espejo: cámara frontal en vivo. Con el botón de la barra se alterna al
 /// filtro de prueba del motor AR nativo (`TestFilterView`).

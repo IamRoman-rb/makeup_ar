@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'login_screen.dart';
-import 'l10n/app_localizations.dart'; // <-- Importación del traductor
+import 'package:ar_makeup_app/features/auth/presentation/login_screen.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- Importación del traductor
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});

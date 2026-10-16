@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'camera_screen.dart';
-import 'features/ar/presentation/test_filter_view.dart';
-import 'features/studio/data/cloud_recipe_generator.dart';
-import 'features/studio/data/engine_image_analyzer.dart';
-import 'features/studio/data/firestore_look_repository.dart';
-import 'features/studio/domain/studio_look.dart';
-import 'features/studio/presentation/studio_screen.dart';
-import 'filter_editor_screen.dart';
-import 'step_by_step_screen.dart';
-import 'shared_bottom_nav.dart';
-import 'l10n/app_localizations.dart'; // <-- 1. Importamos el traductor
+import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
+import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
+import 'package:ar_makeup_app/features/studio/data/cloud_recipe_generator.dart';
+import 'package:ar_makeup_app/features/studio/data/engine_image_analyzer.dart';
+import 'package:ar_makeup_app/features/studio/data/firestore_look_repository.dart';
+import 'package:ar_makeup_app/features/studio/domain/studio_look.dart';
+import 'package:ar_makeup_app/features/studio/presentation/studio_screen.dart';
+import 'package:ar_makeup_app/features/catalog/presentation/filter_editor_screen.dart';
+import 'package:ar_makeup_app/features/catalog/presentation/step_by_step_screen.dart';
+import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importamos el traductor
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});

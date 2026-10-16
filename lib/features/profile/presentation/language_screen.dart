@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'main.dart'; // Necesario para acceder a ARMakeupApp.setLocale
-import 'l10n/app_localizations.dart'; // <-- 1. Importación del traductor
+import 'package:ar_makeup_app/main.dart'; // Necesario para acceder a ARMakeupApp.setLocale
+import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 
 class LanguageScreen extends StatelessWidget {
   const LanguageScreen({super.key});

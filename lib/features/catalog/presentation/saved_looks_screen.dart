@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'step_by_step_screen.dart';
-import 'l10n/app_localizations.dart'; // <-- 1. Importación del traductor
+import 'package:ar_makeup_app/features/catalog/presentation/step_by_step_screen.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 
 class SavedLooksScreen extends StatelessWidget {
   const SavedLooksScreen({super.key});
