@@ -92,6 +92,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         }
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       if (e.code == 'requires-recent-login') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please log out and log in again before deleting your account.')),
@@ -154,7 +155,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.pushNotif, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500)),
               subtitle: Text(l10n.pushNotifDesc, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600)),
-              activeColor: const Color(0xFFD4AF37),
+              activeThumbColor: const Color(0xFFD4AF37),
               value: _pushNotifications,
               onChanged: (val) => setState(() => _pushNotifications = val),
             ),
@@ -163,7 +164,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.emailNotif, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500)),
               subtitle: Text(l10n.emailNotifDesc, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600)),
-              activeColor: const Color(0xFFD4AF37),
+              activeThumbColor: const Color(0xFFD4AF37),
               value: _emailNewsletters,
               onChanged: (val) => setState(() => _emailNewsletters = val),
             ),

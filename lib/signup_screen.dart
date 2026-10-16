@@ -106,6 +106,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const CatalogScreen()), (route) => false);
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? l10n.registrationError)));
     } finally {
       if (mounted) setState(() => _isLoading = false);

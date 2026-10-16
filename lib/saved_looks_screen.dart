@@ -127,7 +127,7 @@ class SavedLooksScreen extends StatelessWidget {
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), shape: BoxShape.circle),
+                                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle),
                                     child: const Icon(Icons.favorite, color: Color(0xFFE91E63), size: 20),
                                   ),
                                 ),

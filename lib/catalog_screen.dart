@@ -131,7 +131,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(25),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))],
                   ),
                   child: TextField(
                     controller: _searchController,
@@ -275,7 +275,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                               child: Container(
                                                 padding: const EdgeInsets.all(8),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white.withOpacity(0.9),
+                                                  color: Colors.white.withValues(alpha: 0.9),
                                                   shape: BoxShape.circle,
                                                   boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
                                                 ),
@@ -298,7 +298,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                                 child: Container(
                                                   padding: const EdgeInsets.all(8),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.white.withOpacity(0.9),
+                                                    color: Colors.white.withValues(alpha: 0.9),
                                                     shape: BoxShape.circle,
                                                     boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
                                                   ),

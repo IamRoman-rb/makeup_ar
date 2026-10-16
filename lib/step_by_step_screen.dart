@@ -163,7 +163,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
                       if (image.isNotEmpty)
                         Container(
                           decoration: BoxDecoration(
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 10))],
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(20),
@@ -325,7 +325,7 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
             : DecorationImage(
           image: const NetworkImage('https://picsum.photos/800/400?blur=10'),
           fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.6), BlendMode.darken),
+          colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.6), BlendMode.darken),
         ),
       ),
       clipBehavior: Clip.antiAlias,
