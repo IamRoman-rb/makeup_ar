@@ -29,6 +29,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  // Una vez: creados en build, cada tecla de la búsqueda o cada categoría se
+  // resuscribía a Firestore y la lista pasaba por el spinner.
+  final User? _user = FirebaseAuth.instance.currentUser;
+  late final Stream<DocumentSnapshot>? _userStream =
+      _user == null ? null : FirebaseFirestore.instance.collection('users').doc(_user.uid).snapshots();
+  late final Stream<QuerySnapshot> _looksStream =
+      FirebaseFirestore.instance.collection('looks').orderBy('order').snapshots();
   final String defaultImage = 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?q=80&w=800&auto=format&fit=crop';
 
   @override
@@ -98,7 +106,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     ];
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      stream: _userStream,
       builder: (context, userSnapshot) {
         final userData = userSnapshot.data?.data() as Map<String, dynamic>? ?? {};
         final savedLooks = List<String>.from(userData['saved_looks'] ?? []);
@@ -184,7 +192,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
                 // LISTA DE FILTROS
                 StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance.collection('looks').orderBy('order').snapshots(),
+                        stream: _looksStream,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
 

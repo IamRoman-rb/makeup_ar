@@ -50,10 +50,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    try {
+      if (user == null) return;
       final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        final data = doc.data()!;
+      final data = doc.data();
+      if (data != null && mounted) {
         setState(() {
           _nameController.text = data['nombre'] ?? '';
           _ageController.text = (data['edad'] ?? '').toString();
@@ -75,8 +76,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           }
         });
       }
+    } catch (e) {
+      debugPrint('Error cargando el perfil: $e');
+    } finally {
+      // Antes, un error de Firestore dejaba el spinner para siempre.
+      if (mounted) setState(() => _isLoading = false);
     }
-    setState(() => _isLoading = false);
   }
 
   Future<void> _pickImage() async {

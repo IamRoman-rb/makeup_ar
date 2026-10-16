@@ -57,6 +57,15 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
   bool _isSaving = false;
   bool _isLoading = false;
 
+  // Una vez: creado en build, cada setState (agregar un paso, cambiar la
+  // categoría) se resuscribía y reemplazaba el formulario por un spinner.
+  late final Stream<DocumentSnapshot>? _userStream = _userSnapshots();
+
+  static Stream<DocumentSnapshot>? _userSnapshots() {
+    final user = FirebaseAuth.instance.currentUser;
+    return user == null ? null : FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -110,7 +119,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
     } catch (e) {
       debugPrint("Error cargando look: $e");
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -168,7 +177,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
       debugPrint("Error guardando look: $e");
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.filterEditorSaveError('$e'))));
     } finally {
-      setState(() => _isSaving = false);
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -205,6 +214,11 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
         }
       } catch (e) {
         debugPrint("Error eliminando: $e");
+        // Antes quedaba _isSaving en true y el spinner tapaba el botón de guardar.
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorWithDetails('$e'))));
+        }
       }
     }
   }
@@ -222,10 +236,8 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
     return StreamBuilder<DocumentSnapshot>(
-      stream: user == null ? null : FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      stream: _userStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(backgroundColor: Color(0xFF121212), body: Center(child: CircularProgressIndicator(color: Colors.pinkAccent)));

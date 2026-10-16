@@ -6,8 +6,20 @@ import 'package:ar_makeup_app/features/catalog/presentation/step_by_step_screen.
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_labels.dart';
 
-class SavedLooksScreen extends StatelessWidget {
+class SavedLooksScreen extends StatefulWidget {
   const SavedLooksScreen({super.key});
+
+  @override
+  State<SavedLooksScreen> createState() => _SavedLooksScreenState();
+}
+
+class _SavedLooksScreenState extends State<SavedLooksScreen> {
+  // Una vez: el de looks se recreaba con cada cambio del documento del usuario
+  // (quitar un favorito volvía a pedir toda la colección y mostraba el spinner).
+  final User? _user = FirebaseAuth.instance.currentUser;
+  late final Stream<DocumentSnapshot>? _userStream =
+      _user == null ? null : FirebaseFirestore.instance.collection('users').doc(_user.uid).snapshots();
+  late final Stream<QuerySnapshot> _looksStream = FirebaseFirestore.instance.collection('looks').snapshots();
 
   Widget _buildSafeImage(String imageUrl) {
     // Si la URL está vacía, mostramos un fondo elegante con un ícono
@@ -60,7 +72,7 @@ class SavedLooksScreen extends StatelessWidget {
         centerTitle: true,
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+        stream: _userStream,
         builder: (context, userSnapshot) {
           if (userSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
@@ -80,13 +92,17 @@ class SavedLooksScreen extends StatelessWidget {
           }
 
           return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('looks').snapshots(),
+            stream: _looksStream,
             builder: (context, looksSnapshot) {
               if (looksSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
               }
+              final looksData = looksSnapshot.data;
+              if (looksSnapshot.hasError || looksData == null) {
+                return Center(child: Text(l10n.catalogLoadError('${looksSnapshot.error ?? ''}')));
+              }
 
-              final allLooks = looksSnapshot.data!.docs;
+              final allLooks = looksData.docs;
               // Filtramos localmente para solo mostrar los que están en nuestro arreglo de guardados
               final filteredLooks = allLooks.where((doc) => savedLooks.contains(doc.id)).toList();
 

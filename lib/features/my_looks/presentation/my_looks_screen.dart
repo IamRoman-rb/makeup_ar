@@ -87,7 +87,20 @@ class _MyLooksScreenState extends State<MyLooksScreen> {
       _generating = true;
       _message = null;
     });
-    final result = await widget.generator.generate(prompt: text, locale: _locale(context));
+    final GenerationResult result;
+    try {
+      result = await widget.generator.generate(prompt: text, locale: _locale(context));
+    } catch (e) {
+      // El contrato devuelve fallas tipadas; esto es por si un generador tira.
+      debugPrint('generate: $e');
+      if (mounted) {
+        setState(() {
+          _generating = false;
+          _message = l10n.myAiLooksErrorGeneric;
+        });
+      }
+      return;
+    }
     if (!mounted) return;
     final fallback = result.fallback;
     setState(() {

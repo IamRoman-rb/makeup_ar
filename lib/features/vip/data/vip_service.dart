@@ -27,14 +27,17 @@ class VipService {
   /// Llamar una sola vez al arrancar la app (ver main.dart).
   static Future<void> configure() async {
     if (_configured) return;
-    _configured = true;
 
     final apiKey = RevenueCatConfig.keyFor(apple: Platform.isIOS || Platform.isMacOS);
     if (apiKey.isEmpty) {
+      _configured = true;
       debugPrint('VipService: sin key de RevenueCat (--dart-define-from-file=env/revenuecat.json); VIP desactivado.');
       return;
     }
+    // Se marca recién si sale bien: si tira, el "Reintentar" del splash
+    // (AppServices.retry) vuelve a intentarlo.
     await Purchases.configure(PurchasesConfiguration(apiKey));
+    _configured = true;
     _available = true;
   }
 

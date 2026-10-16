@@ -94,3 +94,40 @@ Después venían 800 ms de transición. En total, unos 4,5 s hasta el catálogo,
 - RevenueCat sigue sin medir: hay que repetir con la key.
 
 **Pendiente:** repetir el protocolo (5 arranques en frío, con la key de RevenueCat) y anotar los números acá.
+
+## Revisión perf-auditor (2026-10-16)
+
+`perf-auditor` revisó lo que cambió desde `6958c02`: arranque, VIP, Mis looks y las pantallas movidas.
+
+**Corregido:**
+- **Streams de Firestore creados en `build()`** (tutorial, editor de looks, catálogo y guardados). Cada `setState` se volvía a suscribir y mostraba el spinner:
+  - en el tutorial, cada swipe de paso destruía el reproductor de video;
+  - en el editor se perdía el foco;
+  - en el catálogo parpadeaba la lista con cada tecla.
+  
+  Ahora cada stream se crea una vez en el `State`.
+- **Video del tutorial:**
+  - se pausa al ir a segundo plano y al abrir la cámara AR;
+  - si falla `initialize()` vuelve a "sin video";
+  - `_resolving` ya no queda trabado;
+  - el ícono de play vuelve al terminar.
+- **Fondo del paywall:** era una imagen de `picsum.photos`, un servicio de terceros que se pedía cada vez; ahora es un degradé local.
+- **RevenueCat:** `configure` se marca hecho solo si sale bien, así que el "Reintentar" del splash lo vuelve a intentar.
+- **`setState` después de `dispose`:** corregido en el editor de looks y en editar perfil. Si un borrado falla, el editor ya no queda con el spinner.
+- **Varios:**
+  - `saved_looks_screen` ya no usa `data!` sin chequear;
+  - se agregó el `dispose` que faltaba en los controllers de login y registro;
+  - en Mis looks, `generate` atrapa excepciones;
+  - `AppServices.ready` se dispara después de `runApp`.
+
+**Pendiente, a decidir con mediciones del E20:**
+- **Catálogo** (`dumpsys meminfo` con el catálogo abierto):
+  - la lista se arma entera, no es perezosa;
+  - las imágenes se decodifican sin `cacheWidth`;
+  - `lookRecipe` corre en cada rebuild.
+- **Guardados:** se escucha toda la colección `looks` y se filtra en el teléfono.
+- **Arranque:**
+  - RevenueCat en paralelo con Firebase; antes hay que medirlo con la key;
+  - fuentes de GoogleFonts empaquetadas, sin bajarlas por red;
+  - transición de 800 ms.
+- **Menores:** imágenes de pasos y avatar sin `cacheWidth`.

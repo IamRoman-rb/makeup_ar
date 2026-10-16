@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,21 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  // Los streams se crean una vez: creados en build, cada setState (por ejemplo
+  // el swipe de paso) se resuscribía, pasaba por "waiting" y reemplazaba la
+  // pantalla por un spinner, destruyendo el reproductor de video.
+  late final Stream<DocumentSnapshot> _lookStream =
+      FirebaseFirestore.instance.collection('looks').doc(widget.lookId).snapshots();
+  late final Stream<DocumentSnapshot>? _userStream = _userSnapshots();
+
+  /// Para pausar el video antes de abrir la cámara AR.
+  final GlobalKey<_TutorialVideoSectionState> _videoKey = GlobalKey();
+
+  static Stream<DocumentSnapshot>? _userSnapshots() {
+    final user = FirebaseAuth.instance.currentUser;
+    return user == null ? null : FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -33,10 +50,9 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final currentUser = FirebaseAuth.instance.currentUser;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('looks').doc(widget.lookId).snapshots(),
+      stream: _lookStream,
       builder: (context, lookSnapshot) {
         if (lookSnapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))));
@@ -57,7 +73,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
             : <Map<String, dynamic>>[];
 
         return StreamBuilder<DocumentSnapshot>(
-          stream: currentUser == null ? null : FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots(),
+          stream: _userStream,
           builder: (context, userSnapshot) {
             final isPremium = isPremiumUser(userSnapshot.data?.data() as Map<String, dynamic>?);
 
@@ -80,13 +96,17 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
                   IconButton(
                     icon: Icon(recipe == null ? Icons.camera_front_outlined : Icons.auto_awesome, color: const Color(0xFF1A1A1A)),
                     tooltip: recipe == null ? l10n.mirror : l10n.tryOnAr,
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => CameraScreen(
-                        initialLook: recipe == null
-                            ? null
-                            : TestFilterOption(id: 'look-${widget.lookId}', label: recipe.name, recipe: recipe),
-                      ),
-                    )),
+                    onPressed: () {
+                      // El video no compite con la cámara y el motor AR.
+                      _videoKey.currentState?.pause();
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => CameraScreen(
+                          initialLook: recipe == null
+                              ? null
+                              : TestFilterOption(id: 'look-${widget.lookId}', label: recipe.name, recipe: recipe),
+                        ),
+                      ));
+                    },
                   ),
                 ],
               ),
@@ -117,7 +137,12 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
         // El video/paywall VIP siempre se muestra, tenga o no video este look.
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
-          child: TutorialVideoSection(lookId: widget.lookId, legacyVideoUrl: legacyVideoUrl, isPremium: isPremium),
+          child: TutorialVideoSection(
+            key: _videoKey,
+            lookId: widget.lookId,
+            legacyVideoUrl: legacyVideoUrl,
+            isPremium: isPremium,
+          ),
         ),
 
         if (steps.isEmpty) Expanded(child: _buildEmptyStepsState()),
@@ -282,7 +307,7 @@ class TutorialVideoSection extends StatefulWidget {
   State<TutorialVideoSection> createState() => _TutorialVideoSectionState();
 }
 
-class _TutorialVideoSectionState extends State<TutorialVideoSection> {
+class _TutorialVideoSectionState extends State<TutorialVideoSection> with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   String? _videoUrl;
   bool _resolving = false;
@@ -294,7 +319,25 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (widget.isPremium) _resolveVideo();
+  }
+
+  /// En segundo plano el video se pausa (no sigue con audio y decodificador).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) pause();
+  }
+
+  /// Pausa si está reproduciendo (al abrir la cámara AR, al salir de la app).
+  void pause() {
+    final controller = _controller;
+    if (controller != null && controller.value.isPlaying) unawaited(controller.pause());
+  }
+
+  /// Redibuja con los cambios del reproductor (fin del video: vuelve el play).
+  void _onVideoChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -313,19 +356,27 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
     final request = ++_request;
     _disposeVideo();
     setState(() => _resolving = true);
-    final premiumUrl = await PremiumContent.videoUrl(widget.lookId);
+    String? premiumUrl;
+    try {
+      premiumUrl = await PremiumContent.videoUrl(widget.lookId);
+    } catch (e) {
+      // videoUrl ya atrapa los errores de Firestore; esto cubre el resto.
+      debugPrint('Video del tutorial: $e');
+    } finally {
+      // Si este pedido sigue vigente, nunca queda el spinner trabado.
+      if (mounted && request == _request) setState(() => _resolving = false);
+    }
     if (!mounted || request != _request) return;
     final legacy = widget.legacyVideoUrl;
     final url = premiumUrl ?? (legacy != null && legacy.isNotEmpty ? legacy : null);
-    setState(() {
-      _resolving = false;
-      _videoUrl = url;
-    });
+    setState(() => _videoUrl = url);
     if (url != null) _initializeVideo(url);
   }
 
   void _disposeVideo() {
-    _controller?.dispose();
+    final controller = _controller;
+    controller?.removeListener(_onVideoChanged);
+    controller?.dispose();
     _controller = null;
     _videoUrl = null;
     _resolving = false;
@@ -335,12 +386,21 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
     final controller = VideoPlayerController.networkUrl(Uri.parse(url));
     _controller = controller;
     controller.initialize().then((_) {
-      if (mounted) setState(() {});
+      if (!mounted || _controller != controller) return;
+      controller.addListener(_onVideoChanged);
+      setState(() {});
+    }).catchError((Object e) {
+      // Red o códec: "sin video" en lugar de un spinner eterno.
+      debugPrint('Video del tutorial no se pudo abrir: $e');
+      if (!mounted || _controller != controller) return;
+      setState(_disposeVideo);
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _controller?.removeListener(_onVideoChanged);
     _controller?.dispose();
     super.dispose();
   }
@@ -361,13 +421,14 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(20),
-        image: showVideoPlayer
+        // Sin imagen de red de terceros (antes picsum.photos en cada apertura).
+        gradient: showVideoPlayer
             ? null
-            : DecorationImage(
-          image: const NetworkImage('https://picsum.photos/800/400?blur=10'),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.6), BlendMode.darken),
-        ),
+            : const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF2A2418), Color(0xFF1A1A1A), Color(0xFF3A2E14)],
+              ),
       ),
       clipBehavior: Clip.antiAlias,
       child: showVideoPlayer
@@ -398,7 +459,8 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
     }
 
     return GestureDetector(
-      onTap: () => setState(() => controller.value.isPlaying ? controller.pause() : controller.play()),
+      // El listener del controller redibuja cuando cambia el estado.
+      onTap: () => controller.value.isPlaying ? controller.pause() : controller.play(),
       child: Stack(
         alignment: Alignment.center,
         children: [

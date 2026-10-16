@@ -45,6 +45,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   ];
   final List<String> preferences = ['Natural', 'Glamour', 'Minimalist', 'Bold', 'Skincare Focus'];
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _ageController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (pickedFile != null) {

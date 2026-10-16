@@ -12,8 +12,8 @@ void main() {
   // Firebase, App Check y RevenueCat arrancan en paralelo con el splash, que
   // los espera (AppServices.ready) antes de navegar: el primer frame no
   // espera a Firebase (docs/ar_engine/STARTUP.md).
-  unawaited(AppServices.ready.catchError((Object _) {}));
   runApp(const ARMakeupApp());
+  unawaited(AppServices.ready.catchError((Object _) {}));
   binding.waitUntilFirstFrameRasterized.then((_) => StartupTrace.mark('first_frame'));
 }
 
