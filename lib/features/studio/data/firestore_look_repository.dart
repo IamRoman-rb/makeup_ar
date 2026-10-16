@@ -44,6 +44,9 @@ final class FirestoreLookRepository implements ILookRepository {
         ...look.toFirestore(),
         // Lo que el catálogo y el paso a paso ya leen.
         'steps': const <Object?>[],
+        // Mismo criterio que el editor de looks (ms de creación): al final
+        // del catálogo. Sin este campo el catálogo viejo no lo listaba.
+        'order': DateTime.now().millisecondsSinceEpoch,
         'createdBy': uid,
         'createdAt': FieldValue.serverTimestamp(),
       });

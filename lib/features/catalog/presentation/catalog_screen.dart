@@ -14,6 +14,7 @@ import 'package:ar_makeup_app/features/catalog/presentation/step_by_step_screen.
 import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importamos el traductor
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_labels.dart';
+import 'package:ar_makeup_app/features/catalog/domain/catalog_order.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -35,8 +36,15 @@ class _CatalogScreenState extends State<CatalogScreen> {
   final User? _user = FirebaseAuth.instance.currentUser;
   late final Stream<DocumentSnapshot>? _userStream =
       _user == null ? null : FirebaseFirestore.instance.collection('users').doc(_user.uid).snapshots();
-  late final Stream<QuerySnapshot> _looksStream =
-      FirebaseFirestore.instance.collection('looks').orderBy('order').snapshots();
+  // Sin orderBy('order'): Firestore excluye los documentos sin ese campo
+  // (los publicados desde el Studio). Se ordena en el cliente (catalog_order).
+  late final Stream<QuerySnapshot> _looksStream = FirebaseFirestore.instance.collection('looks').snapshots();
+
+  static int _sortKey(QueryDocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final createdAt = data['createdAt'];
+    return catalogSortKey(order: data['order'], createdAt: createdAt is Timestamp ? createdAt.toDate() : null);
+  }
   final String defaultImage = 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?q=80&w=800&auto=format&fit=crop';
 
   @override
@@ -205,7 +213,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                             return Padding(padding: const EdgeInsets.all(40.0), child: Text(l10n.noLooksFound(l10n.categoryAll)));
                           }
 
-                          final allLooks = snapshot.data!.docs;
+                          final allLooks = sortCatalog(snapshot.data!.docs, keyOf: _sortKey, idOf: (doc) => doc.id);
 
                           // LÓGICA DE DOBLE FILTRADO
                           final filteredLooks = allLooks.where((doc) {
