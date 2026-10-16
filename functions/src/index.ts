@@ -4,8 +4,8 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { defineString } from 'firebase-functions/params';
-import { onCall } from 'firebase-functions/v2/https';
+import { defineSecret, defineString } from 'firebase-functions/params';
+import { onCall, onRequest } from 'firebase-functions/v2/https';
 
 import { AiLookDeps, FirestoreAiLookStore, handleDeleteAiLook, handleSaveAiLook } from './aiLooks';
 import { GenerateDeps, handleGenerate } from './generateRecipe';
@@ -13,6 +13,7 @@ import { FakeLlmClient } from './llm/fakeLlmClient';
 import { GeminiClient } from './llm/geminiClient';
 import { LlmClient } from './llm/llmClient';
 import { FirestoreQuotaStore } from './quota';
+import { FirestorePremiumStore, WebhookDeps, handleRevenueCatWebhook } from './revenueCatWebhook';
 
 initializeApp();
 
@@ -86,4 +87,35 @@ export const generateRecipe = onCall(
     maxInstances: 3,
   },
   (request) => handleGenerate(request.auth ? { uid: request.auth.uid } : undefined, request.data, getDeps()),
+);
+
+// VIP: RevenueCat avisa compras y vencimientos; solo este endpoint escribe el
+// estado VIP (AUDIT.md §5.2). El secreto es el valor del header Authorization
+// configurado en RevenueCat: firebase functions:secrets:set REVENUECAT_WEBHOOK_AUTH
+const revenueCatAuth = defineSecret('REVENUECAT_WEBHOOK_AUTH');
+// Igual que RevenueCatKeys.entitlementId en la app.
+const vipEntitlement = defineString('VIP_ENTITLEMENT', { default: 'vip' });
+let webhookDeps: WebhookDeps | undefined;
+
+function getWebhookDeps(): WebhookDeps {
+  if (webhookDeps) return webhookDeps;
+  webhookDeps = {
+    secret: () => revenueCatAuth.value(),
+    entitlement: vipEntitlement.value(),
+    store: new FirestorePremiumStore(getFirestore()),
+    log: (entry) => logger.info('revenueCatWebhook', entry),
+  };
+  return webhookDeps;
+}
+
+export const revenueCatWebhook = onRequest(
+  { region: 'us-central1', secrets: [revenueCatAuth], timeoutSeconds: 10, memory: '256MiB', maxInstances: 3 },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).send('POST');
+      return;
+    }
+    const result = await handleRevenueCatWebhook(req.header('authorization'), req.body, getWebhookDeps());
+    res.status(result.status).json({ outcome: result.outcome });
+  },
 );

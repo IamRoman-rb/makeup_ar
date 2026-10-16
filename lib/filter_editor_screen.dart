@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'vip/premium_content.dart';
+
 const List<String> kFilterCategories = ['Lips', 'Eyes', 'Complexion'];
 
 /// Un paso del tutorial, con sus propios controllers para editarlo en el
@@ -62,14 +64,18 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
 
   // 📥 Trae los datos actuales del look
   Future<void> _loadExistingLook() async {
+    final lookId = widget.lookId;
+    if (lookId == null) return;
     setState(() => _isLoading = true);
     try {
-      final doc = await FirebaseFirestore.instance.collection('looks').doc(widget.lookId).get();
+      final doc = await FirebaseFirestore.instance.collection('looks').doc(lookId).get();
       if (doc.exists && doc.data() != null) {
         final data = doc.data()!;
         _nameController.text = data['name'] ?? "Look sin nombre";
         _imageController.text = data['image'] ?? "";
-        _videoController.text = data['video_url'] ?? "";
+        // El video vive en premium/content (AUDIT.md §5.2); los looks sin
+        // migrar lo tienen en el documento y se mueve al guardar.
+        _videoController.text = await PremiumContent.videoUrl(lookId) ?? (data['video_url'] as String? ?? "");
         final category = data['category'] as String?;
         if (category != null && kFilterCategories.contains(category)) {
           _category = category;
@@ -115,15 +121,28 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
         "steps": steps,
         "updated_at": FieldValue.serverTimestamp(),
         if (_imageController.text.trim().isNotEmpty) "image": _imageController.text.trim(),
-        if (_videoController.text.trim().isNotEmpty) "video_url": _videoController.text.trim(),
       };
+      final videoUrl = _videoController.text.trim();
 
-      if (widget.lookId == null) {
+      // El look y su video en un batch: el video va a premium/content (solo
+      // VIP y admins lo leen) y nunca al documento del look, que es público.
+      final looks = FirebaseFirestore.instance.collection('looks');
+      final batch = FirebaseFirestore.instance.batch();
+      final existingId = widget.lookId;
+      final lookRef = existingId == null ? looks.doc() : looks.doc(existingId);
+      if (existingId == null) {
         lookData["order"] = DateTime.now().millisecondsSinceEpoch;
-        await FirebaseFirestore.instance.collection('looks').add(lookData);
+        batch.set(lookRef, lookData);
       } else {
-        await FirebaseFirestore.instance.collection('looks').doc(widget.lookId).update(lookData);
+        batch.update(lookRef, {...lookData, "video_url": FieldValue.delete()});
       }
+      final premiumRef = PremiumContent.ref(lookRef.id);
+      if (videoUrl.isNotEmpty) {
+        batch.set(premiumRef, {"video_url": videoUrl});
+      } else if (existingId != null) {
+        batch.delete(premiumRef);
+      }
+      await batch.commit();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -140,6 +159,8 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
 
   // 🗑️ Borrado
   Future<void> _deleteLook() async {
+    final lookId = widget.lookId;
+    if (lookId == null) return;
     final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -156,7 +177,10 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
     if (confirm == true) {
       setState(() => _isSaving = true);
       try {
-        await FirebaseFirestore.instance.collection('looks').doc(widget.lookId).delete();
+        final batch = FirebaseFirestore.instance.batch()
+          ..delete(PremiumContent.ref(lookId))
+          ..delete(FirebaseFirestore.instance.collection('looks').doc(lookId));
+        await batch.commit();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Look eliminado 🗑️'), backgroundColor: Colors.red),

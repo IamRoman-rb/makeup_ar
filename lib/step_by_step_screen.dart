@@ -8,6 +8,7 @@ import 'camera_screen.dart';
 import 'features/ar/presentation/test_filter_view.dart';
 import 'features/studio/domain/studio_look.dart';
 import 'l10n/app_localizations.dart';
+import 'vip/premium_content.dart';
 import 'vip/vip_paywall_screen.dart';
 
 class StepByStepScreen extends StatefulWidget {
@@ -47,7 +48,8 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
 
         final data = lookSnapshot.data?.data() as Map<String, dynamic>?;
         final lookName = data?['name'] as String? ?? l10n.stepByStepTitle;
-        final videoUrl = data?['video_url'] as String?;
+        // Solo looks sin migrar: el video nuevo vive en premium/content.
+        final legacyVideoUrl = data?['video_url'] as String?;
         final recipe = data == null ? null : lookRecipe(data);
         final rawSteps = data?['steps'];
         final steps = rawSteps is List
@@ -57,7 +59,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
         return StreamBuilder<DocumentSnapshot>(
           stream: currentUser == null ? null : FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots(),
           builder: (context, userSnapshot) {
-            final isPremium = (userSnapshot.data?.data() as Map<String, dynamic>?)?['is_premium'] == true;
+            final isPremium = isPremiumUser(userSnapshot.data?.data() as Map<String, dynamic>?);
 
             return Scaffold(
               backgroundColor: const Color(0xFFFDF7F8),
@@ -88,7 +90,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
                   ),
                 ],
               ),
-              body: _buildContent(steps, videoUrl, isPremium),
+              body: _buildContent(steps, legacyVideoUrl, isPremium),
             );
           },
         );
@@ -109,13 +111,13 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
     );
   }
 
-  Widget _buildContent(List<Map<String, dynamic>> steps, String? videoUrl, bool isPremium) {
+  Widget _buildContent(List<Map<String, dynamic>> steps, String? legacyVideoUrl, bool isPremium) {
     return Column(
       children: [
         // El video/paywall VIP siempre se muestra, tenga o no video este look.
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
-          child: TutorialVideoSection(videoUrl: videoUrl, isPremium: isPremium),
+          child: TutorialVideoSection(lookId: widget.lookId, legacyVideoUrl: legacyVideoUrl, isPremium: isPremium),
         ),
 
         if (steps.isEmpty) Expanded(child: _buildEmptyStepsState()),
@@ -259,11 +261,22 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
 /// TODO: el botón "Hazte VIP" ya abre la pasarela de pago real
 /// (VipPaywallScreen), pero esta necesita que se configure una cuenta de
 /// RevenueCat con al menos un producto — ver lib/vip/revenue_cat_keys.dart.
+///
+/// La URL se pide solo si el usuario es VIP: vive en looks/{id}/premium/content,
+/// que las reglas dejan leer solo a VIP vigentes y admins (PremiumContent).
 class TutorialVideoSection extends StatefulWidget {
-  final String? videoUrl;
+  final String lookId;
+
+  /// video_url del documento del look: solo en looks sin migrar.
+  final String? legacyVideoUrl;
   final bool isPremium;
 
-  const TutorialVideoSection({super.key, required this.videoUrl, required this.isPremium});
+  const TutorialVideoSection({
+    super.key,
+    required this.lookId,
+    required this.legacyVideoUrl,
+    required this.isPremium,
+  });
 
   @override
   State<TutorialVideoSection> createState() => _TutorialVideoSectionState();
@@ -271,27 +284,55 @@ class TutorialVideoSection extends StatefulWidget {
 
 class _TutorialVideoSectionState extends State<TutorialVideoSection> {
   VideoPlayerController? _controller;
+  String? _videoUrl;
+  bool _resolving = false;
+  // Descarta respuestas viejas si cambia el look o el estado VIP en el medio.
+  int _request = 0;
 
-  bool get _hasVideo => widget.videoUrl != null && widget.videoUrl!.isNotEmpty;
+  bool get _hasVideo => _videoUrl != null;
 
   @override
   void initState() {
     super.initState();
-    if (widget.isPremium && _hasVideo) _initializeVideo();
+    if (widget.isPremium) _resolveVideo();
   }
 
   @override
   void didUpdateWidget(covariant TutorialVideoSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isPremium && _hasVideo && (!oldWidget.isPremium || oldWidget.videoUrl != widget.videoUrl)) {
-      _controller?.dispose();
-      _controller = null;
-      _initializeVideo();
+    final changed = oldWidget.lookId != widget.lookId || oldWidget.legacyVideoUrl != widget.legacyVideoUrl;
+    if (widget.isPremium && (!oldWidget.isPremium || changed)) {
+      _resolveVideo();
+    } else if (!widget.isPremium && oldWidget.isPremium) {
+      _request++;
+      _disposeVideo();
     }
   }
 
-  void _initializeVideo() {
-    final controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl!));
+  Future<void> _resolveVideo() async {
+    final request = ++_request;
+    _disposeVideo();
+    setState(() => _resolving = true);
+    final premiumUrl = await PremiumContent.videoUrl(widget.lookId);
+    if (!mounted || request != _request) return;
+    final legacy = widget.legacyVideoUrl;
+    final url = premiumUrl ?? (legacy != null && legacy.isNotEmpty ? legacy : null);
+    setState(() {
+      _resolving = false;
+      _videoUrl = url;
+    });
+    if (url != null) _initializeVideo(url);
+  }
+
+  void _disposeVideo() {
+    _controller?.dispose();
+    _controller = null;
+    _videoUrl = null;
+    _resolving = false;
+  }
+
+  void _initializeVideo(String url) {
+    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
     _controller = controller;
     controller.initialize().then((_) {
       if (mounted) setState(() {});
@@ -312,7 +353,7 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
 
   @override
   Widget build(BuildContext context) {
-    final showVideoPlayer = widget.isPremium && _hasVideo;
+    final showVideoPlayer = widget.isPremium && (_hasVideo || _resolving);
 
     return Container(
       height: 220,

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -9,6 +8,10 @@ import 'revenue_cat_keys.dart';
 
 /// Wrapper sobre el SDK de RevenueCat para la suscripción VIP que
 /// desbloquea los videos de los tutoriales.
+///
+/// El cliente no escribe el estado VIP (firestore.rules lo prohíbe): lo pone
+/// el webhook de RevenueCat en `users/{uid}.premium_until` segundos después de
+/// la compra (functions/src/revenueCatWebhook.ts, AUDIT.md §5.2).
 class VipService {
   const VipService._();
 
@@ -40,30 +43,17 @@ class VipService {
     return offerings.current;
   }
 
-  /// Compra el paquete. Devuelve true si terminó con el entitlement VIP
-  /// activo (y en ese caso ya sincronizó `users/{uid}.is_premium`).
+  /// Compra el paquete. Devuelve true si RevenueCat confirma el entitlement
+  /// VIP; el acceso a los videos llega con el webhook.
   static Future<bool> purchase(Package package) async {
     final result = await Purchases.purchase(PurchaseParams.package(package));
-    final isVip = result.customerInfo.entitlements.all[RevenueCatKeys.entitlementId]?.isActive ?? false;
-    if (isVip) await _syncPremiumFlag(true);
-    return isVip;
+    return result.customerInfo.entitlements.all[RevenueCatKeys.entitlementId]?.isActive ?? false;
   }
 
   /// Restaura compras previas (requisito de las tiendas). Devuelve true si
   /// encontró el entitlement VIP activo.
   static Future<bool> restore() async {
     final customerInfo = await Purchases.restorePurchases();
-    final isVip = customerInfo.entitlements.all[RevenueCatKeys.entitlementId]?.isActive ?? false;
-    await _syncPremiumFlag(isVip);
-    return isVip;
-  }
-
-  static Future<void> _syncPremiumFlag(bool isPremium) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    await FirebaseFirestore.instance.collection('users').doc(uid).set(
-      {'is_premium': isPremium},
-      SetOptions(merge: true),
-    );
+    return customerInfo.entitlements.all[RevenueCatKeys.entitlementId]?.isActive ?? false;
   }
 }

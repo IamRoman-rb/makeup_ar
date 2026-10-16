@@ -129,6 +129,17 @@ Hay que probarla con el emulador antes de desplegarla (`.claude/rules/firebase.m
 
 ### 5.2 Alto: VIP gratis y videos expuestos
 
+**Resuelto en código el 2026-10-16**, con la regla de Firestore probada en el emulador. Falta desplegar.
+- **Estado VIP:** el cliente ya no puede escribir `is_premium`, `premium_until` ni `premium_event_ms`. Lo escribe solo el webhook de RevenueCat (`functions/src/revenueCatWebhook.ts`) como `premium_until`, y las reglas lo comparan con `request.time`.
+- **Videos:** el video pasa a `looks/{id}/premium/content`, que leen solo los VIP vigentes y los admins. El editor lo mueve al guardar cada look. Mientras queden looks sin volver a guardar, la app usa el `video_url` viejo, que sigue siendo público hasta entonces.
+- **Pendiente:**
+  - desplegar el webhook, que necesita Blaze;
+  - configurar el webhook en RevenueCat;
+  - el evento `TRANSFER` (restaurar una compra en otro usuario): se ignora y queda en el log.
+- **Pasos:** en `F2_PLAN.md`, "VIP: webhook de RevenueCat".
+
+Diagnóstico original:
+
 - `VipService._syncPremiumFlag` escribe `is_premium` desde el cliente. Con la regla actual cualquiera se marca VIP. Con la regla de §5.1 el cliente ya no puede escribirlo, así que la fuente de verdad tiene que pasar al servidor: un **webhook de RevenueCat → Cloud Function** que escriba `is_premium` con el Admin SDK. Alternativa sin backend: no guardar el flag y consultar `Purchases.getCustomerInfo()` en el cliente (más simple, pero manipulable en un dispositivo rooteado).
 - `looks.video_url` es de lectura pública: el "paywall" solo oculta el reproductor, pero la URL se puede leer sin pagar. Si el video es contenido pago, debería vivir en una subcolección `looks/{id}/premium/{doc}` con lectura solo para usuarios VIP (`get(users/uid).data.is_premium == true`), o en Storage con reglas equivalentes.
 

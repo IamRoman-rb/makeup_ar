@@ -51,7 +51,7 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
       if (!mounted) return;
       if (isVip) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Listo, ya sos VIP! 🎉'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('¡Listo, ya sos VIP! 🎉 Se activa en unos segundos.'), backgroundColor: Colors.green),
         );
         Navigator.pop(context, true);
       }
@@ -75,7 +75,9 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
       final isVip = await VipService.restore();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isVip ? '¡Encontramos tu suscripción VIP! 🎉' : 'No encontramos ninguna compra para restaurar.')),
+        SnackBar(content: Text(isVip
+            ? '¡Encontramos tu suscripción VIP! 🎉 Se activa en unos segundos.'
+            : 'No encontramos ninguna compra para restaurar.')),
       );
       if (isVip) Navigator.pop(context, true);
     } catch (e) {

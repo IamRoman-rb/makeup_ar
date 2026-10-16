@@ -30,6 +30,7 @@ function userToken(uid) {
 }
 
 function toValue(value) {
+  if (value instanceof Date) return { timestampValue: value.toISOString() };
   if (typeof value === 'boolean') return { booleanValue: value };
   if (typeof value === 'number') {
     return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
@@ -119,8 +120,47 @@ test('catalog/saved_looks actualizan saved_looks', async () => {
   assert.equal(await update('users/alice', 'alice', { saved_looks: ['look1'] }), OK);
 });
 
-test('VipService sigue pudiendo escribir is_premium (pendiente de mover al servidor)', async () => {
-  assert.equal(await update('users/alice', 'alice', { is_premium: true }), OK);
+// --- VIP (AUDIT.md §5.2): el estado lo escribe solo el servidor ---------------
+
+const FUTURE = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+const PAST = new Date(Date.now() - 24 * 3600 * 1000);
+
+test('el cliente NO puede marcarse VIP: ni is_premium ni premium_until, ni al crear ni al actualizar', async () => {
+  assert.equal(await update('users/alice', 'alice', { is_premium: true }), DENIED);
+  assert.equal(await update('users/alice', 'alice', { premium_until: FUTURE }), DENIED);
+  assert.equal(await update('users/alice', 'alice', { premium_event_ms: 1 }), DENIED);
+  assert.equal(await set('users/alice', 'alice', { nombre: 'Alice', premium_until: FUTURE }), DENIED);
+  assert.equal(await set('users/mallory', 'mallory', { nombre: 'M', is_premium: true }), DENIED);
+  assert.equal(await set('users/mallory', 'mallory', { nombre: 'M', premium_until: FUTURE }), DENIED);
+});
+
+test('un VIP edita su perfil sin tocar el estado VIP', async () => {
+  await set('users/vip', 'owner', { nombre: 'Vip', premium_until: FUTURE, premium_event_ms: 5 });
+  assert.equal(await update('users/vip', 'vip', { nombre: 'Vip 2' }), OK);
+  assert.equal(await update('users/vip', 'vip', { premium_until: PAST }), DENIED);
+});
+
+test('contenido premium: lo leen VIP vigentes y admins; no vencidos, comunes ni anónimos', async () => {
+  await set('looks/look1/premium/content', 'owner', { video_url: 'https://example.com/v.mp4' });
+  await set('users/vip', 'owner', { nombre: 'Vip', premium_until: FUTURE });
+  await set('users/expired', 'owner', { nombre: 'Ex', premium_until: PAST });
+  await set('users/legacy', 'owner', { nombre: 'Legacy', is_premium: true });
+  assert.equal(await read('looks/look1/premium/content', 'vip'), OK);
+  assert.equal(await read('looks/look1/premium/content', 'admin'), OK);
+  assert.equal(await read('looks/look1/premium/content', 'expired'), DENIED);
+  assert.equal(await read('looks/look1/premium/content', 'legacy'), DENIED);
+  assert.equal(await read('looks/look1/premium/content', 'alice'), DENIED);
+  assert.equal(await read('looks/look1/premium/content', null), DENIED);
+});
+
+test('contenido premium: solo un admin lo escribe, y solo con video_url', async () => {
+  await set('users/vip', 'owner', { nombre: 'Vip', premium_until: FUTURE });
+  assert.equal(await set('looks/look1/premium/content', 'vip', { video_url: 'x' }), DENIED);
+  assert.equal(await set('looks/look1/premium/content', 'alice', { video_url: 'x' }), DENIED);
+  assert.equal(await set('looks/look1/premium/content', 'admin', { video_url: 'https://example.com/v.mp4' }), OK);
+  assert.equal(await set('looks/look1/premium/content', 'admin', { video_url: 'x', otro: 1 }), DENIED);
+  assert.equal(await remove('looks/look1/premium/content', 'alice'), DENIED);
+  assert.equal(await remove('looks/look1/premium/content', 'admin'), OK);
 });
 
 test('un admin edita su perfil sin tocar is_admin', async () => {

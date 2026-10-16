@@ -35,6 +35,21 @@
    - para probar en el E20 con un build de profile, registrar el **token de debug**. Aparece en logcat como `DebugAppCheckProvider` al abrir la app.
 4. Desde `functions/`, correr `npm install`. Después, desde la raíz: `firebase deploy --only functions,firestore:rules --project armakeupapp`.
 
+**VIP: webhook de RevenueCat** (AUDIT.md §5.2). Se despliega junto con las functions y lo hacés vos.
+1. Elegí un valor largo al azar para el header de autenticación, por ejemplo `Bearer <32 caracteres al azar>`, y guardalo con `firebase functions:secrets:set REVENUECAT_WEBHOOK_AUTH --project armakeupapp`.
+   - Necesita Blaze.
+   - Sin este secreto, el deploy de functions falla.
+2. Hacé el deploy: `firebase deploy --only functions,firestore:rules --project armakeupapp`. La URL queda como `https://us-central1-armakeupapp.cloudfunctions.net/revenueCatWebhook`.
+3. En RevenueCat → Project settings → Integrations → Webhooks, cargá:
+   - esa URL;
+   - en "Authorization header value", el mismo valor del paso 1.
+   - Probalo con "Send test event": tiene que responder 200 (`ignored_type`).
+4. El entitlement tiene que llamarse `vip`, como `RevenueCatKeys.entitlementId`. Si en RevenueCat se llama distinto, cambiá el parámetro `VIP_ENTITLEMENT`.
+5. **Para probar sin compras:** en la consola de Firestore, poné en `users/{uid}` el campo `premium_until` (timestamp) con una fecha futura. Se saca borrándolo.
+   - Las reglas ya no aceptan `is_premium`.
+   - Para que las reglas se apliquen sin Blaze: `firebase deploy --only firestore:rules --project armakeupapp`.
+6. **Migrar los videos:** abrí cada look con video en el editor y guardalo. El video pasa a `looks/{id}/premium/content` y sale del documento público.
+
 **Probar sin deploy (emulador, sin Blaze):** las funciones corren en tu PC y el resto es el proyecto real.
 - **Qué es real:**
   - Firestore y Auth son los de producción;

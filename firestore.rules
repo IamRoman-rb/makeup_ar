@@ -19,6 +19,22 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('is_admin', false) == true;
     }
 
+    // Estado VIP: lo escribe solo el servidor (webhook de RevenueCat,
+    // functions/src/revenueCatWebhook.ts) o un admin desde la consola. Se
+    // compara el vencimiento con request.time: vence solo aunque se pierda un
+    // evento. is_premium (viejo) no cuenta: cualquiera lo pudo escribir.
+    function serverFields() {
+      return ['is_premium', 'premium_until', 'premium_event_ms'];
+    }
+
+    function premiumUntil() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('premium_until', null);
+    }
+
+    function isPremium() {
+      return isSignedIn() && premiumUntil() is timestamp && premiumUntil() > request.time;
+    }
+
     // Campos de receta de un look o borrador del Studio (F3), si vienen. El
     // contenido de la receta lo valida la app con el esquema JSON antes de
     // escribir y al leer (RecipeValidator); acá solo se cuidan los tipos.
@@ -36,6 +52,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Contenido pago de un look (hoy la URL del video del tutorial): solo VIP
+    // vigentes y admins. Antes video_url estaba en el look, de lectura pública
+    // (AUDIT.md §5.2).
+    match /looks/{lookId}/premium/{docId} {
+      allow read: if isAdmin() || isPremium();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['video_url'])
+        && request.resource.data.video_url is string;
+      allow delete: if isAdmin();
+    }
+
     // Borradores del Studio (F3): solo admins, y siempre con una receta.
     // Separados de "looks" para que el catálogo siga con lectura pública sin
     // filtrar por estado (las reglas no filtran consultas).
@@ -49,18 +76,16 @@ service cloud.firestore {
     // "users" tiene datos personales (correo, edad, fecha de nacimiento).
     // Cada usuario solo puede leer/escribir SU PROPIO documento, y NUNCA el
     // campo is_admin: antes cualquiera podía ponerse is_admin: true y editar
-    // o borrar todo el catálogo (docs/ar_engine/AUDIT.md §5.1).
-    //
-    // is_premium sigue escribible por el cliente a propósito: VipService lo
-    // sincroniza tras una compra de RevenueCat. Bloquearlo exige mover esa
-    // sincronización al servidor (webhook de RevenueCat -> Cloud Function);
-    // pendiente de decisión (AUDIT.md §5.2).
+    // o borrar todo el catálogo (docs/ar_engine/AUDIT.md §5.1). Tampoco el
+    // estado VIP (serverFields): antes cualquiera se marcaba VIP (§5.2).
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
-        && request.resource.data.get('is_admin', false) == false;
+        && request.resource.data.get('is_admin', false) == false
+        && !request.resource.data.keys().hasAny(serverFields());
       allow update: if isOwner(userId)
-        && request.resource.data.get('is_admin', false) == resource.data.get('is_admin', false);
+        && request.resource.data.get('is_admin', false) == resource.data.get('is_admin', false)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(serverFields());
       allow delete: if isOwner(userId);
     }
 
