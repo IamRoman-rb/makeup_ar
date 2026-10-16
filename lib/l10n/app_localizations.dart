@@ -1661,6 +1661,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your account was created, but we couldn\'t upload the photo. You can add it later from your profile.'**
   String get signupPhotoFailed;
+
+  /// No description provided for @startupError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the app. Check your connection.'**
+  String get startupError;
+
+  /// No description provided for @commonRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get commonRetry;
 }
 
 class _AppLocalizationsDelegate

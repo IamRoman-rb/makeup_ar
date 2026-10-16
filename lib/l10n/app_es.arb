@@ -656,5 +656,7 @@
     "vipRestore": "Restaurar compras",
     "vipNoPlans": "Todavía no hay ningún plan VIP configurado.",
     "vipHeadline": "Desbloquea los videos de todos los tutoriales",
-    "signupPhotoFailed": "Tu cuenta se creó, pero no pudimos subir la foto. Puedes agregarla después desde tu perfil."
+    "signupPhotoFailed": "Tu cuenta se creó, pero no pudimos subir la foto. Puedes agregarla después desde tu perfil.",
+    "startupError": "No se pudo iniciar la app. Revisa tu conexión.",
+    "commonRetry": "Reintentar"
 }

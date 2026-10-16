@@ -67,3 +67,30 @@ Se decide después de medir, no antes:
 - **Si `firebase` → `revenuecat` se lleva segundos:** App Check y RevenueCat pasan a después del primer frame, sin `await` antes de `runApp`. Las llamadas que los necesitan esperan a que estén listos; las callables y las compras ocurren mucho después.
 - **Si `TotalTime` es mucho mayor que `first_frame`:** el costo está antes de `main()`, en el motor y el registro de plugins. Ahí se mira qué plugin inicializa en `onAttachedToEngine`.
 - **Espera fija del splash (3 s):** es una decisión de producto. Se puede reemplazar por "hasta que esté listo, con un mínimo de X ms".
+
+## Medición 1 (E20, 2026-10-16) y cambio aplicado
+
+Una corrida con `flutter run --profile`, primer arranque después de instalar y con sesión iniciada. No son las 5 en frío del protocolo, pero alcanza para decidir, porque la espera dominante era fija en el código.
+
+| Etapa | ms desde `main()` |
+|---|---|
+| `onCreate` (antes de `main`) | 844 (logcat `CheckTime`) |
+| `firebase` | 666, con 60 frames perdidos antes del primer frame |
+| `app_check` | 678 |
+| `revenuecat` | 679 (sin key: no se mide el costo real) |
+| `first_frame` | 733 |
+| `splash_done_catalog` | 3695: 2962 ms de espera fija |
+
+Después venían 800 ms de transición. En total, unos 4,5 s hasta el catálogo, y el 65 % era la espera fija del splash.
+
+**Cambio, decidido con el usuario:**
+- Firebase, App Check y RevenueCat arrancan después de `runApp` (`lib/app_services.dart`), en paralelo con el splash.
+- El splash espera que terminen, con un mínimo de 800 ms (`kMinSplashDuration`). El fade del logo pasa a 600 ms.
+- Si fallan (por ejemplo, sin red), el splash muestra el error y un botón para reintentar. Antes la app se cerraba.
+
+**Esperado:**
+- primer frame en menos de 100 ms;
+- catálogo alrededor de 1,6 s después de `main()` (800 ms de splash más 800 de transición);
+- RevenueCat sigue sin medir: hay que repetir con la key.
+
+**Pendiente:** repetir el protocolo (5 arranques en frío, con la key de RevenueCat) y anotar los números acá.

@@ -1,24 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'features/studio/data/app_check_setup.dart';
-import 'firebase_options.dart';
+import 'app_services.dart';
 import 'l10n/app_localizations.dart';
 import 'package:ar_makeup_app/features/auth/presentation/splash_screen.dart';
 import 'startup_trace.dart';
-import 'package:ar_makeup_app/features/vip/data/vip_service.dart';
 
-void main() async {
+void main() {
   StartupTrace.start();
   final binding = WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  StartupTrace.mark('firebase');
-  // Antes de cualquier Cloud Function (generateRecipe exige App Check).
-  await activateAppCheck();
-  StartupTrace.mark('app_check');
-  await VipService.configure();
-  StartupTrace.mark('revenuecat');
+  // Firebase, App Check y RevenueCat arrancan en paralelo con el splash, que
+  // los espera (AppServices.ready) antes de navegar: el primer frame no
+  // espera a Firebase (docs/ar_engine/STARTUP.md).
+  unawaited(AppServices.ready.catchError((Object _) {}));
   runApp(const ARMakeupApp());
   binding.waitUntilFirstFrameRasterized.then((_) => StartupTrace.mark('first_frame'));
 }

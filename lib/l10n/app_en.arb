@@ -549,5 +549,7 @@
     "vipRestore": "Restore purchases",
     "vipNoPlans": "No VIP plan is set up yet.",
     "vipHeadline": "Unlock the videos of every tutorial",
-    "signupPhotoFailed": "Your account was created, but we couldn't upload the photo. You can add it later from your profile."
+    "signupPhotoFailed": "Your account was created, but we couldn't upload the photo. You can add it later from your profile.",
+    "startupError": "Couldn't start the app. Check your connection.",
+    "commonRetry": "Retry"
 }

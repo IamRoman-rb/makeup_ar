@@ -3,7 +3,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ar_makeup_app/features/auth/presentation/login_screen.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_screen.dart';
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart';
 import 'package:ar_makeup_app/startup_trace.dart';
+
+/// Tiempo mínimo con el logo en pantalla. Antes eran 3 s fijos: en el E20 el
+/// splash era el 65 % del arranque (docs/ar_engine/STARTUP.md).
+const Duration kMinSplashDuration = Duration(milliseconds: 800);
+
+/// Completa cuando [ready] terminó y pasó [minimum], lo que ocurra último.
+/// Si [ready] falla, falla igual.
+Future<void> splashGate(Future<void> ready, {Duration minimum = kMinSplashDuration}) async {
+  await Future.wait<void>([ready, Future<void>.delayed(minimum)]);
+}
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,14 +27,15 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  bool _failed = false;
 
   @override
   void initState() {
     super.initState();
-    // Configuramos una animación de 2 segundos
+    // El logo termina de aparecer antes del mínimo del splash.
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 600),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
 
@@ -30,9 +43,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _navigateToNext();
   }
 
-  Future<void> _navigateToNext() async {
-    // Simulamos un tiempo de carga para que el usuario aprecie el logo
-    await Future.delayed(const Duration(seconds: 3));
+  Future<void> _navigateToNext({bool retry = false}) async {
+    if (_failed) setState(() => _failed = false);
+    try {
+      await splashGate(retry ? AppServices.retry() : AppServices.ready);
+    } catch (e) {
+      debugPrint('No se pudieron iniciar los servicios: $e');
+      if (mounted) setState(() => _failed = true);
+      return;
+    }
 
     if (!mounted) return;
 
@@ -91,6 +110,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   letterSpacing: 2.0,
                 ),
               ),
+              if (_failed) ...[
+                const SizedBox(height: 30),
+                Text(
+                  AppLocalizations.of(context)!.startupError,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+                ),
+                TextButton(
+                  onPressed: () => _navigateToNext(retry: true),
+                  child: Text(AppLocalizations.of(context)!.commonRetry,
+                      style: const TextStyle(color: Color(0xFFD4AF37))),
+                ),
+              ],
             ],
           ),
         ),

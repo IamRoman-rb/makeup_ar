@@ -880,4 +880,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get signupPhotoFailed =>
       'Votre compte a été créé, mais la photo n\'a pas pu être envoyée. Vous pourrez l\'ajouter plus tard depuis votre profil.';
+
+  @override
+  String get startupError =>
+      'Impossible de démarrer l\'application. Vérifiez votre connexion.';
+
+  @override
+  String get commonRetry => 'Réessayer';
 }

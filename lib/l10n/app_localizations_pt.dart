@@ -868,4 +868,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get signupPhotoFailed =>
       'Sua conta foi criada, mas não conseguimos enviar a foto. Você pode adicioná-la depois no seu perfil.';
+
+  @override
+  String get startupError =>
+      'Não foi possível iniciar o app. Verifique sua conexão.';
+
+  @override
+  String get commonRetry => 'Tentar de novo';
 }

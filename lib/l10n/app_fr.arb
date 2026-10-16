@@ -353,5 +353,7 @@
     "vipRestore": "Restaurer les achats",
     "vipNoPlans": "Aucune offre VIP n'est encore configurée.",
     "vipHeadline": "Débloquez les vidéos de tous les tutoriels",
-    "signupPhotoFailed": "Votre compte a été créé, mais la photo n'a pas pu être envoyée. Vous pourrez l'ajouter plus tard depuis votre profil."
+    "signupPhotoFailed": "Votre compte a été créé, mais la photo n'a pas pu être envoyée. Vous pourrez l'ajouter plus tard depuis votre profil.",
+    "startupError": "Impossible de démarrer l'application. Vérifiez votre connexion.",
+    "commonRetry": "Réessayer"
 }
