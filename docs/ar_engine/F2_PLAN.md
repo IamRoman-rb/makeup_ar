@@ -44,7 +44,7 @@
    - esa URL;
    - en "Authorization header value", el mismo valor del paso 1.
    - Probalo con "Send test event": tiene que responder 200 (`ignored_type`).
-4. El entitlement tiene que llamarse `vip`, como `RevenueCatKeys.entitlementId`. Si en RevenueCat se llama distinto, cambiá el parámetro `VIP_ENTITLEMENT`.
+4. El entitlement tiene que llamarse `vip`, como `RC_ENTITLEMENT` de la app (`env/revenuecat.json`, por defecto `vip`). Si en RevenueCat se llama distinto, cambiá los dos: `RC_ENTITLEMENT` y el parámetro `VIP_ENTITLEMENT` de la función.
 5. **Para probar sin compras:** en la consola de Firestore, poné en `users/{uid}` el campo `premium_until` (timestamp) con una fecha futura. Se saca borrándolo.
    - Las reglas ya no aceptan `is_premium`.
    - Para que las reglas se apliquen sin Blaze: `firebase deploy --only firestore:rules --project armakeupapp`.

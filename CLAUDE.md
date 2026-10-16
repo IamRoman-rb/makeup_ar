@@ -24,6 +24,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 
 - `flutter pub get` · `flutter analyze` · `flutter test`
 - Medir rendimiento siempre en profile: `flutter run --profile -d <id>`. Nunca en debug.
+- Keys de RevenueCat (VIP): `--dart-define-from-file=env/revenuecat.json` en `flutter run`/`flutter build` (plantilla en `env/revenuecat.example.json`, el real está en `.gitignore`). Sin eso compila igual y el VIP queda desactivado.
 - Arranque de la app: líneas `STARTUP <etapa> <ms>` en logcat (`lib/startup_trace.dart`); protocolo de arranque en frío con `adb shell am start -W` en `docs/ar_engine/STARTUP.md`.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
 - Benchmark del tracker (LiteRT, GPU vs CPU; imagen sintética): `flutter run --profile -t lib/main_benchmark.dart -d <id>`. Resultados en pantalla y en logcat (`makeup_bench`).
@@ -77,7 +78,7 @@ Las reglas detalladas se cargan solas desde `.claude/rules/` cuando tocás esos 
 ## Seguridad y secretos
 
 - No leas ni copies secretos. Si encontrás una key en el código o en el historial, reportá archivo, commit y tipo, sin pegar el valor, y recordame revocarla.
-- No toques `.env`, `google-services.json`, `GoogleService-Info.plist`, `key.properties`, `*.jks` ni `revenue_cat_keys.dart` (un hook lo bloquea). Usá `revenue_cat_keys.example.dart` como referencia.
+- No toques `.env`, `google-services.json`, `GoogleService-Info.plist`, `key.properties`, `*.jks` ni `revenue_cat_keys.dart` (un hook lo bloquea). Las keys de RevenueCat van en `env/revenuecat.json` (ignorado); la referencia es `env/revenuecat.example.json`.
 
 ## Cómo trabajar
 

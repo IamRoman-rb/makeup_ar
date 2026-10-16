@@ -145,7 +145,12 @@ Diagnóstico original:
 
 ### 5.3 Compilación y tests
 
-- **Hallazgo 4:** que el código compile no debería depender de un archivo ignorado. Propuesta: `RevenueCatKeys` lee `String.fromEnvironment('RC_ANDROID_KEY')` / `'RC_IOS_KEY'` (con `--dart-define` o `--dart-define-from-file=env/revenuecat.json`, archivo ignorado), y `revenue_cat_keys.dart` se versiona sin valores. Las keys públicas de RevenueCat (`appl_`/`goog_`) están pensadas para ir en el cliente, pero se respeta la decisión de no versionarlas.
+- **Hallazgo 4, resuelto el 2026-10-16:**
+  - Las keys entran por `--dart-define-from-file=env/revenuecat.json` (`lib/vip/revenue_cat_config.dart`).
+  - Sin key, la app compila y el VIP queda desactivado.
+  - `revenue_cat_keys.dart` ya no se usa.
+
+  Diagnóstico original: que el código compile no debería depender de un archivo ignorado. Propuesta: `RevenueCatKeys` lee `String.fromEnvironment('RC_ANDROID_KEY')` / `'RC_IOS_KEY'` (con `--dart-define` o `--dart-define-from-file=env/revenuecat.json`, archivo ignorado), y `revenue_cat_keys.dart` se versiona sin valores. Las keys públicas de RevenueCat (`appl_`/`goog_`) están pensadas para ir en el cliente, pero se respeta la decisión de no versionarlas.
 - **Hallazgo 5:** reemplazar `test/widget_test.dart` (plantilla de `flutter create` que referencia `MyApp`) por tests reales. Los de F1 (recetas) van en `test/features/ar/`.
 
 ### 5.4 Otros

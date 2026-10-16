@@ -258,9 +258,9 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
 /// siempre que el usuario no sea VIP, tenga o no video cargado este look en
 /// particular.
 ///
-/// TODO: el botón "Hazte VIP" ya abre la pasarela de pago real
-/// (VipPaywallScreen), pero esta necesita que se configure una cuenta de
-/// RevenueCat con al menos un producto — ver lib/vip/revenue_cat_keys.dart.
+/// El botón "Hazte VIP" abre la pasarela de pago real (VipPaywallScreen), que
+/// necesita una cuenta de RevenueCat con al menos un producto y sus keys por
+/// --dart-define-from-file=env/revenuecat.json (lib/vip/revenue_cat_config.dart).
 ///
 /// La URL se pide solo si el usuario es VIP: vive en looks/{id}/premium/content,
 /// que las reglas dejan leer solo a VIP vigentes y admins (PremiumContent).

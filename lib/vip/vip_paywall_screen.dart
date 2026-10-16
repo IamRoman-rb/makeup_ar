@@ -27,6 +27,14 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
   }
 
   Future<void> _load() async {
+    if (!VipService.isAvailable) {
+      // Build sin key de RevenueCat (env/revenuecat.json): no hay catálogo.
+      setState(() {
+        _isLoading = false;
+        _error = 'El VIP no está disponible en esta versión.';
+      });
+      return;
+    }
     setState(() {
       _isLoading = true;
       _error = null;

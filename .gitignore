@@ -44,7 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# RevenueCat API keys (ver lib/vip/revenue_cat_keys.example.dart)
+# RevenueCat API keys: van por --dart-define-from-file (env/revenuecat.example.json).
+# revenue_cat_keys.dart es el formato viejo; se ignora por si quedó en alguna PC.
+/env/revenuecat.json
 /lib/vip/revenue_cat_keys.dart
 
 # Claude Code: preferencias personales y settings locales
