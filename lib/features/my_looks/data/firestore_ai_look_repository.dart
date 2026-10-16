@@ -28,7 +28,11 @@ final class FirestoreAiLookRepository implements IAiLookRepository {
     final separator = emulator.lastIndexOf(':');
     if (separator > 0) {
       final port = int.tryParse(emulator.substring(separator + 1));
-      if (port != null) functions.useFunctionsEmulator(emulator.substring(0, separator), port);
+      // Sin el mapeo automático a 10.0.2.2 (eso es solo para el emulador de
+      // Android): en el teléfono, 127.0.0.1 llega a la PC por adb reverse.
+      if (port != null) {
+        functions.useFunctionsEmulator(emulator.substring(0, separator), port, automaticHostMapping: false);
+      }
     }
     return (name, payload) async {
       try {
