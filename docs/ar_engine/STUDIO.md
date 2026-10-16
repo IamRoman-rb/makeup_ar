@@ -106,7 +106,9 @@ Los umbrales son iniciales, calibrados para que pasen todos los presets (`python
 
 - **Calibrar F4** con 20 fotos en el E20 (F4_PLAN.md, "Para probarlo en el E20").
 - **Usuarios finales que generan sus propios looks:** hoy solo admins.
-- La imagen del catálogo es una URL opcional; todavía no se sube desde el Studio.
+- **Imagen del catálogo:** sigue siendo una URL opcional pegada a mano. Subirla desde el Studio queda para después de Blaze, decidido el 2026-10-16:
+  - el bucket `armakeupapp.firebasestorage.app` exige Blaze;
+  - las reglas de Storage viven solo en la consola: antes de versionar `storage.rules` hay que copiar las actuales, para no pisar las de `profile_pictures/`.
 
 ## Looks generados por usuarios ("Mis looks con IA", §10.13.5)
 
