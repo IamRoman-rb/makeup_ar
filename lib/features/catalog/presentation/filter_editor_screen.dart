@@ -3,7 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:ar_makeup_app/features/catalog/presentation/catalog_labels.dart';
 import 'package:ar_makeup_app/features/vip/data/premium_content.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart';
 
 const List<String> kFilterCategories = ['Lips', 'Eyes', 'Complexion'];
 
@@ -45,7 +47,8 @@ class FilterEditorScreen extends StatefulWidget {
 }
 
 class _FilterEditorScreenState extends State<FilterEditorScreen> {
-  final TextEditingController _nameController = TextEditingController(text: "Nuevo Look");
+  final TextEditingController _nameController = TextEditingController();
+  bool _defaultNameSet = false;
   final TextEditingController _imageController = TextEditingController();
   final TextEditingController _videoController = TextEditingController();
   String _category = kFilterCategories.first;
@@ -59,6 +62,16 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
     super.initState();
     if (widget.lookId != null) {
       _loadExistingLook();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Nombre por defecto de un look nuevo, en el idioma de la app.
+    if (!_defaultNameSet && widget.lookId == null) {
+      _defaultNameSet = true;
+      _nameController.text = AppLocalizations.of(context)!.filterEditorDefaultName;
     }
   }
 
@@ -110,6 +123,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
 
   // ☁️ Crea o actualiza
   Future<void> _saveLookToFirebase() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isSaving = true);
 
     try {
@@ -146,12 +160,13 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Look guardado con éxito! 🚀'), backgroundColor: Colors.green),
+          SnackBar(content: Text(l10n.filterEditorSaved), backgroundColor: Colors.green),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       debugPrint("Error guardando look: $e");
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.filterEditorSaveError('$e'))));
     } finally {
       setState(() => _isSaving = false);
     }
@@ -161,15 +176,16 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
   Future<void> _deleteLook() async {
     final lookId = widget.lookId;
     if (lookId == null) return;
+    final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
-          title: const Text('¿Eliminar look?', style: TextStyle(color: Colors.white)),
-          content: const Text('Esta acción no se puede deshacer.', style: TextStyle(color: Colors.white70)),
+          title: Text(l10n.filterEditorDeleteTitle, style: const TextStyle(color: Colors.white)),
+          content: Text(l10n.filterEditorDeleteBody, style: const TextStyle(color: Colors.white70)),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar', style: TextStyle(color: Colors.white54))),
-            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent))),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.commonCancel, style: const TextStyle(color: Colors.white54))),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.commonDelete, style: const TextStyle(color: Colors.redAccent))),
           ],
         )
     );
@@ -183,7 +199,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
         await batch.commit();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Look eliminado 🗑️'), backgroundColor: Colors.red),
+            SnackBar(content: Text(l10n.filterEditorDeleted), backgroundColor: Colors.red),
           );
           Navigator.pop(context);
         }
@@ -224,7 +240,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
             appBar: AppBar(backgroundColor: Colors.black, elevation: 0),
             body: Center(
               child: Text(
-                'Solo un administrador puede crear o editar looks.',
+                AppLocalizations.of(context)!.filterEditorAdminOnly,
                 style: GoogleFonts.inter(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
@@ -238,12 +254,13 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
   }
 
   Widget _buildEditor(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isEditing = widget.lookId != null;
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: Text(isEditing ? 'Editar Look' : 'Nuevo Look', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        title: Text(isEditing ? l10n.filterEditorEditTitle : l10n.filterEditorNewTitle, style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.black,
         elevation: 0,
         actions: [
@@ -251,14 +268,14 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
               onPressed: _isSaving ? null : _deleteLook,
-              tooltip: 'Eliminar look',
+              tooltip: l10n.filterEditorDeleteTooltip,
             ),
           _isSaving
               ? const Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator(color: Colors.pink))
               : IconButton(
             icon: const Icon(Icons.cloud_upload_rounded, color: Colors.pinkAccent),
             onPressed: _saveLookToFirebase,
-            tooltip: 'Guardar',
+            tooltip: l10n.save,
           )
         ],
       ),
@@ -270,15 +287,15 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
           TextField(
             controller: _nameController,
             style: const TextStyle(color: Colors.white, fontSize: 18),
-            decoration: _fieldDecoration('Nombre del Look'),
+            decoration: _fieldDecoration(l10n.filterEditorName),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             initialValue: _category,
             dropdownColor: const Color(0xFF1E1E1E),
             style: const TextStyle(color: Colors.white, fontSize: 16),
-            decoration: _fieldDecoration('Categoría'),
-            items: kFilterCategories.map((category) => DropdownMenuItem(value: category, child: Text(category))).toList(),
+            decoration: _fieldDecoration(l10n.filterEditorCategory),
+            items: kFilterCategories.map((category) => DropdownMenuItem(value: category, child: Text(lookCategoryLabel(l10n, category)))).toList(),
             onChanged: (value) {
               if (value != null) setState(() => _category = value);
             },
@@ -287,30 +304,30 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
           TextField(
             controller: _imageController,
             style: const TextStyle(color: Colors.white),
-            decoration: _fieldDecoration('URL de imagen de portada (opcional)'),
+            decoration: _fieldDecoration(l10n.filterEditorCoverUrl),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _videoController,
             style: const TextStyle(color: Colors.white),
-            decoration: _fieldDecoration('URL del video del tutorial (opcional, requiere Premium)'),
+            decoration: _fieldDecoration(l10n.filterEditorVideoUrl),
           ),
           const SizedBox(height: 28),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Pasos del tutorial', style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l10n.filterEditorSteps, style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               TextButton.icon(
                 onPressed: _addStep,
                 icon: const Icon(Icons.add, color: Colors.pinkAccent),
-                label: const Text('Agregar paso', style: TextStyle(color: Colors.pinkAccent)),
+                label: Text(l10n.filterEditorAddStep, style: const TextStyle(color: Colors.pinkAccent)),
               ),
             ],
           ),
           if (_steps.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Text('Todavía no agregaste ningún paso.', style: GoogleFonts.inter(color: Colors.white38)),
+              child: Text(l10n.filterEditorNoSteps, style: GoogleFonts.inter(color: Colors.white38)),
             ),
           for (int i = 0; i < _steps.length; i++) _buildStepCard(i),
           const SizedBox(height: 40),
@@ -330,6 +347,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
   }
 
   Widget _buildStepCard(int index) {
+    final l10n = AppLocalizations.of(context)!;
     final step = _steps[index];
 
     return Card(
@@ -344,11 +362,11 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Paso ${index + 1}', style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(l10n.filterEditorStep(index + 1), style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                   onPressed: () => _removeStep(index),
-                  tooltip: 'Eliminar paso',
+                  tooltip: l10n.filterEditorRemoveStep,
                 ),
               ],
             ),
@@ -356,20 +374,20 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
             TextField(
               controller: step.title,
               style: const TextStyle(color: Colors.white),
-              decoration: _fieldDecoration('Título'),
+              decoration: _fieldDecoration(l10n.filterEditorStepTitle),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: step.image,
               style: const TextStyle(color: Colors.white),
-              decoration: _fieldDecoration('URL de imagen (opcional)'),
+              decoration: _fieldDecoration(l10n.filterEditorStepImage),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: step.description,
               style: const TextStyle(color: Colors.white),
               maxLines: 3,
-              decoration: _fieldDecoration('Descripción / instrucción'),
+              decoration: _fieldDecoration(l10n.filterEditorStepDescription),
             ),
           ],
         ),

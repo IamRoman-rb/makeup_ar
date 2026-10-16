@@ -13,6 +13,7 @@ import 'package:ar_makeup_app/features/catalog/presentation/filter_editor_screen
 import 'package:ar_makeup_app/features/catalog/presentation/step_by_step_screen.dart';
 import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importamos el traductor
+import 'package:ar_makeup_app/features/catalog/presentation/catalog_labels.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -86,7 +87,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     final user = FirebaseAuth.instance.currentUser;
     final l10n = AppLocalizations.of(context)!; // <-- 2. Instanciamos el traductor
 
-    if (user == null) return const Scaffold(body: Center(child: Text('Inicia sesión')));
+    if (user == null) return Scaffold(body: Center(child: Text(l10n.loginFirst)));
 
     // 3. Categorías visuales (Traducidas según el idioma seleccionado)
     final List<String> displayCategories = [
@@ -108,7 +109,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
       floatingActionButton: isAdmin
           ? FloatingActionButton(
               backgroundColor: const Color(0xFF1A1A1A),
-              tooltip: 'Crear filtro (admin)',
+              tooltip: l10n.catalogCreateLookTooltip,
               onPressed: () => _openAdminMenu(context, user.uid),
               child: const Icon(Icons.add, color: Colors.white),
             )
@@ -188,7 +189,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
 
                           if (snapshot.hasError) {
-                            return Padding(padding: const EdgeInsets.all(40.0), child: Text('Error cargando los looks: ${snapshot.error}'));
+                            return Padding(padding: const EdgeInsets.all(40.0), child: Text(l10n.catalogLoadError('${snapshot.error}')));
                           }
 
                           // Caso de base de datos vacía general
@@ -311,7 +312,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                       const SizedBox(height: 15),
                                       Text(name, style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A1A))),
                                       const SizedBox(height: 5),
-                                      Text(category, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37), letterSpacing: 1.2)),
+                                      Text(lookCategoryLabel(l10n, category), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37), letterSpacing: 1.2)),
                                       if (recipe != null)
                                         Padding(
                                           padding: const EdgeInsets.only(top: 8),

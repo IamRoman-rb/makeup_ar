@@ -14,6 +14,7 @@ import 'package:ar_makeup_app/features/my_looks/data/firestore_ai_look_repositor
 import 'package:ar_makeup_app/features/my_looks/presentation/my_looks_screen.dart';
 import 'package:ar_makeup_app/features/studio/data/cloud_recipe_generator.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
+import 'package:ar_makeup_app/features/profile/presentation/profile_labels.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -36,11 +37,11 @@ class ProfileScreen extends StatelessWidget {
               }
 
               if (snapshot.hasError) {
-                return Center(child: Text('Error cargando el perfil: ${snapshot.error}'));
+                return Center(child: Text(l10n.profileLoadError('${snapshot.error}')));
               }
 
               if (!snapshot.hasData || !snapshot.data!.exists) {
-                return const Center(child: Text('Error loading user data'));
+                return Center(child: Text(l10n.profileNoData));
               }
 
               final data = snapshot.data!.data() as Map<String, dynamic>;
@@ -54,8 +55,8 @@ class ProfileScreen extends StatelessWidget {
 
               List<dynamic> rawPrefs = data['gustos_personales'] ?? [];
               String descripcion = rawPrefs.isNotEmpty
-                  ? 'Preferences: ${rawPrefs.join(' | ')}'
-                  : 'Exploring elegant, minimalist aesthetics.';
+                  ? l10n.profilePreferences(rawPrefs.map((p) => preferenceLabel(l10n, '$p')).join(' | '))
+                  : l10n.profileDefaultBio;
 
               return SingleChildScrollView(
                 child: Column(
@@ -109,7 +110,7 @@ class ProfileScreen extends StatelessWidget {
                           Column(
                             children: [
                               Text(l10n.skinTypeLabel, style: GoogleFonts.inter(fontSize: 10, color: Colors.grey)), // <-- Traducido
-                              Text(tipoPiel, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37))),
+                              Text(skinTypeLabel(l10n, '$tipoPiel'), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37))),
                             ],
                           ),
                           const SizedBox(width: 20),
@@ -118,7 +119,7 @@ class ProfileScreen extends StatelessWidget {
                           Column(
                             children: [
                               Text(l10n.toneLabel, style: GoogleFonts.inter(fontSize: 10, color: Colors.grey)), // <-- Traducido
-                              Text(tonoPiel, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37))),
+                              Text(skinToneLabel(l10n, '$tonoPiel'), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37))),
                             ],
                           ),
                         ],

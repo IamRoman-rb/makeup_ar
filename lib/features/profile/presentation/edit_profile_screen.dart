@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
+import 'package:ar_makeup_app/features/profile/presentation/profile_labels.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -228,7 +229,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: skinTypes.map((type) {
                 final isSelected = _selectedSkinType == type;
                 return ChoiceChip(
-                  label: Text(type, style: GoogleFonts.inter(color: isSelected ? const Color(0xFF1A1A1A) : Colors.grey.shade600, fontSize: 12)),
+                  label: Text(skinTypeLabel(l10n, type), style: GoogleFonts.inter(color: isSelected ? const Color(0xFF1A1A1A) : Colors.grey.shade600, fontSize: 12)),
                   selected: isSelected,
                   onSelected: (selected) => setState(() => _selectedSkinType = type),
                   backgroundColor: Colors.transparent, selectedColor: Colors.white,
@@ -250,7 +251,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     children: [
                       Container(width: 50, height: 50, decoration: BoxDecoration(color: tone['color'], shape: BoxShape.circle, border: Border.all(color: isSelected ? const Color(0xFF1A1A1A) : Colors.transparent, width: 2))),
                       const SizedBox(height: 8),
-                      Text(tone['name'], style: GoogleFonts.inter(fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                      Text(skinToneLabel(l10n, tone['name'] as String), style: GoogleFonts.inter(fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                     ],
                   ),
                 );
@@ -265,7 +266,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: preferences.map((pref) {
                 final isSelected = _selectedPreferences.contains(pref);
                 return FilterChip(
-                  label: Text(pref, style: GoogleFonts.inter(color: isSelected ? const Color(0xFF1A1A1A) : Colors.grey.shade600, fontSize: 12)),
+                  label: Text(preferenceLabel(l10n, pref), style: GoogleFonts.inter(color: isSelected ? const Color(0xFF1A1A1A) : Colors.grey.shade600, fontSize: 12)),
                   selected: isSelected,
                   onSelected: (selected) { setState(() { selected ? _selectedPreferences.add(pref) : _selectedPreferences.remove(pref); }); },
                   backgroundColor: Colors.transparent, selectedColor: Colors.white,

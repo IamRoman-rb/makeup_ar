@@ -43,7 +43,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
         }
 
         if (lookSnapshot.hasError) {
-          return Scaffold(body: Center(child: Text('Error: ${lookSnapshot.error}')));
+          return Scaffold(body: Center(child: Text(l10n.errorWithDetails('${lookSnapshot.error}'))));
         }
 
         final data = lookSnapshot.data?.data() as Map<String, dynamic>?;
@@ -103,7 +103,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
       child: Padding(
         padding: const EdgeInsets.all(30.0),
         child: Text(
-          'Todavía no hay pasos cargados para este look.',
+          AppLocalizations.of(context)!.stepsEmpty,
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 15),
         ),
@@ -384,9 +384,9 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
       children: [
         const Icon(Icons.videocam_off_outlined, color: Color(0xFFD4AF37), size: 35),
         const SizedBox(height: 10),
-        Text('Sin video para este look', style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(AppLocalizations.of(context)!.tutorialNoVideoTitle, style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 5),
-        Text('Todavía no cargamos un video para este tutorial.', style: GoogleFonts.inter(color: Colors.white70, fontSize: 13), textAlign: TextAlign.center),
+        Text(AppLocalizations.of(context)!.tutorialNoVideoBody, style: GoogleFonts.inter(color: Colors.white70, fontSize: 13), textAlign: TextAlign.center),
       ],
     );
   }
@@ -418,9 +418,9 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
       children: [
         const Icon(Icons.lock_outline, color: Color(0xFFD4AF37), size: 35),
         const SizedBox(height: 10),
-        Text('Tutorial VIP', style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(AppLocalizations.of(context)!.tutorialVipTitle, style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 5),
-        Text('Desbloquea los secretos de este look.', style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
+        Text(AppLocalizations.of(context)!.tutorialVipBody, style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
         const SizedBox(height: 15),
         ElevatedButton(
           onPressed: _openVipPaywall,
@@ -430,7 +430,7 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> {
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
           ),
-          child: Text('Hazte VIP', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+          child: Text(AppLocalizations.of(context)!.becomeVip, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
         ),
       ],
     );

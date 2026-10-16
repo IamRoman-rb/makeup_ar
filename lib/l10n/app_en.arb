@@ -415,5 +415,138 @@
                 "type": "int"
             }
         }
-    }
+    },
+    "loginError": "Couldn't sign in: {details}",
+    "@loginError": {
+        "placeholders": {
+            "details": {
+                "type": "String"
+            }
+        }
+    },
+    "errorWithDetails": "Error: {details}",
+    "@errorWithDetails": {
+        "placeholders": {
+            "details": {
+                "type": "String"
+            }
+        }
+    },
+    "commonCancel": "Cancel",
+    "commonDelete": "Delete",
+    "catalogCreateLookTooltip": "Create look (admin)",
+    "catalogLoadError": "Couldn't load the looks: {details}",
+    "@catalogLoadError": {
+        "placeholders": {
+            "details": {
+                "type": "String"
+            }
+        }
+    },
+    "filterEditorNewTitle": "New look",
+    "filterEditorEditTitle": "Edit look",
+    "filterEditorDefaultName": "New look",
+    "filterEditorSaved": "Look saved! 🚀",
+    "filterEditorSaveError": "Couldn't save the look: {details}",
+    "@filterEditorSaveError": {
+        "placeholders": {
+            "details": {
+                "type": "String"
+            }
+        }
+    },
+    "filterEditorDeleteTitle": "Delete look?",
+    "filterEditorDeleteBody": "This can't be undone.",
+    "filterEditorDeleted": "Look deleted 🗑️",
+    "filterEditorAdminOnly": "Only an admin can create or edit looks.",
+    "filterEditorDeleteTooltip": "Delete look",
+    "filterEditorName": "Look name",
+    "filterEditorCategory": "Category",
+    "filterEditorCoverUrl": "Cover image URL (optional)",
+    "filterEditorVideoUrl": "Tutorial video URL (optional, VIP only)",
+    "filterEditorSteps": "Tutorial steps",
+    "filterEditorAddStep": "Add step",
+    "filterEditorNoSteps": "No steps yet.",
+    "filterEditorStep": "Step {number}",
+    "@filterEditorStep": {
+        "placeholders": {
+            "number": {
+                "type": "int"
+            }
+        }
+    },
+    "filterEditorRemoveStep": "Remove step",
+    "filterEditorStepTitle": "Title",
+    "filterEditorStepImage": "Image URL (optional)",
+    "filterEditorStepDescription": "Description / instructions",
+    "stepsEmpty": "There are no steps for this look yet.",
+    "tutorialNoVideoTitle": "No video for this look",
+    "tutorialNoVideoBody": "We haven't uploaded a video for this tutorial yet.",
+    "tutorialVipTitle": "VIP tutorial",
+    "tutorialVipBody": "Unlock the secrets of this look.",
+    "becomeVip": "Go VIP",
+    "passwordEmailSent": "Email sent to {email}",
+    "@passwordEmailSent": {
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "passwordEmailError": "Couldn't send the email.",
+    "deleteAccountReauth": "Log out and log back in before deleting your account.",
+    "profileLoadError": "Couldn't load your profile: {details}",
+    "@profileLoadError": {
+        "placeholders": {
+            "details": {
+                "type": "String"
+            }
+        }
+    },
+    "profileNoData": "We couldn't find your profile data.",
+    "profilePreferences": "Preferences: {list}",
+    "@profilePreferences": {
+        "placeholders": {
+            "list": {
+                "type": "String"
+            }
+        }
+    },
+    "profileDefaultBio": "Exploring elegant, minimalist aesthetics.",
+    "skinTypeCombined": "Combination",
+    "skinTypeOily": "Oily",
+    "skinTypeDry": "Dry",
+    "skinTypeSensitive": "Sensitive",
+    "skinToneLight": "Light",
+    "skinToneMedium": "Medium",
+    "skinToneTan": "Tan",
+    "skinToneDeep": "Deep",
+    "prefNatural": "Natural",
+    "prefGlamour": "Glamour",
+    "prefMinimalist": "Minimalist",
+    "prefBold": "Bold",
+    "prefSkincare": "Skincare focus",
+    "vipUnavailable": "VIP isn't available in this version.",
+    "vipLoadError": "Couldn't load the VIP plans.\n{details}",
+    "@vipLoadError": {
+        "placeholders": {
+            "details": {
+                "type": "String"
+            }
+        }
+    },
+    "vipPurchased": "Done, you're VIP! 🎉 It activates in a few seconds.",
+    "vipPurchaseError": "Couldn't complete the purchase: {details}",
+    "@vipPurchaseError": {
+        "placeholders": {
+            "details": {
+                "type": "String"
+            }
+        }
+    },
+    "vipRestored": "We found your VIP subscription! 🎉 It activates in a few seconds.",
+    "vipNothingToRestore": "No purchases to restore.",
+    "vipRestore": "Restore purchases",
+    "vipNoPlans": "No VIP plan is set up yet.",
+    "vipHeadline": "Unlock the videos of every tutorial"
 }

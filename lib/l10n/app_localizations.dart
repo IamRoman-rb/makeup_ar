@@ -1277,6 +1277,384 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Write between 1 and {max} characters.'**
   String myAiLooksInvalidPrompt(int max);
+
+  /// No description provided for @loginError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign in: {details}'**
+  String loginError(String details);
+
+  /// No description provided for @errorWithDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {details}'**
+  String errorWithDetails(String details);
+
+  /// No description provided for @commonCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get commonCancel;
+
+  /// No description provided for @commonDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get commonDelete;
+
+  /// No description provided for @catalogCreateLookTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Create look (admin)'**
+  String get catalogCreateLookTooltip;
+
+  /// No description provided for @catalogLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the looks: {details}'**
+  String catalogLoadError(String details);
+
+  /// No description provided for @filterEditorNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New look'**
+  String get filterEditorNewTitle;
+
+  /// No description provided for @filterEditorEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit look'**
+  String get filterEditorEditTitle;
+
+  /// No description provided for @filterEditorDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'New look'**
+  String get filterEditorDefaultName;
+
+  /// No description provided for @filterEditorSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Look saved! 🚀'**
+  String get filterEditorSaved;
+
+  /// No description provided for @filterEditorSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the look: {details}'**
+  String filterEditorSaveError(String details);
+
+  /// No description provided for @filterEditorDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete look?'**
+  String get filterEditorDeleteTitle;
+
+  /// No description provided for @filterEditorDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone.'**
+  String get filterEditorDeleteBody;
+
+  /// No description provided for @filterEditorDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Look deleted 🗑️'**
+  String get filterEditorDeleted;
+
+  /// No description provided for @filterEditorAdminOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only an admin can create or edit looks.'**
+  String get filterEditorAdminOnly;
+
+  /// No description provided for @filterEditorDeleteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete look'**
+  String get filterEditorDeleteTooltip;
+
+  /// No description provided for @filterEditorName.
+  ///
+  /// In en, this message translates to:
+  /// **'Look name'**
+  String get filterEditorName;
+
+  /// No description provided for @filterEditorCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get filterEditorCategory;
+
+  /// No description provided for @filterEditorCoverUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover image URL (optional)'**
+  String get filterEditorCoverUrl;
+
+  /// No description provided for @filterEditorVideoUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial video URL (optional, VIP only)'**
+  String get filterEditorVideoUrl;
+
+  /// No description provided for @filterEditorSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial steps'**
+  String get filterEditorSteps;
+
+  /// No description provided for @filterEditorAddStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Add step'**
+  String get filterEditorAddStep;
+
+  /// No description provided for @filterEditorNoSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'No steps yet.'**
+  String get filterEditorNoSteps;
+
+  /// No description provided for @filterEditorStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {number}'**
+  String filterEditorStep(int number);
+
+  /// No description provided for @filterEditorRemoveStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove step'**
+  String get filterEditorRemoveStep;
+
+  /// No description provided for @filterEditorStepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get filterEditorStepTitle;
+
+  /// No description provided for @filterEditorStepImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image URL (optional)'**
+  String get filterEditorStepImage;
+
+  /// No description provided for @filterEditorStepDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description / instructions'**
+  String get filterEditorStepDescription;
+
+  /// No description provided for @stepsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no steps for this look yet.'**
+  String get stepsEmpty;
+
+  /// No description provided for @tutorialNoVideoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No video for this look'**
+  String get tutorialNoVideoTitle;
+
+  /// No description provided for @tutorialNoVideoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We haven\'t uploaded a video for this tutorial yet.'**
+  String get tutorialNoVideoBody;
+
+  /// No description provided for @tutorialVipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'VIP tutorial'**
+  String get tutorialVipTitle;
+
+  /// No description provided for @tutorialVipBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock the secrets of this look.'**
+  String get tutorialVipBody;
+
+  /// No description provided for @becomeVip.
+  ///
+  /// In en, this message translates to:
+  /// **'Go VIP'**
+  String get becomeVip;
+
+  /// No description provided for @passwordEmailSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Email sent to {email}'**
+  String passwordEmailSent(String email);
+
+  /// No description provided for @passwordEmailError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send the email.'**
+  String get passwordEmailError;
+
+  /// No description provided for @deleteAccountReauth.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out and log back in before deleting your account.'**
+  String get deleteAccountReauth;
+
+  /// No description provided for @profileLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your profile: {details}'**
+  String profileLoadError(String details);
+
+  /// No description provided for @profileNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t find your profile data.'**
+  String get profileNoData;
+
+  /// No description provided for @profilePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences: {list}'**
+  String profilePreferences(String list);
+
+  /// No description provided for @profileDefaultBio.
+  ///
+  /// In en, this message translates to:
+  /// **'Exploring elegant, minimalist aesthetics.'**
+  String get profileDefaultBio;
+
+  /// No description provided for @skinTypeCombined.
+  ///
+  /// In en, this message translates to:
+  /// **'Combination'**
+  String get skinTypeCombined;
+
+  /// No description provided for @skinTypeOily.
+  ///
+  /// In en, this message translates to:
+  /// **'Oily'**
+  String get skinTypeOily;
+
+  /// No description provided for @skinTypeDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Dry'**
+  String get skinTypeDry;
+
+  /// No description provided for @skinTypeSensitive.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive'**
+  String get skinTypeSensitive;
+
+  /// No description provided for @skinToneLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get skinToneLight;
+
+  /// No description provided for @skinToneMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get skinToneMedium;
+
+  /// No description provided for @skinToneTan.
+  ///
+  /// In en, this message translates to:
+  /// **'Tan'**
+  String get skinToneTan;
+
+  /// No description provided for @skinToneDeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep'**
+  String get skinToneDeep;
+
+  /// No description provided for @prefNatural.
+  ///
+  /// In en, this message translates to:
+  /// **'Natural'**
+  String get prefNatural;
+
+  /// No description provided for @prefGlamour.
+  ///
+  /// In en, this message translates to:
+  /// **'Glamour'**
+  String get prefGlamour;
+
+  /// No description provided for @prefMinimalist.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimalist'**
+  String get prefMinimalist;
+
+  /// No description provided for @prefBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get prefBold;
+
+  /// No description provided for @prefSkincare.
+  ///
+  /// In en, this message translates to:
+  /// **'Skincare focus'**
+  String get prefSkincare;
+
+  /// No description provided for @vipUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'VIP isn\'t available in this version.'**
+  String get vipUnavailable;
+
+  /// No description provided for @vipLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the VIP plans.\n{details}'**
+  String vipLoadError(String details);
+
+  /// No description provided for @vipPurchased.
+  ///
+  /// In en, this message translates to:
+  /// **'Done, you\'re VIP! 🎉 It activates in a few seconds.'**
+  String get vipPurchased;
+
+  /// No description provided for @vipPurchaseError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t complete the purchase: {details}'**
+  String vipPurchaseError(String details);
+
+  /// No description provided for @vipRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'We found your VIP subscription! 🎉 It activates in a few seconds.'**
+  String get vipRestored;
+
+  /// No description provided for @vipNothingToRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'No purchases to restore.'**
+  String get vipNothingToRestore;
+
+  /// No description provided for @vipRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get vipRestore;
+
+  /// No description provided for @vipNoPlans.
+  ///
+  /// In en, this message translates to:
+  /// **'No VIP plan is set up yet.'**
+  String get vipNoPlans;
+
+  /// No description provided for @vipHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock the videos of every tutorial'**
+  String get vipHeadline;
 }
 
 class _AppLocalizationsDelegate

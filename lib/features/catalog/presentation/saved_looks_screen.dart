@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/step_by_step_screen.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
+import 'package:ar_makeup_app/features/catalog/presentation/catalog_labels.dart';
 
 class SavedLooksScreen extends StatelessWidget {
   const SavedLooksScreen({super.key});
@@ -137,7 +138,7 @@ class SavedLooksScreen extends StatelessWidget {
                           const SizedBox(height: 15),
                           Text(name, style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A1A))),
                           const SizedBox(height: 5),
-                          Text(category, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37), letterSpacing: 1.2)),
+                          Text(lookCategoryLabel(l10n, category), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37), letterSpacing: 1.2)),
                         ],
                       ),
                     ),

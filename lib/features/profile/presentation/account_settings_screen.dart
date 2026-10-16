@@ -17,6 +17,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   bool _emailNewsletters = false;
 
   Future<void> _sendPasswordResetEmail() async {
+    final l10n = AppLocalizations.of(context)!;
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && user.email != null) {
       try {
@@ -24,7 +25,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Email sent to ${user.email}', style: GoogleFonts.inter()),
+              content: Text(l10n.passwordEmailSent(user.email ?? ''), style: GoogleFonts.inter()),
               backgroundColor: const Color(0xFF1A1A1A),
             ),
           );
@@ -32,7 +33,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error sending email', style: GoogleFonts.inter())),
+            SnackBar(content: Text(l10n.passwordEmailError, style: GoogleFonts.inter())),
           );
         }
       }
@@ -95,10 +96,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       if (!mounted) return;
       if (e.code == 'requires-recent-login') {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please log out and log in again before deleting your account.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.deleteAccountReauth)),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errorWithDetails(e.message ?? e.code))));
       }
     }
   }

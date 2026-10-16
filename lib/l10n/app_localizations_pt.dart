@@ -649,4 +649,219 @@ class AppLocalizationsPt extends AppLocalizations {
   String myAiLooksInvalidPrompt(int max) {
     return 'Escreva entre 1 e $max caracteres.';
   }
+
+  @override
+  String loginError(String details) {
+    return 'Não foi possível entrar: $details';
+  }
+
+  @override
+  String errorWithDetails(String details) {
+    return 'Erro: $details';
+  }
+
+  @override
+  String get commonCancel => 'Cancelar';
+
+  @override
+  String get commonDelete => 'Excluir';
+
+  @override
+  String get catalogCreateLookTooltip => 'Criar look (admin)';
+
+  @override
+  String catalogLoadError(String details) {
+    return 'Erro ao carregar os looks: $details';
+  }
+
+  @override
+  String get filterEditorNewTitle => 'Novo look';
+
+  @override
+  String get filterEditorEditTitle => 'Editar look';
+
+  @override
+  String get filterEditorDefaultName => 'Novo look';
+
+  @override
+  String get filterEditorSaved => 'Look salvo com sucesso! 🚀';
+
+  @override
+  String filterEditorSaveError(String details) {
+    return 'Não foi possível salvar o look: $details';
+  }
+
+  @override
+  String get filterEditorDeleteTitle => 'Excluir look?';
+
+  @override
+  String get filterEditorDeleteBody => 'Esta ação não pode ser desfeita.';
+
+  @override
+  String get filterEditorDeleted => 'Look excluído 🗑️';
+
+  @override
+  String get filterEditorAdminOnly =>
+      'Só um administrador pode criar ou editar looks.';
+
+  @override
+  String get filterEditorDeleteTooltip => 'Excluir look';
+
+  @override
+  String get filterEditorName => 'Nome do look';
+
+  @override
+  String get filterEditorCategory => 'Categoria';
+
+  @override
+  String get filterEditorCoverUrl => 'URL da imagem de capa (opcional)';
+
+  @override
+  String get filterEditorVideoUrl =>
+      'URL do vídeo do tutorial (opcional, só VIP)';
+
+  @override
+  String get filterEditorSteps => 'Passos do tutorial';
+
+  @override
+  String get filterEditorAddStep => 'Adicionar passo';
+
+  @override
+  String get filterEditorNoSteps => 'Ainda não há passos.';
+
+  @override
+  String filterEditorStep(int number) {
+    return 'Passo $number';
+  }
+
+  @override
+  String get filterEditorRemoveStep => 'Remover passo';
+
+  @override
+  String get filterEditorStepTitle => 'Título';
+
+  @override
+  String get filterEditorStepImage => 'URL da imagem (opcional)';
+
+  @override
+  String get filterEditorStepDescription => 'Descrição / instruções';
+
+  @override
+  String get stepsEmpty => 'Ainda não há passos para este look.';
+
+  @override
+  String get tutorialNoVideoTitle => 'Sem vídeo para este look';
+
+  @override
+  String get tutorialNoVideoBody =>
+      'Ainda não enviamos um vídeo para este tutorial.';
+
+  @override
+  String get tutorialVipTitle => 'Tutorial VIP';
+
+  @override
+  String get tutorialVipBody => 'Desbloqueie os segredos deste look.';
+
+  @override
+  String get becomeVip => 'Seja VIP';
+
+  @override
+  String passwordEmailSent(String email) {
+    return 'Enviamos um e-mail para $email';
+  }
+
+  @override
+  String get passwordEmailError => 'Não foi possível enviar o e-mail.';
+
+  @override
+  String get deleteAccountReauth =>
+      'Saia e entre de novo antes de excluir sua conta.';
+
+  @override
+  String profileLoadError(String details) {
+    return 'Erro ao carregar o perfil: $details';
+  }
+
+  @override
+  String get profileNoData => 'Não encontramos os dados do seu perfil.';
+
+  @override
+  String profilePreferences(String list) {
+    return 'Preferências: $list';
+  }
+
+  @override
+  String get profileDefaultBio =>
+      'Explorando estéticas elegantes e minimalistas.';
+
+  @override
+  String get skinTypeCombined => 'Mista';
+
+  @override
+  String get skinTypeOily => 'Oleosa';
+
+  @override
+  String get skinTypeDry => 'Seca';
+
+  @override
+  String get skinTypeSensitive => 'Sensível';
+
+  @override
+  String get skinToneLight => 'Clara';
+
+  @override
+  String get skinToneMedium => 'Média';
+
+  @override
+  String get skinToneTan => 'Morena';
+
+  @override
+  String get skinToneDeep => 'Escura';
+
+  @override
+  String get prefNatural => 'Natural';
+
+  @override
+  String get prefGlamour => 'Glamour';
+
+  @override
+  String get prefMinimalist => 'Minimalista';
+
+  @override
+  String get prefBold => 'Ousado';
+
+  @override
+  String get prefSkincare => 'Foco em skincare';
+
+  @override
+  String get vipUnavailable => 'O VIP não está disponível nesta versão.';
+
+  @override
+  String vipLoadError(String details) {
+    return 'Não foi possível carregar os planos VIP.\n$details';
+  }
+
+  @override
+  String get vipPurchased => 'Pronto, você é VIP! 🎉 Ativa em alguns segundos.';
+
+  @override
+  String vipPurchaseError(String details) {
+    return 'Não foi possível concluir a compra: $details';
+  }
+
+  @override
+  String get vipRestored =>
+      'Encontramos sua assinatura VIP! 🎉 Ativa em alguns segundos.';
+
+  @override
+  String get vipNothingToRestore => 'Não encontramos compras para restaurar.';
+
+  @override
+  String get vipRestore => 'Restaurar compras';
+
+  @override
+  String get vipNoPlans => 'Ainda não há nenhum plano VIP configurado.';
+
+  @override
+  String get vipHeadline => 'Desbloqueie os vídeos de todos os tutoriais';
 }

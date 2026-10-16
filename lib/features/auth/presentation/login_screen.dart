@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ar_makeup_app/l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_screen.dart';
 import 'package:ar_makeup_app/features/auth/presentation/signup_screen.dart';
@@ -18,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _login() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -33,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Error al iniciar sesión', style: GoogleFonts.inter())),
+        SnackBar(content: Text(l10n.loginError(e.message ?? e.code), style: GoogleFonts.inter())),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -42,6 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFFDF7F8),
       body: SafeArea(
@@ -62,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 50),
               Text(
-                'Welcome Back',
+                l10n.welcomeBack,
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -71,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Please enter your details to sign in.',
+                l10n.loginSubtitle,
                 style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 40),
@@ -80,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(
-                  hintText: 'Email or Username',
+                  hintText: l10n.emailOrUser,
                   hintStyle: GoogleFonts.inter(color: Colors.grey.shade400),
                   enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
                   focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A1A1A))),
@@ -93,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
-                  hintText: 'Password',
+                  hintText: l10n.password,
                   hintStyle: GoogleFonts.inter(color: Colors.grey.shade400),
                   enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
                   focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A1A1A))),
@@ -108,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  'Forgot Password?',
+                  l10n.forgotPassword,
                   style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
                 ),
               ),
@@ -129,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('LOG IN', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                      Text(l10n.logIn, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                       const SizedBox(width: 10),
                       const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
                     ],
@@ -142,11 +145,11 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Don't have an account? ", style: GoogleFonts.inter(color: Colors.grey.shade600)),
+                  Text(l10n.noAccount, style: GoogleFonts.inter(color: Colors.grey.shade600)),
                   GestureDetector(
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SignUpScreen())),
                     child: Text(
-                      'Sign Up',
+                      l10n.signUp,
                       style: GoogleFonts.inter(color: const Color(0xFF1A1A1A), fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
                     ),
                   ),

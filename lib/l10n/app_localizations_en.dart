@@ -645,4 +645,217 @@ class AppLocalizationsEn extends AppLocalizations {
   String myAiLooksInvalidPrompt(int max) {
     return 'Write between 1 and $max characters.';
   }
+
+  @override
+  String loginError(String details) {
+    return 'Couldn\'t sign in: $details';
+  }
+
+  @override
+  String errorWithDetails(String details) {
+    return 'Error: $details';
+  }
+
+  @override
+  String get commonCancel => 'Cancel';
+
+  @override
+  String get commonDelete => 'Delete';
+
+  @override
+  String get catalogCreateLookTooltip => 'Create look (admin)';
+
+  @override
+  String catalogLoadError(String details) {
+    return 'Couldn\'t load the looks: $details';
+  }
+
+  @override
+  String get filterEditorNewTitle => 'New look';
+
+  @override
+  String get filterEditorEditTitle => 'Edit look';
+
+  @override
+  String get filterEditorDefaultName => 'New look';
+
+  @override
+  String get filterEditorSaved => 'Look saved! 🚀';
+
+  @override
+  String filterEditorSaveError(String details) {
+    return 'Couldn\'t save the look: $details';
+  }
+
+  @override
+  String get filterEditorDeleteTitle => 'Delete look?';
+
+  @override
+  String get filterEditorDeleteBody => 'This can\'t be undone.';
+
+  @override
+  String get filterEditorDeleted => 'Look deleted 🗑️';
+
+  @override
+  String get filterEditorAdminOnly => 'Only an admin can create or edit looks.';
+
+  @override
+  String get filterEditorDeleteTooltip => 'Delete look';
+
+  @override
+  String get filterEditorName => 'Look name';
+
+  @override
+  String get filterEditorCategory => 'Category';
+
+  @override
+  String get filterEditorCoverUrl => 'Cover image URL (optional)';
+
+  @override
+  String get filterEditorVideoUrl => 'Tutorial video URL (optional, VIP only)';
+
+  @override
+  String get filterEditorSteps => 'Tutorial steps';
+
+  @override
+  String get filterEditorAddStep => 'Add step';
+
+  @override
+  String get filterEditorNoSteps => 'No steps yet.';
+
+  @override
+  String filterEditorStep(int number) {
+    return 'Step $number';
+  }
+
+  @override
+  String get filterEditorRemoveStep => 'Remove step';
+
+  @override
+  String get filterEditorStepTitle => 'Title';
+
+  @override
+  String get filterEditorStepImage => 'Image URL (optional)';
+
+  @override
+  String get filterEditorStepDescription => 'Description / instructions';
+
+  @override
+  String get stepsEmpty => 'There are no steps for this look yet.';
+
+  @override
+  String get tutorialNoVideoTitle => 'No video for this look';
+
+  @override
+  String get tutorialNoVideoBody =>
+      'We haven\'t uploaded a video for this tutorial yet.';
+
+  @override
+  String get tutorialVipTitle => 'VIP tutorial';
+
+  @override
+  String get tutorialVipBody => 'Unlock the secrets of this look.';
+
+  @override
+  String get becomeVip => 'Go VIP';
+
+  @override
+  String passwordEmailSent(String email) {
+    return 'Email sent to $email';
+  }
+
+  @override
+  String get passwordEmailError => 'Couldn\'t send the email.';
+
+  @override
+  String get deleteAccountReauth =>
+      'Log out and log back in before deleting your account.';
+
+  @override
+  String profileLoadError(String details) {
+    return 'Couldn\'t load your profile: $details';
+  }
+
+  @override
+  String get profileNoData => 'We couldn\'t find your profile data.';
+
+  @override
+  String profilePreferences(String list) {
+    return 'Preferences: $list';
+  }
+
+  @override
+  String get profileDefaultBio => 'Exploring elegant, minimalist aesthetics.';
+
+  @override
+  String get skinTypeCombined => 'Combination';
+
+  @override
+  String get skinTypeOily => 'Oily';
+
+  @override
+  String get skinTypeDry => 'Dry';
+
+  @override
+  String get skinTypeSensitive => 'Sensitive';
+
+  @override
+  String get skinToneLight => 'Light';
+
+  @override
+  String get skinToneMedium => 'Medium';
+
+  @override
+  String get skinToneTan => 'Tan';
+
+  @override
+  String get skinToneDeep => 'Deep';
+
+  @override
+  String get prefNatural => 'Natural';
+
+  @override
+  String get prefGlamour => 'Glamour';
+
+  @override
+  String get prefMinimalist => 'Minimalist';
+
+  @override
+  String get prefBold => 'Bold';
+
+  @override
+  String get prefSkincare => 'Skincare focus';
+
+  @override
+  String get vipUnavailable => 'VIP isn\'t available in this version.';
+
+  @override
+  String vipLoadError(String details) {
+    return 'Couldn\'t load the VIP plans.\n$details';
+  }
+
+  @override
+  String get vipPurchased =>
+      'Done, you\'re VIP! 🎉 It activates in a few seconds.';
+
+  @override
+  String vipPurchaseError(String details) {
+    return 'Couldn\'t complete the purchase: $details';
+  }
+
+  @override
+  String get vipRestored =>
+      'We found your VIP subscription! 🎉 It activates in a few seconds.';
+
+  @override
+  String get vipNothingToRestore => 'No purchases to restore.';
+
+  @override
+  String get vipRestore => 'Restore purchases';
+
+  @override
+  String get vipNoPlans => 'No VIP plan is set up yet.';
+
+  @override
+  String get vipHeadline => 'Unlock the videos of every tutorial';
 }
