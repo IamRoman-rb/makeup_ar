@@ -877,4 +877,145 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get commonRetry => 'Reintentar';
+
+  @override
+  String get coachGuideMe => 'Guíame';
+
+  @override
+  String get coachTitle => 'Guía de maquillaje';
+
+  @override
+  String get coachIntroTitle => 'Antes de empezar';
+
+  @override
+  String get coachIntroBody =>
+      'Para más precisión, empezá con la cara lavada y tomá una referencia. Todo se mide en el teléfono: no se guarda ni se sube ninguna imagen.';
+
+  @override
+  String get coachTakeReference => 'Tomar referencia';
+
+  @override
+  String get coachSkip => 'Saltear';
+
+  @override
+  String get coachTakingReference => 'Quedate quieta mirando a la cámara…';
+
+  @override
+  String get coachReferenceFailed =>
+      'No se pudo tomar la referencia. Seguimos sin ella.';
+
+  @override
+  String get coachHoldTarget => 'Mantené para ver el look';
+
+  @override
+  String get coachMute => 'Silenciar';
+
+  @override
+  String get coachUnmute => 'Activar voz';
+
+  @override
+  String get coachVoiceUnavailable =>
+      'Tu teléfono no tiene voz para este idioma: las indicaciones quedan en pantalla.';
+
+  @override
+  String get coachNoZones =>
+      'Este look no tiene zonas que la guía pueda revisar.';
+
+  @override
+  String get coachStarting => 'Mirá a la cámara para empezar.';
+
+  @override
+  String get coachDone => '¡Listo! Tu maquillaje coincide con el look.';
+
+  @override
+  String get coachLookAtCamera => 'Mirá de frente a la cámara.';
+
+  @override
+  String get coachComeCloser => 'Acercate un poco a la cámara.';
+
+  @override
+  String get coachMoreLight => 'Falta luz: buscá una luz pareja sobre la cara.';
+
+  @override
+  String coachVerdictOk(String zone) {
+    return '$zone: ¡bien!';
+  }
+
+  @override
+  String coachTooLittle(String zone) {
+    return '$zone: falta color, sumá un poco más.';
+  }
+
+  @override
+  String coachTooMuch(String zone) {
+    return '$zone: hay de más, difuminá o quitá un poco.';
+  }
+
+  @override
+  String coachTooDark(String zone) {
+    return '$zone: quedó más oscuro que el look.';
+  }
+
+  @override
+  String coachTooLight(String zone) {
+    return '$zone: quedó más claro que el look.';
+  }
+
+  @override
+  String coachOtherTone(String zone) {
+    return '$zone: el tono no es el del look.';
+  }
+
+  @override
+  String coachNotVisible(String zone) {
+    return '$zone: no se ve bien, girá un poco hacia la cámara.';
+  }
+
+  @override
+  String get coachLinerMissing =>
+      'Delineado: falta, marcá la línea de las pestañas.';
+
+  @override
+  String get coachLinerThin => 'Delineado: quedó fino, engrosalo un poco.';
+
+  @override
+  String get coachLinerThick => 'Delineado: quedó grueso, afinalo.';
+
+  @override
+  String get coachWingShort =>
+      'Delineado: la cola quedó corta, alargala hacia afuera.';
+
+  @override
+  String get coachWingLong => 'Delineado: la cola quedó larga, acortala.';
+
+  @override
+  String get coachLinerTooFar =>
+      'Acercate a la cámara para revisar el delineado.';
+
+  @override
+  String get coachZoneLips => 'Labios';
+
+  @override
+  String get coachZoneLipLiner => 'Delineado de labios';
+
+  @override
+  String get coachZoneCheeks => 'Rubor';
+
+  @override
+  String get coachZoneEyeLiner => 'Delineado';
+
+  @override
+  String get coachZoneShadowLid => 'Sombra del párpado';
+
+  @override
+  String get coachZoneShadowCrease => 'Sombra del pliegue';
+
+  @override
+  String get coachZoneShadowOuterV => 'Sombra en la V externa';
+
+  @override
+  String get coachZoneShadowInnerCorner => 'Lagrimal';
+
+  @override
+  String get coachZoneShadowBrowBone => 'Bajo la ceja';
 }

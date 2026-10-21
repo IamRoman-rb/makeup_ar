@@ -1673,6 +1673,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get commonRetry;
+
+  /// No description provided for @coachGuideMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide me'**
+  String get coachGuideMe;
+
+  /// No description provided for @coachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Makeup guide'**
+  String get coachTitle;
+
+  /// No description provided for @coachIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Before you start'**
+  String get coachIntroTitle;
+
+  /// No description provided for @coachIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'For better accuracy, start with a clean face and take a reference. Everything is measured on your phone: no image is saved or uploaded.'**
+  String get coachIntroBody;
+
+  /// No description provided for @coachTakeReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Take reference'**
+  String get coachTakeReference;
+
+  /// No description provided for @coachSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get coachSkip;
+
+  /// No description provided for @coachTakingReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold still and look at the camera…'**
+  String get coachTakingReference;
+
+  /// No description provided for @coachReferenceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t take the reference. Continuing without it.'**
+  String get coachReferenceFailed;
+
+  /// No description provided for @coachHoldTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to see the look'**
+  String get coachHoldTarget;
+
+  /// No description provided for @coachMute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get coachMute;
+
+  /// No description provided for @coachUnmute.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn voice on'**
+  String get coachUnmute;
+
+  /// No description provided for @coachVoiceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone has no voice for this language: tips stay on screen.'**
+  String get coachVoiceUnavailable;
+
+  /// No description provided for @coachNoZones.
+  ///
+  /// In en, this message translates to:
+  /// **'This look has no areas the guide can check.'**
+  String get coachNoZones;
+
+  /// No description provided for @coachStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Look at the camera to start.'**
+  String get coachStarting;
+
+  /// No description provided for @coachDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done! Your makeup matches the look.'**
+  String get coachDone;
+
+  /// No description provided for @coachLookAtCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Face the camera.'**
+  String get coachLookAtCamera;
+
+  /// No description provided for @coachComeCloser.
+  ///
+  /// In en, this message translates to:
+  /// **'Move a bit closer to the camera.'**
+  String get coachComeCloser;
+
+  /// No description provided for @coachMoreLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough light: find even light on your face.'**
+  String get coachMoreLight;
+
+  /// No description provided for @coachVerdictOk.
+  ///
+  /// In en, this message translates to:
+  /// **'{zone}: looks good!'**
+  String coachVerdictOk(String zone);
+
+  /// No description provided for @coachTooLittle.
+  ///
+  /// In en, this message translates to:
+  /// **'{zone}: needs more color, add a bit more.'**
+  String coachTooLittle(String zone);
+
+  /// No description provided for @coachTooMuch.
+  ///
+  /// In en, this message translates to:
+  /// **'{zone}: too much, blend or remove a little.'**
+  String coachTooMuch(String zone);
+
+  /// No description provided for @coachTooDark.
+  ///
+  /// In en, this message translates to:
+  /// **'{zone}: darker than the look.'**
+  String coachTooDark(String zone);
+
+  /// No description provided for @coachTooLight.
+  ///
+  /// In en, this message translates to:
+  /// **'{zone}: lighter than the look.'**
+  String coachTooLight(String zone);
+
+  /// No description provided for @coachOtherTone.
+  ///
+  /// In en, this message translates to:
+  /// **'{zone}: the shade doesn’t match the look.'**
+  String coachOtherTone(String zone);
+
+  /// No description provided for @coachNotVisible.
+  ///
+  /// In en, this message translates to:
+  /// **'{zone}: can’t see it well, turn a bit toward the camera.'**
+  String coachNotVisible(String zone);
+
+  /// No description provided for @coachLinerMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyeliner: missing, trace along your lash line.'**
+  String get coachLinerMissing;
+
+  /// No description provided for @coachLinerThin.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyeliner: too thin, make it a bit thicker.'**
+  String get coachLinerThin;
+
+  /// No description provided for @coachLinerThick.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyeliner: too thick, make it thinner.'**
+  String get coachLinerThick;
+
+  /// No description provided for @coachWingShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyeliner: the wing is short, extend it outward.'**
+  String get coachWingShort;
+
+  /// No description provided for @coachWingLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyeliner: the wing is long, shorten it.'**
+  String get coachWingLong;
+
+  /// No description provided for @coachLinerTooFar.
+  ///
+  /// In en, this message translates to:
+  /// **'Move closer to the camera to check your eyeliner.'**
+  String get coachLinerTooFar;
+
+  /// No description provided for @coachZoneLips.
+  ///
+  /// In en, this message translates to:
+  /// **'Lips'**
+  String get coachZoneLips;
+
+  /// No description provided for @coachZoneLipLiner.
+  ///
+  /// In en, this message translates to:
+  /// **'Lip liner'**
+  String get coachZoneLipLiner;
+
+  /// No description provided for @coachZoneCheeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Blush'**
+  String get coachZoneCheeks;
+
+  /// No description provided for @coachZoneEyeLiner.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyeliner'**
+  String get coachZoneEyeLiner;
+
+  /// No description provided for @coachZoneShadowLid.
+  ///
+  /// In en, this message translates to:
+  /// **'Lid shadow'**
+  String get coachZoneShadowLid;
+
+  /// No description provided for @coachZoneShadowCrease.
+  ///
+  /// In en, this message translates to:
+  /// **'Crease shadow'**
+  String get coachZoneShadowCrease;
+
+  /// No description provided for @coachZoneShadowOuterV.
+  ///
+  /// In en, this message translates to:
+  /// **'Outer V shadow'**
+  String get coachZoneShadowOuterV;
+
+  /// No description provided for @coachZoneShadowInnerCorner.
+  ///
+  /// In en, this message translates to:
+  /// **'Inner corner'**
+  String get coachZoneShadowInnerCorner;
+
+  /// No description provided for @coachZoneShadowBrowBone.
+  ///
+  /// In en, this message translates to:
+  /// **'Brow bone'**
+  String get coachZoneShadowBrowBone;
 }
 
 class _AppLocalizationsDelegate

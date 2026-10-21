@@ -551,5 +551,94 @@
     "vipHeadline": "Unlock the videos of every tutorial",
     "signupPhotoFailed": "Your account was created, but we couldn't upload the photo. You can add it later from your profile.",
     "startupError": "Couldn't start the app. Check your connection.",
-    "commonRetry": "Retry"
+    "commonRetry": "Retry",
+    "coachGuideMe": "Guide me",
+    "coachTitle": "Makeup guide",
+    "coachIntroTitle": "Before you start",
+    "coachIntroBody": "For better accuracy, start with a clean face and take a reference. Everything is measured on your phone: no image is saved or uploaded.",
+    "coachTakeReference": "Take reference",
+    "coachSkip": "Skip",
+    "coachTakingReference": "Hold still and look at the camera…",
+    "coachReferenceFailed": "Couldn’t take the reference. Continuing without it.",
+    "coachHoldTarget": "Hold to see the look",
+    "coachMute": "Mute",
+    "coachUnmute": "Turn voice on",
+    "coachVoiceUnavailable": "Your phone has no voice for this language: tips stay on screen.",
+    "coachNoZones": "This look has no areas the guide can check.",
+    "coachStarting": "Look at the camera to start.",
+    "coachDone": "Done! Your makeup matches the look.",
+    "coachLookAtCamera": "Face the camera.",
+    "coachComeCloser": "Move a bit closer to the camera.",
+    "coachMoreLight": "Not enough light: find even light on your face.",
+    "coachVerdictOk": "{zone}: looks good!",
+    "@coachVerdictOk": {
+        "placeholders": {
+            "zone": {
+                "type": "String"
+            }
+        }
+    },
+    "coachTooLittle": "{zone}: needs more color, add a bit more.",
+    "@coachTooLittle": {
+        "placeholders": {
+            "zone": {
+                "type": "String"
+            }
+        }
+    },
+    "coachTooMuch": "{zone}: too much, blend or remove a little.",
+    "@coachTooMuch": {
+        "placeholders": {
+            "zone": {
+                "type": "String"
+            }
+        }
+    },
+    "coachTooDark": "{zone}: darker than the look.",
+    "@coachTooDark": {
+        "placeholders": {
+            "zone": {
+                "type": "String"
+            }
+        }
+    },
+    "coachTooLight": "{zone}: lighter than the look.",
+    "@coachTooLight": {
+        "placeholders": {
+            "zone": {
+                "type": "String"
+            }
+        }
+    },
+    "coachOtherTone": "{zone}: the shade doesn’t match the look.",
+    "@coachOtherTone": {
+        "placeholders": {
+            "zone": {
+                "type": "String"
+            }
+        }
+    },
+    "coachNotVisible": "{zone}: can’t see it well, turn a bit toward the camera.",
+    "@coachNotVisible": {
+        "placeholders": {
+            "zone": {
+                "type": "String"
+            }
+        }
+    },
+    "coachLinerMissing": "Eyeliner: missing, trace along your lash line.",
+    "coachLinerThin": "Eyeliner: too thin, make it a bit thicker.",
+    "coachLinerThick": "Eyeliner: too thick, make it thinner.",
+    "coachWingShort": "Eyeliner: the wing is short, extend it outward.",
+    "coachWingLong": "Eyeliner: the wing is long, shorten it.",
+    "coachLinerTooFar": "Move closer to the camera to check your eyeliner.",
+    "coachZoneLips": "Lips",
+    "coachZoneLipLiner": "Lip liner",
+    "coachZoneCheeks": "Blush",
+    "coachZoneEyeLiner": "Eyeliner",
+    "coachZoneShadowLid": "Lid shadow",
+    "coachZoneShadowCrease": "Crease shadow",
+    "coachZoneShadowOuterV": "Outer V shadow",
+    "coachZoneShadowInnerCorner": "Inner corner",
+    "coachZoneShadowBrowBone": "Brow bone"
 }

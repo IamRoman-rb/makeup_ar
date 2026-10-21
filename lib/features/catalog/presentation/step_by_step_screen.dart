@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
+import 'package:ar_makeup_app/features/coach/presentation/coach_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:ar_makeup_app/features/studio/domain/studio_look.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
@@ -100,13 +101,22 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
                       // El video no compite con la cámara y el motor AR.
                       _videoKey.currentState?.pause();
                       Navigator.push(context, MaterialPageRoute(
-                        builder: (camera) => CameraScreen(
-                          initialLook: recipe == null
+                        builder: (camera) {
+                          final look = recipe == null
                               ? null
-                              : TestFilterOption(id: 'look-${widget.lookId}', label: recipe.name, recipe: recipe),
-                          // Ya venimos del tutorial: "Ver tutorial" vuelve atrás.
-                          onOpenTutorial: recipe == null ? null : () => Navigator.of(camera).pop(),
-                        ),
+                              : TestFilterOption(id: 'look-${widget.lookId}', label: recipe.name, recipe: recipe);
+                          return CameraScreen(
+                            initialLook: look,
+                            // Ya venimos del tutorial: "Ver tutorial" vuelve atrás.
+                            onOpenTutorial: look == null ? null : () => Navigator.of(camera).pop(),
+                            // La guía reemplaza a la cámara; al salir, vuelve al tutorial.
+                            onOpenCoach: look == null
+                                ? null
+                                : () => Navigator.of(camera).pushReplacement(
+                                      MaterialPageRoute<void>(builder: (_) => CoachScreen(look: look)),
+                                    ),
+                          );
+                        },
                       ));
                     },
                   ),

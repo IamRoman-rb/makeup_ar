@@ -45,6 +45,7 @@ final class EngineImageAnalyzer implements IImageLookAnalyzer {
       FaceImageStatus.badImage => PhotoLookStatus.badImage,
     },
     yawRatio: analysis.yawRatio,
+    eyeDistancePx: analysis.eyeDistancePx,
     skin: _region(analysis.skin),
     lips: _region(analysis.lips),
     lipLiner: _region(analysis.lipLiner),

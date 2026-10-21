@@ -29,6 +29,7 @@ final class LookMeasurements {
   const LookMeasurements({
     required this.status,
     this.yawRatio = 0,
+    this.eyeDistancePx = 0,
     this.skin = LookRegion.missing,
     this.lips = LookRegion.missing,
     this.lipLiner = LookRegion.missing,
@@ -49,6 +50,10 @@ final class LookMeasurements {
 
   /// Giro de la cara: nariz respecto del medio de los ojos (0 de frente).
   final double yawRatio;
+
+  /// Distancia entre los ángulos externos de los ojos en px de la foto o de la
+  /// cámara (guía en vivo): cuán cerca está la cara. 0 = sin medir.
+  final double eyeDistancePx;
   final LookRegion skin;
   final LookRegion lips;
   final LookRegion lipLiner;

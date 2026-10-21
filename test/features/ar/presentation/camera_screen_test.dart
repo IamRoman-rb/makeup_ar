@@ -54,6 +54,19 @@ void main() {
     expect(find.text('Ver tutorial'), findsOneWidget);
   });
 
+  testWidgets('"Guíame" sobre la cámara solo con un look y su callback', (tester) async {
+    var opened = 0;
+    await tester.pumpWidget(_app(CameraScreen(renderer: FakeRenderer(), initialLook: look, onOpenCoach: () => opened++)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('camera-open-coach')));
+    expect(opened, 1);
+    expect(find.text('Guíame'), findsOneWidget);
+
+    await tester.pumpWidget(_app(CameraScreen(renderer: FakeRenderer(), initialLook: look)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('camera-open-coach')), findsNothing);
+  });
+
   testWidgets('sin motor: espejo de respaldo', (tester) async {
     final renderer = FakeRenderer(available: false);
     await tester.pumpWidget(_app(CameraScreen(renderer: renderer)));

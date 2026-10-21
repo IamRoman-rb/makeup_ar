@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ar_makeup_app/features/ar/domain/makeup_recipe.dart';
 import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
+import 'package:ar_makeup_app/features/coach/presentation/coach_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:ar_makeup_app/features/studio/data/cloud_recipe_generator.dart';
 import 'package:ar_makeup_app/features/studio/data/engine_image_analyzer.dart';
@@ -70,13 +71,18 @@ class _CatalogScreenState extends State<CatalogScreen> {
       navigator.push(MaterialPageRoute<void>(builder: (_) => StepByStepScreen(lookId: lookId)));
       return;
     }
+    final look = TestFilterOption(id: 'look-$lookId', label: recipe.name, recipe: recipe);
     navigator.push(MaterialPageRoute<void>(
       builder: (camera) => CameraScreen(
-        initialLook: TestFilterOption(id: 'look-$lookId', label: recipe.name, recipe: recipe),
+        initialLook: look,
         // Reemplaza la cámara: se cierra antes de que arranque el video del
         // tutorial (cámara, motor y video juntos no entran en el E20).
         onOpenTutorial: () => Navigator.of(camera).pushReplacement(
           MaterialPageRoute<void>(builder: (_) => StepByStepScreen(lookId: lookId)),
+        ),
+        // La guía abre su propia sesión de cámara: reemplaza a esta.
+        onOpenCoach: () => Navigator.of(camera).pushReplacement(
+          MaterialPageRoute<void>(builder: (_) => CoachScreen(look: look)),
         ),
       ),
     ));

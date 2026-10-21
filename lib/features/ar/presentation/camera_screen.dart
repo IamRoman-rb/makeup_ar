@@ -19,7 +19,7 @@ import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
 /// Si el motor no puede dibujar en este equipo (o `AR_RENDERER=painter`), queda
 /// el espejo de respaldo con `CameraController`, sin maquillaje.
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({super.key, this.initialLook, this.onOpenTutorial, this.renderer});
+  const CameraScreen({super.key, this.initialLook, this.onOpenTutorial, this.onOpenCoach, this.renderer});
 
   final TestFilterOption? initialLook;
 
@@ -27,6 +27,10 @@ class CameraScreen extends StatefulWidget {
   /// que la feature `ar` no dependa del catálogo; quien lo pasa decide si
   /// reemplaza esta pantalla (la cámara se cierra antes del video) o vuelve.
   final VoidCallback? onOpenTutorial;
+
+  /// Botón "Guíame" sobre la cámara (guía de maquillaje con el look; null =
+  /// sin botón). Callback por la misma razón que [onOpenTutorial].
+  final VoidCallback? onOpenCoach;
 
   /// Inyectable para tests; por defecto, el de `AR_RENDERER`.
   final IMakeupRenderer? renderer;
@@ -146,6 +150,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     final look = widget.initialLook;
     final lookOptions = _lookOptions;
     final onOpenTutorial = widget.onOpenTutorial;
+    final onOpenCoach = widget.onOpenCoach;
 
     final Widget body;
     if (!_inForeground) {
@@ -195,7 +200,28 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
             ),
         ],
       ),
-      body: body,
+      body: onOpenCoach == null || _fallbackMirror || !_inForeground
+          ? body
+          : Stack(
+              children: [
+                Positioned.fill(child: body),
+                // Arriba al centro: a los costados están el FPS y comparar.
+                Positioned(
+                  top: 8,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: FilledButton.icon(
+                      key: const ValueKey('camera-open-coach'),
+                      onPressed: onOpenCoach,
+                      style: FilledButton.styleFrom(backgroundColor: Colors.pink),
+                      icon: const Icon(Icons.record_voice_over_outlined, size: 18),
+                      label: Text(l10n.coachGuideMe),
+                    ),
+                  ),
+                ),
+              ],
+            ),
       bottomNavigationBar: const SharedBottomNav(currentIndex: 2),
     );
   }

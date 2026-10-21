@@ -138,6 +138,7 @@ class TestFilterView extends StatefulWidget {
     this.onOptionSelected,
     this.mirrorOnly = false,
     this.controls = TestFilterControls.full,
+    this.showHud = true,
   });
 
   final TestFilterLabels labels;
@@ -170,6 +171,10 @@ class TestFilterView extends StatefulWidget {
 
   /// Qué controles se ven abajo.
   final TestFilterControls controls;
+
+  /// Badge de FPS y botón de comparar arriba (la guía de maquillaje los oculta:
+  /// ahí la usuaria tiene que ver su cara tal cual).
+  final bool showHud;
 
   @override
   State<TestFilterView> createState() => _TestFilterViewState();
@@ -365,8 +370,10 @@ class _TestFilterViewState extends State<TestFilterView> {
             ),
           ),
         if (!widget.mirrorOnly) ...[
-          Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
-          Positioned(top: 8, right: 8, child: _buildCompareButton()),
+          if (widget.showHud) ...[
+            Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
+            Positioned(top: 8, right: 8, child: _buildCompareButton()),
+          ],
           if (_buildControls() case final controls?) Positioned(left: 0, right: 0, bottom: 0, child: controls),
         ],
       ],

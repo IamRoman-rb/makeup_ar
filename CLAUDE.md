@@ -38,6 +38,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Referencia Python del compositor de capas (cara y ojos; misma matemática que `face.frag`/`eyes.frag` y `layerOver`): `python -m unittest discover -s tools/makeup`.
 - Grilla de calibración del labial (5 tonos de piel × presets; ajustar `lumaFollow`/opacidad de los presets): `python tools/lips/calibration_grid.py` → `docs/ar_engine/img/lips_calibration.png`. Diseño en `docs/ar_engine/LIPS.md`.
 - Regenerar la malla canónica (si cambia `packages/makeup_engine/third_party/mediapipe_face_geometry`): `python tools/mesh/gen_canonical_mesh.py`.
+- Malla suave (subdivisión de la malla canónica, TRACKER.md §9): `python tools/mesh/gen_subdivided_mesh.py` (`--check` verifica); tests con `python -m unittest discover -s tools/mesh`. En el arnés, "Ajuste" cambia el One Euro y prende la malla suave en vivo (líneas `TRACK`/`TUNE`).
 - Spike del motor nativo: `flutter run --profile -t lib/main_spike.dart -d <id>` (no carga Firebase ni RevenueCat).
 - Tests del plugin: `flutter test` dentro de `packages/makeup_engine` (Dart) y `android/gradlew.bat :makeup_engine:testDebugUnitTest` (JVM; necesita `JAVA_HOME` apuntando al JBR de Android Studio).
 - Tests de host del C++ del motor (matemática del tracker, sin GL; necesita Visual Studio con C++): `packages\makeup_engine\test_native\run_host_tests.cmd [filtro]`.
@@ -50,6 +51,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Modelo propio (fase 3, solo infraestructura; sin datos ni entrenamiento): `python -m unittest discover -s tools/model` (necesita `torch`, `numpy` y `opencv-python`; ver `tools/model/requirements.txt`). Protocolo de datos en `tools/model/CONSENT.md` y pasos en `docs/ar_engine/MODEL.md`. Los datos viven fuera del repo.
 - iOS (fase 4, OpenGL ES 3 de EAGL; mismo núcleo C++): si cambian las fuentes o los shaders del `CMakeLists.txt`, `python tools/ios/gen_ios_sources.py` (`--check` verifica). La rama iOS del C++ se compila sin Mac con `python tools/ios/check_ios_cpp.py` (NDK + shims; no compila Swift). Pasos en una Mac y checklist de paridad en `docs/ar_engine/IOS.md`.
 - Referencia Python de la capa de iris: `python -m unittest discover -s tools/makeup` (incluye `iris_shading.py`).
+- Guía de maquillaje en vivo (catálogo → look → "Guíame"): diseño, umbrales (`CoachPolicy`) y protocolo en `docs/ar_engine/COACH.md`. Línea `COACH` en logcat por muestra (ms, Hz del tracker, foco, veredictos). Feature `coach` en `lib/features/coach/`.
 
 ## Reglas de código (Dart)
 
@@ -58,7 +60,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Cancelá en `dispose()` todo `StreamSubscription`, `Timer`, controller e `Isolate`.
 - Los frames se descartan con una bandera tipo `_frameInFlight`; nunca se encolan.
 - Arquitectura limpia, feature-first: `lib/features/<feature>/{domain,data,presentation}`. El dominio no depende de Flutter ni de Firebase.
-  Features: `ar` (motor y espejo), `studio`, `my_looks`, `auth`, `catalog` (catálogo, tutoriales, editor admin), `profile`, `vip`. Widgets compartidos en `lib/shared/widgets/`. En `lib/` solo quedan los `main*.dart`, `firebase_options.dart` y `startup_trace.dart`.
+  Features: `ar` (motor y espejo), `studio`, `my_looks`, `coach` (guía de maquillaje en vivo), `auth`, `catalog` (catálogo, tutoriales, editor admin), `profile`, `vip`. Widgets compartidos en `lib/shared/widgets/`. En `lib/` solo quedan los `main*.dart`, `firebase_options.dart` y `startup_trace.dart`.
 - Código nuevo con tests. `flutter analyze` sin warnings antes de dar algo por terminado.
 
 ## Reglas del motor nativo y shaders
