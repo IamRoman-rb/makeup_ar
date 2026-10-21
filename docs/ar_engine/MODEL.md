@@ -16,6 +16,7 @@ Decisión (2026-10-15): solo infraestructura. El código vive en `tools/model/` 
 | `train.py` | Pérdida Wing (px del recorte) + forma (aristas de la malla) + presencia; jitter de ROI y de color; negativos sin cara; entrenamiento float y después QAT int8. |
 | `metrics.py` / `evaluate.py` | NME por región (normalizado por la distancia entre ojos, con máscara para etiquetas a mano parciales), jitter en videos quietos (sin la deriva lenta), y el criterio de salida del §7. |
 | `export.py` | A `.tflite` con ai-edge-torch, envuelto para que tenga la misma entrada y salida que `face_landmarks_detector.tflite` (int8 opcional, calibrado con validación). |
+| `dense.py` | Modelo más denso (opción 5 de precisión, 2026-10-21). Contornos densos de labios (64 + 48) y ojos (32 + 32) remuestreados por largo de arco; pseudo-etiquetas del maestro con spline Catmull-Rom; métrica punto-a-contorno (`contour_nme`) para polilíneas marcadas a mano; espejo horizontal (`mirror_map` desde la malla canónica, iris reordenado por ángulo). |
 
 Tests (sin datos ni modelos): `python -m unittest discover -s tools/model`.
 
@@ -33,6 +34,11 @@ Tests (sin datos ni modelos): `python -m unittest discover -s tools/model`.
 
 - **El maestro marca el techo.** La destilación aprende a imitar a FaceMesh-V2: para superarlo hacen falta las etiquetas a mano (paso 4) y entrenar también contra ellas, o datos sintéticos propios con geometría exacta.
 - **La QAT usa `torch.ao.quantization` (FX)**, que está deprecado a favor de torchao. Hoy funciona con la versión instalada (los tests lo corren); si se retira, hay que pasar al flujo PT2E de ai-edge-torch, que `export.py` ya usa para int8.
-- **Sin espejo horizontal en el aumento de datos:** necesita el mapa de índices izquierda↔derecha de los 478 puntos. Queda pendiente.
+- **Espejo horizontal en el aumento de datos (resuelto el 2026-10-21):** `dense.mirror_map()` saca el mapa izquierda↔derecha de los 468 puntos de la malla canónica (el vértice más cercano a (−x, y, z)) e intercambia los iris. El anillo de cada iris se reordena por ángulo en cada muestra, así que no importa cómo los numere el maestro. `train.py` espeja la mitad de los cuadros (`--flip`).
+- **Cabezal denso (opción 5, `train.py --dense`, `export.py --dense`):**
+  - El alumno aprende además 176 puntos sobre los contornos de labios y ojos. Al principio son pseudo-etiquetas del maestro con spline; con polilíneas marcadas a mano (paso 4: alcanza con dibujar el borde, sin marcar puntos) aprende el borde real.
+  - `contour_nme` mide la distancia de esos puntos al borde marcado: es la métrica que dice si el modelo propio ve el borde mejor que FaceMesh-V2.
+  - El `.tflite` exportado sigue dando los 478 puntos que espera el motor.
+  - Para que el motor use los puntos densos hay que sumarlos a la malla, con su UV, por ejemplo en lugar de los puntos nuevos del contorno de la malla suave (`TRACKER.md` §9). Se decide con números del alumno contra el maestro.
 - **Red de labios (oclusión, fase 4):** sería un cabezal más sobre el mismo backbone, con una máscara de 64×64 del ROI de la boca. Las etiquetas iniciales saldrían de los contornos de labios del maestro (`FACEMESH_LIPS`), corregidas a mano en los casos de oclusión (mano, taza, micrófono). No se entrena hasta que el set tenga oclusiones grabadas. Mientras tanto queda la oclusión heurística de P8–P9.
 - **Esfuerzo:** del orden de meses (informe §6.2), dominado por datos y evaluación, no por la red.

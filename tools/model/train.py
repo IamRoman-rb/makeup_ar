@@ -32,6 +32,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from dense import DENSE_POINTS, dense_targets, flip_points
 from geometry import CONNECTIONS, MESH_VERTEX_COUNT, Roi, crop, engine_constants, image_to_roi, roi_from_points
 from student import INPUT_SIZE, LandmarkStudent
 
@@ -39,6 +40,10 @@ WING_W = 10.0
 WING_EPSILON = 2.0
 SHAPE_WEIGHT = 0.5
 PRESENCE_WEIGHT = 0.1
+# Cabezal denso (contornos de labios y ojos, dense.py): mismo Wing en px.
+DENSE_WEIGHT = 1.0
+# Probabilidad de espejar horizontalmente cada cuadro de entrenamiento.
+FLIP_PROBABILITY = 0.5
 
 
 @lru_cache(maxsize=1)
@@ -69,20 +74,28 @@ def shape_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
 
 def distill_loss(pred: torch.Tensor, presence_logit: torch.Tensor, target: torch.Tensor,
-                 has_face: torch.Tensor) -> tuple[torch.Tensor, dict[str, float]]:
+                 has_face: torch.Tensor, pred_dense: torch.Tensor | None = None,
+                 target_dense: torch.Tensor | None = None) -> tuple[torch.Tensor, dict[str, float]]:
     """pred/target: (B, 478, 3) en coordenadas del recorte; has_face (B,) 0/1.
-    Los puntos solo cuentan en los recortes con cara."""
+    Los puntos solo cuentan en los recortes con cara. pred_dense/target_dense:
+    (B, DENSE_POINTS, 2) del cabezal denso, si lo hay."""
     face = has_face > 0.5
     presence = nn.functional.binary_cross_entropy_with_logits(presence_logit, has_face.float())
+    dense = pred.sum() * 0.0
     if face.any():
         p = pred[face] * INPUT_SIZE
         t = target[face] * INPUT_SIZE
         wing = wing_loss(p[..., :2], t[..., :2]) + 0.1 * wing_loss(p[..., 2:], t[..., 2:])
         shape = shape_loss(p, t)
+        if pred_dense is not None and target_dense is not None:
+            dense = wing_loss(pred_dense[face] * INPUT_SIZE, target_dense[face] * INPUT_SIZE)
     else:
         wing = shape = pred.sum() * 0.0
-    total = wing + SHAPE_WEIGHT * shape + PRESENCE_WEIGHT * presence
-    return total, {"wing": wing.item(), "forma": shape.item(), "presencia": presence.item()}
+    total = wing + SHAPE_WEIGHT * shape + PRESENCE_WEIGHT * presence + DENSE_WEIGHT * dense
+    parts = {"wing": wing.item(), "forma": shape.item(), "presencia": presence.item()}
+    if pred_dense is not None:
+        parts["denso"] = dense.item()
+    return total, parts
 
 
 # --- Datos -----------------------------------------------------------------------
@@ -108,8 +121,14 @@ def color_jitter(image: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     return np.clip(x, 0.0, 1.0)
 
 
-def make_sample(image: np.ndarray, points: np.ndarray, rng: np.random.Generator | None, roi_scale: float):
-    """(recorte (3, S, S) float [0,1], puntos (478, 3) en coords del recorte)."""
+def make_sample(image: np.ndarray, points: np.ndarray, rng: np.random.Generator | None, roi_scale: float,
+                flip: bool = False, dense: bool = False):
+    """(recorte (3, S, S) float [0,1], puntos (478, 3) en coords del recorte)
+    y, con [dense], los contornos densos (DENSE_POINTS, 2) en coords del
+    recorte. [flip]: espeja la imagen y los puntos (dense.flip_points)."""
+    if flip:
+        points = flip_points(points, image.shape[1])
+        image = np.ascontiguousarray(image[:, ::-1])
     roi = roi_from_points(points[:MESH_VERTEX_COUNT], roi_scale)
     if rng is not None:
         roi = jitter_roi(roi, rng)
@@ -117,7 +136,10 @@ def make_sample(image: np.ndarray, points: np.ndarray, rng: np.random.Generator 
     pixels = color_jitter(patch, rng) if rng is not None else patch.astype(np.float32) / 255.0
     uv = image_to_roi(roi, points[:, :2])
     target = np.concatenate([uv, points[:, 2:3] / roi.size], axis=-1).astype(np.float32)
-    return np.ascontiguousarray(pixels.transpose(2, 0, 1)), target
+    pixels = np.ascontiguousarray(pixels.transpose(2, 0, 1))
+    if not dense:
+        return pixels, target
+    return pixels, target, image_to_roi(roi, dense_targets(points)).astype(np.float32)
 
 
 class DistillDataset(torch.utils.data.Dataset):
@@ -125,12 +147,15 @@ class DistillDataset(torch.utils.data.Dataset):
     (frames, points (F, 478, 3) px, presence (F,)). [negatives]: fracción de
     recortes sin cara (un ROI lejos de la cara) para la presencia."""
 
-    def __init__(self, data_root: Path, video_ids: list[str], train: bool, negatives: float = 0.1, seed: int = 0):
+    def __init__(self, data_root: Path, video_ids: list[str], train: bool, negatives: float = 0.1, seed: int = 0,
+                 dense: bool = False, flip: float = FLIP_PROBABILITY):
         import cv2
 
         self._cv2 = cv2
         self.root = Path(data_root)
         self.train = train
+        self.dense = dense
+        self.flip = flip if train else 0.0
         self.negatives = negatives
         self.rng = np.random.default_rng(seed)
         self.roi_scale = float(engine_constants()["kRoiScale"])
@@ -155,17 +180,22 @@ class DistillDataset(torch.utils.data.Dataset):
             far = points.copy()
             far[:, :2] += np.sign(self.rng.uniform(-1, 1, 2)) * (np.ptp(points[:, :2], axis=0) * 1.6)
             points, has_face = far, 0.0
-        pixels, target = make_sample(image, points, rng, self.roi_scale)
-        return torch.from_numpy(pixels), torch.from_numpy(target), torch.tensor(has_face)
+        flip = self.flip > 0.0 and self.rng.random() < self.flip
+        sample = make_sample(image, points, rng, self.roi_scale, flip=flip, dense=self.dense)
+        tensors = (torch.from_numpy(sample[0]), torch.from_numpy(sample[1]), torch.tensor(has_face))
+        return tensors + ((torch.from_numpy(sample[2]),) if self.dense else ())
 
 
 # --- Entrenamiento ---------------------------------------------------------------
 
 def train_step(model: nn.Module, optimizer: torch.optim.Optimizer, batch) -> dict[str, float]:
-    images, targets, has_face = batch
+    images, targets, has_face = batch[:3]
+    target_dense = batch[3] if len(batch) > 3 else None
     model.train()
-    pred, presence = model(images)
-    loss, parts = distill_loss(pred, presence, targets, has_face)
+    outputs = model(images)
+    pred, presence = outputs[0], outputs[1]
+    pred_dense = outputs[2] if len(outputs) > 2 else None
+    loss, parts = distill_loss(pred, presence, targets, has_face, pred_dense, target_dense)
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     nn.utils.clip_grad_norm_(model.parameters(), 5.0)
@@ -186,15 +216,16 @@ def prepare_qat(model: nn.Module) -> nn.Module:
                               (torch.zeros(1, 3, INPUT_SIZE, INPUT_SIZE),))
 
 
-def run(data_root: Path, out: Path, epochs: int, qat_epochs: int, batch_size: int, lr: float, workers: int) -> None:
+def run(data_root: Path, out: Path, epochs: int, qat_epochs: int, batch_size: int, lr: float, workers: int,
+        dense: bool = False, flip: float = FLIP_PROBABILITY) -> None:
     from dataset import load_manifest, load_revoked, split_records, video_id
 
     records = load_manifest(data_root / "manifest.jsonl", load_revoked(data_root / "revoked.txt"))
     ids = {name: [video_id(r) for r in recs] for name, recs in split_records(records).items()}
-    train_set = DistillDataset(data_root, ids["train"], train=True)
+    train_set = DistillDataset(data_root, ids["train"], train=True, dense=dense, flip=flip)
     loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=workers,
                                          drop_last=True)
-    model = LandmarkStudent()
+    model = LandmarkStudent(dense_points=DENSE_POINTS if dense else 0)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(1, epochs * len(loader)))
     out.mkdir(parents=True, exist_ok=True)
@@ -229,8 +260,13 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=2e-3)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--dense", action="store_true",
+                        help="cabezal denso de contornos de labios y ojos (dense.py)")
+    parser.add_argument("--flip", type=float, default=FLIP_PROBABILITY,
+                        help="probabilidad de espejar cada cuadro (0 = sin espejo)")
     args = parser.parse_args()
-    run(args.data, args.out, args.epochs, args.qat_epochs, args.batch_size, args.lr, args.workers)
+    run(args.data, args.out, args.epochs, args.qat_epochs, args.batch_size, args.lr, args.workers,
+        dense=args.dense, flip=args.flip)
     return 0
 
 

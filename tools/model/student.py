@@ -4,7 +4,9 @@ verificamos para un producto) y sin depender de torchvision.
 
 Entrada: recorte RGB [0,1] de INPUT_SIZE² (el mismo ROI que el tracker).
 Salida: (B, 478, 3) en coordenadas del recorte ([0,1] en x, y; z en la misma
-escala) y un logit de presencia de cara (B,).
+escala) y un logit de presencia de cara (B,). Con [dense_points] > 0 suma un
+cabezal denso (B, dense_points, 2): contornos de labios y ojos remuestreados
+(dense.py, opción 5 de precisión). El motor solo usa los 478 (export.py).
 """
 
 from __future__ import annotations
@@ -84,9 +86,11 @@ class InvertedResidual(nn.Module):
 
 
 class LandmarkStudent(nn.Module):
-    def __init__(self, width: float = 1.0, points: int = LANDMARK_COUNT, head_hidden: int = 1024):
+    def __init__(self, width: float = 1.0, points: int = LANDMARK_COUNT, head_hidden: int = 1024,
+                 dense_points: int = 0):
         super().__init__()
         self.points = points
+        self.dense_points = dense_points
         channels = _divisible(16 * width)
         layers: list[nn.Module] = [ConvBnAct(3, channels, 3, 2, act="hswish")]
         for kernel, expanded, out, se, act, stride in SMALL_BLOCKS:
@@ -101,14 +105,22 @@ class LandmarkStudent(nn.Module):
         self.head = nn.Sequential(nn.Flatten(), nn.Linear(last, head_hidden), nn.Hardswish(inplace=True))
         self.landmarks = nn.Linear(head_hidden, points * 3)
         self.presence = nn.Linear(head_hidden, 1)
+        self.dense = nn.Linear(head_hidden, dense_points * 2) if dense_points > 0 else None
         # Arranca prediciendo la cara media en el centro del recorte.
         nn.init.zeros_(self.landmarks.weight)
         with torch.no_grad():
             self.landmarks.bias.copy_(torch.tensor([0.5, 0.5, 0.0]).repeat(points))
+            if self.dense is not None:
+                nn.init.zeros_(self.dense.weight)
+                self.dense.bias.fill_(0.5)
 
-    def forward(self, image: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, image: torch.Tensor):
         hidden = self.head(self.pool(self.features(image)))
-        return self.landmarks(hidden).view(-1, self.points, 3), self.presence(hidden).squeeze(-1)
+        points = self.landmarks(hidden).view(-1, self.points, 3)
+        presence = self.presence(hidden).squeeze(-1)
+        if self.dense is None:
+            return points, presence
+        return points, presence, self.dense(hidden).view(-1, self.dense_points, 2)
 
 
 def parameter_count(model: nn.Module) -> int:

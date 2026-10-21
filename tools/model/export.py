@@ -40,7 +40,9 @@ class WrappedForEngine(nn.Module):
         if image.shape[-1] != INPUT_SIZE:
             image = nn.functional.interpolate(image, size=(INPUT_SIZE, INPUT_SIZE), mode="bilinear",
                                               align_corners=False)
-        points, presence = self.student(image)
+        # El cabezal denso (si lo hay) no va al motor: misma salida que FaceMesh-V2.
+        outputs = self.student(image)
+        points, presence = outputs[0], outputs[1]
         return (points * self.engine_input).reshape(points.shape[0], -1), presence.reshape(-1, 1)
 
 
@@ -50,13 +52,16 @@ def main() -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--engine-input", type=int, default=256)
     parser.add_argument("--int8", action="store_true")
+    parser.add_argument("--dense", action="store_true", help="los pesos tienen el cabezal denso (train.py --dense)")
     parser.add_argument("--calibration", type=Path)
     args = parser.parse_args()
     try:
         import ai_edge_torch
     except ImportError:
         raise SystemExit("falta ai-edge-torch: pip install ai-edge-torch (solo para exportar)")
-    student = LandmarkStudent()
+    from dense import DENSE_POINTS
+
+    student = LandmarkStudent(dense_points=DENSE_POINTS if args.dense else 0)
     student.load_state_dict(torch.load(args.weights, map_location="cpu"))
     model = WrappedForEngine(student, args.engine_input).eval()
     sample = (torch.zeros(1, args.engine_input, args.engine_input, 3),)
