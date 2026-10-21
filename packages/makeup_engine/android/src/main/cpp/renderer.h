@@ -15,14 +15,17 @@
 #include <atomic>
 #include <mutex>
 #include <string>
+#include <vector>
 
 #include "crop_pass.h"
+#include "look_sample_pass.h"
 #include "scene_light.h"
 #include "scene_pass.h"
 #include "face_layers.h"
 #include "face_style.h"
 #include "frame_stats.h"
 #include "gl_utils.h"
+#include "mesh/subdivision.h"
 #include "tracking/tracking_state.h"
 
 namespace makeup {
@@ -109,6 +112,20 @@ class Renderer {
   // la escena (scene_light.h); apagada, salen tal cual (comparación A/B).
   void setRenderOptions(bool showLandmarks, TintRegion region, bool lightAdaptation);
 
+  // Malla suave (mesh/subdivision.h): stencils butterfly en lugar del punto
+  // medio lineal. Cualquier hilo; se aplica en el próximo frame.
+  void setSmoothMesh(bool enabled);
+
+  // --- Muestra para la guía (docs/ar_engine/COACH.md) ---
+  // Cualquier hilo. Pide una muestra de la cara: el render la toma en el
+  // próximo frame con cara (descarta una lista sin leer).
+  void requestLookSample();
+  // true si hay una muestra lista: [pixels] (kLookSampleSize² RGBA) y [points]
+  // (kLandmarkCount × 3, px del recorte) valen hasta releaseLookSample();
+  // [imageScale]: px de cámara por px del recorte.
+  bool peekLookSample(const uint8_t** pixels, const float** points, float* imageScale) const;
+  void releaseLookSample();
+
   FrameStats& stats() { return stats_; }
 
   // GL_VENDOR / GL_RENDERER / GL_VERSION / GLSL, tras initGl().
@@ -177,6 +194,9 @@ class Renderer {
   void runCropPass(const float* texMatrix, int width, int height, int64_t cameraTimestampNs,
                    int64_t nowNs, int* flags);
   void uploadMesh(const float* points);
+  // Muestra de la guía: poll de la lectura en vuelo o, si hay pedido y cara,
+  // la lanza. [points]: landmarks de este frame (null sin cara).
+  void runLookSample(const float* points, float alpha, const float* texMatrix, int width, int height);
   void adaptRecipeColors(bool enabled);
   static bool faceRect(const float* points, int width, int height, float out[4]);
   void drawFaceLayers(const RenderLandmarks& landmarks, const float* imageToClip, const float* texMatrix,
@@ -196,6 +216,7 @@ class Renderer {
   LipsProgram lipsShimmer_;
   FaceLayers faceLayers_;
   CropPass crop_;
+  LookSamplePass lookSample_;
   ScenePass scene_;
   SceneLightEstimator sceneLight_;
   GlVertexArray quadVao_;
@@ -261,7 +282,18 @@ class Renderer {
   IrisUniforms baseIris_;
   bool drawLightAdapted_ = false;
   std::atomic<bool> lightAdaptation_{true};
-  std::array<float, EngineConfig::kLandmarkCount * 2> meshPoints_{};
+  std::atomic<bool> smoothMesh_{EngineConfig::kSmoothMeshDefault};
+  // Muestra de la guía: el render pasa kRequested -> kInFlight -> kReady y el
+  // analizador kReady -> kIdle. Píxeles y puntos son del render hasta kReady.
+  enum LookSampleState : int { kSampleIdle = 0, kSampleRequested, kSampleInFlight, kSampleReady };
+  std::atomic<int> lookSampleState_{kSampleIdle};
+  std::vector<uint8_t> lookSamplePixels_ = std::vector<uint8_t>(LookSamplePass::kBytes);
+  std::array<float, EngineConfig::kLandmarkCount * 3> lookSamplePoints_{};
+  float lookSampleScale_ = 1.0f;
+  // Puntos de la malla suave (kSubVertexCount) y, al final, los del iris
+  // (kLandmarkCount - kVertexCount) para el overlay de depuración.
+  static constexpr int kIrisPointCount = EngineConfig::kLandmarkCount - mesh::kVertexCount;
+  std::array<float, (mesh::kSubVertexCount + kIrisPointCount) * 2> meshPoints_{};
   int64_t lastFrameStartNs_ = 0;
   std::string glInfo_;
   std::string lastError_;

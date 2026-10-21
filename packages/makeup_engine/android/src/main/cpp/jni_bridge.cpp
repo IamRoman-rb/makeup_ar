@@ -16,6 +16,7 @@
 
 #include "engine_config.h"
 #include "renderer.h"
+#include "studio/live_look_sample.h"
 #include "studio/look_analysis.h"
 #include "studio/palette.h"
 #include "studio/still_face_locator.h"
@@ -143,6 +144,13 @@ void nativeSetRenderOptions(JNIEnv*, jclass, jlong handle, jboolean showLandmark
                               : makeup::TintRegion::kFull;
   fromHandle(handle)->renderer.setRenderOptions(showLandmarks == JNI_TRUE, tintRegion,
                                                 lightAdaptation == JNI_TRUE);
+}
+
+// Ajuste en vivo del arnés: One Euro del tracker y malla suave del render.
+void nativeSetTrackerTuning(JNIEnv*, jclass, jlong handle, jfloat minCutoff, jfloat beta, jboolean smoothMesh) {
+  Engine* engine = fromHandle(handle);
+  engine->tracking.setFilterTuning(minCutoff, beta);
+  engine->renderer.setSmoothMesh(smoothMesh == JNI_TRUE);
 }
 
 void nativeSetTint(JNIEnv*, jclass, jlong handle, jfloat r, jfloat g, jfloat b, jfloat amount) {
@@ -394,6 +402,24 @@ jfloatArray nativeStillAnalyze(JNIEnv* env, jclass, jlong handle) {
 
 void nativeStillDestroy(JNIEnv*, jclass, jlong handle) { delete stillFromHandle(handle); }
 
+// --- Guía de maquillaje (docs/ar_engine/COACH.md) ---
+
+void nativeLookSampleRequest(JNIEnv*, jclass, jlong handle) { fromHandle(handle)->renderer.requestLookSample(); }
+
+// Hilo del analizador. La muestra lista medida (kLookValueCount floats, como
+// nativeStillAnalyze), o null si todavía no hay una.
+jfloatArray nativeLookSampleTake(JNIEnv* env, jclass, jlong handle) {
+  makeup::Renderer& renderer = fromHandle(handle)->renderer;
+  const uint8_t* pixels = nullptr;
+  const float* points = nullptr;
+  float imageScale = 1.0f;
+  if (!renderer.peekLookSample(&pixels, &points, &imageScale)) return nullptr;
+  std::vector<float> values(makeup::kLookValueCount, 0.0f);
+  makeup::analyzeLiveSample(pixels, makeup::LookSamplePass::kSize, points, imageScale, values.data());
+  renderer.releaseLookSample();
+  return toFloatArray(env, values.data(), makeup::kLookValueCount);
+}
+
 // Swatches × kPaletteSwatchFloats (r, g, b sRGB [0,1], fracción), por área.
 jfloatArray nativeStillPalette(JNIEnv* env, jclass, jintArray argb, jint width, jint height) {
   makeup::StillImage image;
@@ -419,6 +445,7 @@ const JNINativeMethod kMethods[] = {
     {"nativeGetLastError", "(J)Ljava/lang/String;", reinterpret_cast<void*>(nativeGetLastError)},
     {"nativeSetGeometry", "(J[F[FIIZ)V", reinterpret_cast<void*>(nativeSetGeometry)},
     {"nativeSetRenderOptions", "(JZIZ)V", reinterpret_cast<void*>(nativeSetRenderOptions)},
+    {"nativeSetTrackerTuning", "(JFFZ)V", reinterpret_cast<void*>(nativeSetTrackerTuning)},
     {"nativeSetTint", "(JFFFF)V", reinterpret_cast<void*>(nativeSetTint)},
     {"nativeSetLips", "(JZFFFFIFF)V", reinterpret_cast<void*>(nativeSetLips)},
     {"nativeSetLipLiner", "(JZFFFF)V", reinterpret_cast<void*>(nativeSetLipLiner)},
@@ -454,6 +481,8 @@ const JNINativeMethod kMethods[] = {
     {"nativeStillAnalyze", "(J)[F", reinterpret_cast<void*>(nativeStillAnalyze)},
     {"nativeStillDestroy", "(J)V", reinterpret_cast<void*>(nativeStillDestroy)},
     {"nativeStillPalette", "([III)[F", reinterpret_cast<void*>(nativeStillPalette)},
+    {"nativeLookSampleRequest", "(J)V", reinterpret_cast<void*>(nativeLookSampleRequest)},
+    {"nativeLookSampleTake", "(J)[F", reinterpret_cast<void*>(nativeLookSampleTake)},
 };
 
 }  // namespace

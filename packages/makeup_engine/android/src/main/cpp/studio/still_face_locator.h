@@ -29,6 +29,22 @@ enum class StillFaceStatus : int {
   kBadImage = 5,      // foto vacía o salidas del modelo inválidas
 };
 
+// Pose 2D de una cara a partir de sus landmarks (px): distancia entre los
+// ángulos externos de los ojos y desplazamiento de la punta de la nariz
+// respecto del medio de los ojos, en distancias entre ojos (signo: hacia +x
+// de la línea de los ojos). La usan "Desde foto" y la guía en vivo.
+struct FacePose {
+  float eyeDistancePx = 0.0f;
+  float yawRatio = 0.0f;
+};
+
+// [points]: al menos los 468 de la malla, (x, y, z) en px.
+FacePose measureFacePose(const float* points);
+
+// kOk, o por qué no sirve para medir: kFaceTooSmall (kStillMinEyeDistancePx)
+// o kProfile (kStillMaxYawRatio).
+StillFaceStatus facePoseStatus(const FacePose& pose);
+
 class StillFaceLocator {
  public:
   enum class Step : int { kDetector = 0, kLandmarks = 1, kDone = 2, kFailed = 3 };

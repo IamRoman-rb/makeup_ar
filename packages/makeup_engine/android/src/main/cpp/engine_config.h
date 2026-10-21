@@ -50,6 +50,19 @@ struct EngineConfig {
   static constexpr float kOneEuroMinCutoff = 1.0f;
   static constexpr float kOneEuroBeta = 0.05f;
   static constexpr float kOneEuroDCutoff = 1.0f;
+  // Rango del ajuste en vivo del arnés (TrackingState::setFilterTuning).
+  static constexpr float kOneEuroTuneMinCutoff = 0.05f;
+  static constexpr float kOneEuroTuneMaxCutoff = 10.0f;
+  static constexpr float kOneEuroTuneMaxBeta = 2.0f;
+  // Malla suave (mesh/subdivision.h, TRACKER.md §9): 4 triángulos por cada
+  // uno con stencils butterfly. Apagada hasta validarla en el E20 con el chip
+  // del arnés; apagada, los puntos nuevos son el punto medio (misma imagen).
+  static constexpr bool kSmoothMeshDefault = false;
+  // Tope del corrimiento del punto suave respecto del medio de su arista, en
+  // fracción del largo de la arista. Una curva real muestreada cada 60° se
+  // corre ~0,13; más que esto son excesos del esquema donde la malla tiene
+  // aristas de largos muy distintos (comisura externa, landmark 61: 0,64).
+  static constexpr float kSmoothMeshMaxOffset = 0.15f;
   // Más que esto entre resultados (o tras perder la cara): filtros desde cero.
   static constexpr float kFilterResetGapSeconds = 0.5f;
 
@@ -263,6 +276,13 @@ struct EngineConfig {
 
   // Tamaño de los puntos del overlay de depuración (px de salida).
   static constexpr float kLandmarkPointSizePx = 5.0f;
+
+  // --- Guía de maquillaje en vivo (docs/ar_engine/COACH.md) ---
+  // Muestra de la cara a pedido (una cada ~1,5 s, no por frame): lado del
+  // recorte (px; 1 MB de lectura) y escala del ROI sobre la caja de los
+  // landmarks (con margen para mejillas y cejas).
+  static constexpr int kLookSampleSize = 512;
+  static constexpr float kLookSampleRoiScale = 1.4f;
 
   // --- Imagen -> receta (F4; docs/ar_engine/F4_PLAN.md, cpp/studio/) ---
   // No es camino caliente: una foto por análisis, en el hilo del analizador.

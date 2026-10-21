@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.os.Process
+import android.os.SystemClock
 import android.util.Log
 import android.util.Range
 import android.view.Surface
@@ -86,6 +87,10 @@ internal class EngineSession(
     private var sessionOpen = false       // entre createCaptureSession y onClosed/onConfigureFailed
 
     @Volatile private var released = false
+    // La guía mide en un hilo de fondo con el núcleo nativo: nativeDestroy y
+    // cada medición van bajo este lock (nativeDestroyed lo protege).
+    private val sampleLock = Any()
+    private var nativeDestroyed = false
     @Volatile private var lastError: String? = null
 
     /**
@@ -394,6 +399,35 @@ internal class EngineSession(
     }
 
     /**
+     * Hilo de fondo (nunca el de UI ni el de render). Guía de maquillaje
+     * (docs/ar_engine/COACH.md): pide una muestra de la cara y la mide como
+     * "Desde foto", con los landmarks del tracker. Devuelve los números
+     * (CONFIG_LOOK_VALUE_COUNT floats) o null si en [timeoutMs] no hubo cara.
+     * El recorte vive en memoria nativa y se descarta: no se guarda nada.
+     */
+    fun sampleLiveLook(timeoutMs: Long = LOOK_SAMPLE_TIMEOUT_MS): FloatArray? {
+        synchronized(sampleLock) {
+            if (released || nativeDestroyed) return null
+            NativeBridge.nativeLookSampleRequest(nativeHandle)
+        }
+        val deadline = SystemClock.uptimeMillis() + timeoutMs
+        while (SystemClock.uptimeMillis() < deadline) {
+            synchronized(sampleLock) {
+                if (released || nativeDestroyed) return null
+                NativeBridge.nativeLookSampleTake(nativeHandle)?.let { return it }
+            }
+            Thread.sleep(LOOK_SAMPLE_POLL_MS)
+        }
+        return null
+    }
+
+    /** Hilo de plataforma. Ajuste en vivo del arnés (TRACKER.md §9). */
+    fun setTrackerTuning(minCutoff: Float, beta: Float, smoothMesh: Boolean) {
+        if (released) return
+        NativeBridge.nativeSetTrackerTuning(nativeHandle, minCutoff, beta, smoothMesh)
+    }
+
+    /**
      * Hilo de plataforma. Prende o apaga el tracker. Los modelos se cargan la
      * primera vez que se prende (no se paga la carga si nadie lo usa).
      */
@@ -430,6 +464,8 @@ internal class EngineSession(
             "readbackMs" to t[NativeBridge.TRACK_STAT_READBACK_MS].toDouble(),
             "cropFailures" to t[NativeBridge.TRACK_STAT_CROP_FAILURES].toDouble(),
             "occlusionGate" to t[NativeBridge.TRACK_STAT_OCCLUSION_GATE].toDouble(),
+            "filterMinCutoff" to t[NativeBridge.TRACK_STAT_FILTER_MIN_CUTOFF].toDouble(),
+            "filterBeta" to t[NativeBridge.TRACK_STAT_FILTER_BETA].toDouble(),
             "initMs" to tracker.initMs,
             "backend" to tracker.backend,
             "error" to tracker.error,
@@ -507,7 +543,12 @@ internal class EngineSession(
 
     /** Hilo de plataforma. */
     private fun destroyNativeIfIdle() {
-        if (renderReleased && trackerReleased) NativeBridge.nativeDestroy(nativeHandle)
+        if (renderReleased && trackerReleased) {
+            synchronized(sampleLock) {
+                if (!nativeDestroyed) NativeBridge.nativeDestroy(nativeHandle)
+                nativeDestroyed = true
+            }
+        }
     }
 
     private fun runOnRenderAndWait(timeoutMs: Long, block: () -> Unit): Boolean {
@@ -538,6 +579,10 @@ internal class EngineSession(
         const val TAG = "makeup_engine"
         const val SURFACE_CLEANUP_TIMEOUT_MS = 250L
         const val CAMERA_QUIT_FALLBACK_MS = 2000L
+        // Guía: espera de una muestra (la cara puede tardar en aparecer) y cada
+        // cuánto se pregunta si está lista (el recorte tarda 1-3 frames).
+        const val LOOK_SAMPLE_TIMEOUT_MS = 1500L
+        const val LOOK_SAMPLE_POLL_MS = 20L
     }
 }
 

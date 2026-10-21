@@ -20,6 +20,10 @@ import 'features/studio/domain/image_recipe.dart';
 ///   `flutter run --profile -t lib/main_tracker.dart -d <id>`
 /// Pide el permiso de cámara antes de montar la vista.
 ///
+/// "Ajuste" (TRACKER.md §9): sliders del filtro One Euro del tracker y el
+/// chip "Malla suave", en vivo. La línea TRACK suma los valores en uso
+/// (`oneEuro=minCutoff/beta mesh=suave|lineal`) para comparar el jitter.
+///
 /// F4: "Foto" mide el maquillaje de una foto de la galería y suma sus 3
 /// variantes como chips (línea `PHOTO ...` en logcat con el tiempo, el estado,
 /// la confianza y el error de ajuste por región); "Paleta" deja los colores de
@@ -47,6 +51,12 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
   final EngineImageAnalyzer _analyzer = EngineImageAnalyzer();
   late List<TestFilterOption> _extraOptions = [_lipLinerOption(), _irisOption()];
   bool _analyzing = false;
+
+  // Ajuste en vivo (null hasta leer los valores del motor).
+  bool _tuningOpen = false;
+  double? _minCutoff;
+  double? _beta;
+  bool _smoothMesh = false;
 
   @override
   void initState() {
@@ -78,6 +88,7 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
           'state=${t.state.name} hz=${_f(t.hz)} lmP50=${_f(t.landmarkP50Ms)} lmP95=${_f(t.landmarkP95Ms)} '
           'detP50=${_f(t.detectorP50Ms)} readback=${_f(t.readbackMs)} cropFails=${t.cropFailures} jitter=${_f(t.jitterP50Px, 2)} '
           'presence=${_f(t.presence, 2)} occl=${_f(t.occlusionGate, 2)} yaw=${_f(t.yawDeg)} pitch=${_f(t.pitchDeg)} roll=${_f(t.rollDeg)} '
+          'oneEuro=${_f(t.filterMinCutoff, 2)}/${_f(t.filterBeta, 3)} mesh=${_smoothMesh ? 'suave' : 'lineal'} '
           'runs=${t.landmarkRuns}/${t.detectorRuns} losses=${t.losses} init=${_f(t.initMs, 0)} '
           'backend="${t.backend ?? '-'}" error="${s.error ?? t.error ?? '-'}"');
     } on Exception catch (e) {
@@ -85,6 +96,70 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
     } finally {
       _inFlight = false;
     }
+  }
+
+  /// Abre el panel con los valores que usa el motor.
+  Future<void> _toggleTuning() async {
+    if (_tuningOpen) {
+      setState(() => _tuningOpen = false);
+      return;
+    }
+    final t = (await _engine.getStats()).tracker;
+    if (!mounted) return;
+    setState(() {
+      _tuningOpen = true;
+      _minCutoff ??= t.filterMinCutoff ?? 1.0;
+      _beta ??= t.filterBeta ?? 0.05;
+    });
+  }
+
+  Future<void> _sendTuning() async {
+    final minCutoff = _minCutoff;
+    final beta = _beta;
+    if (minCutoff == null || beta == null) return;
+    await _engine.setTrackerTuning(minCutoff: minCutoff, beta: beta, smoothMesh: _smoothMesh);
+    debugPrint('TUNE oneEuro=${_f(minCutoff, 2)}/${_f(beta, 3)} mesh=${_smoothMesh ? 'suave' : 'lineal'}');
+  }
+
+  Widget _tuningPanel() {
+    final minCutoff = _minCutoff ?? 1.0;
+    final beta = _beta ?? 0.05;
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('minCutoff ${_f(minCutoff, 2)} Hz (menos = menos temblor, más atraso)',
+              style: const TextStyle(color: Colors.white, fontSize: 11)),
+          Slider(
+            value: minCutoff.clamp(0.1, 3.0),
+            min: 0.1,
+            max: 3.0,
+            onChanged: (value) => setState(() => _minCutoff = value),
+            onChangeEnd: (_) => unawaited(_sendTuning()),
+          ),
+          Text('beta ${_f(beta, 3)} (más = menos atraso al moverte)',
+              style: const TextStyle(color: Colors.white, fontSize: 11)),
+          Slider(
+            value: beta.clamp(0.0, 0.5),
+            max: 0.5,
+            onChanged: (value) => setState(() => _beta = value),
+            onChangeEnd: (_) => unawaited(_sendTuning()),
+          ),
+          FilterChip(
+            label: const Text('Malla suave'),
+            selected: _smoothMesh,
+            onSelected: (value) {
+              setState(() => _smoothMesh = value);
+              unawaited(_sendTuning());
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Future<Uint8List?> _pickPhoto() async {
@@ -224,11 +299,19 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
                             child: Text(_analyzing ? '…' : 'Foto'),
                           ),
                           FilledButton.tonal(onPressed: _analyzing ? null : _analyzePalette, child: const Text('Paleta')),
+                          FilledButton.tonal(onPressed: _toggleTuning, child: const Text('Ajuste')),
                         ],
                       ),
                     ),
                   ),
                 ),
+                if (_tuningOpen)
+                  SafeArea(
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(padding: const EdgeInsets.fromLTRB(8, 112, 8, 8), child: _tuningPanel()),
+                    ),
+                  ),
               ],
             )
           : Center(

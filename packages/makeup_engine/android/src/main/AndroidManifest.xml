@@ -9,4 +9,12 @@
          usamos. Servicios en primer plano exigen justificación en Google Play. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" tools:node="remove" />
+
+    <!-- Guía de maquillaje (CoachVoice.kt): desde Android 11 hay que declarar
+         que se usa el motor de voz del sistema para poder encontrarlo. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
 </manifest>

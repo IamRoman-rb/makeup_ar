@@ -48,6 +48,8 @@ add_library(makeup_engine SHARED
     frame_stats.cpp
     gl_program.cpp
     jni_bridge.cpp
+    look_sample_pass.cpp
+    mesh/subdivision.cpp
     renderer.cpp
     scene_light.cpp
     scene_pass.cpp
@@ -57,6 +59,7 @@ add_library(makeup_engine SHARED
     studio/region_sampling.cpp
     studio/look_analysis.cpp
     studio/palette.cpp
+    studio/live_look_sample.cpp
     tracking/blazeface_decoder.cpp
     tracking/roi.cpp
     tracking/tracking_state.cpp

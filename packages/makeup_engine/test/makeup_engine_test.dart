@@ -109,6 +109,12 @@ void main() {
     expect(calls.single.arguments, {'showLandmarks': false, 'region': 0, 'lightAdaptation': true});
   });
 
+  test('setTrackerTuning manda One Euro y malla suave', () async {
+    await MakeupEngine().setTrackerTuning(minCutoff: 0.8, beta: 0.1, smoothMesh: true);
+    expect(calls.single.method, 'setTrackerTuning');
+    expect(calls.single.arguments, {'minCutoff': 0.8, 'beta': 0.1, 'smoothMesh': true});
+  });
+
   test('getStats parsea las métricas del tracker', () async {
     handler = (_) => {
           'frames': 10.0,
@@ -124,6 +130,8 @@ void main() {
             'presence': 0.99,
             'yawDeg': -12.5,
             'occlusionGate': 0.75,
+            'filterMinCutoff': 1.5,
+            'filterBeta': 0.08,
             'initMs': 812.0,
             'backend': 'detector=gpu landmarks=gpu',
             'error': null,
@@ -139,6 +147,8 @@ void main() {
     expect(tracker.jitterP50Px, 0.4);
     expect(tracker.yawDeg, -12.5);
     expect(tracker.occlusionGate, 0.75);
+    expect(tracker.filterMinCutoff, 1.5);
+    expect(tracker.filterBeta, 0.08);
     expect(tracker.backend, contains('gpu'));
   });
 
@@ -177,6 +187,36 @@ void main() {
     expect(results.first.error, isNull);
     expect(results.last.runP50Ms, isNull);
     expect(results.last.error, contains('OpenGL'));
+  });
+
+  test('sampleLiveLook parsea la muestra en vivo y devuelve null sin cara', () async {
+    final values = List<double>.filled(FaceImageAnalysis.valueCount, 0);
+    values[1] = 140; // distancia entre ojos
+    values[10] = 1; // labios válidos
+    values[11] = 0.52;
+    handler = (_) => values;
+    final analysis = await MakeupEngine().sampleLiveLook();
+    expect(calls.single.method, 'sampleLiveLook');
+    expect(analysis?.status, FaceImageStatus.ok);
+    expect(analysis?.eyeDistancePx, 140);
+    expect(analysis?.lips.l, closeTo(0.52, 1e-9));
+
+    handler = (_) => null;
+    expect(await MakeupEngine().sampleLiveLook(), isNull);
+    handler = (_) => [1.0, 2.0];
+    await expectLater(MakeupEngine().sampleLiveLook(), throwsA(isA<MakeupEngineException>()));
+  });
+
+  test('coachSpeak manda texto e idioma; sin respuesta es false', () async {
+    handler = (_) => true;
+    expect(await MakeupEngine().coachSpeak('Falta color', locale: 'es'), isTrue);
+    expect(calls.single.method, 'coachSpeak');
+    expect(calls.single.arguments, {'text': 'Falta color', 'locale': 'es'});
+    handler = (_) => null;
+    expect(await MakeupEngine().coachSpeak('x', locale: 'fr'), isFalse);
+    await MakeupEngine().coachStop();
+    await MakeupEngine().coachRelease();
+    expect(calls.map((c) => c.method), ['coachSpeak', 'coachSpeak', 'coachStop', 'coachRelease']);
   });
 
   test('analyzeFaceImage manda los bytes y parsea las medidas', () async {

@@ -59,6 +59,8 @@ enum TrackerStatIndex : int {
   kTrackStatReadbackMs,      // último recorte: de pedirlo en GPU a tenerlo en CPU
   kTrackStatCropFailures,    // recortes descartados (fence fallido o timeout: GPU ocupada)
   kTrackStatOcclusionGate,   // compuerta de oclusión del labial [0, 1] (lip_occlusion.h)
+  kTrackStatFilterMinCutoff, // One Euro en uso (setFilterTuning o engine_config.h)
+  kTrackStatFilterBeta,
   kTrackStatCount,
 };
 
@@ -128,6 +130,9 @@ class TrackingState {
   bool landmarksForRender(int64_t targetTimestampNs, float frameDtSeconds, RenderLandmarks* out);
 
   // --- Cualquier hilo ---
+  // Ajuste del One Euro en vivo (arnés): el tracker lo toma en el próximo
+  // resultado. Se recorta a [kOneEuroTuneMin*, kOneEuroTuneMax*].
+  void setFilterTuning(float minCutoff, float beta);
   void snapshotStats(float* out);
   void resetStats();
 
@@ -185,6 +190,10 @@ class TrackingState {
   FaceSamples faceSamples_;  // scratch de updateAppearance
   int64_t lastLandmarkNs_ = 0;
   TripleBuffer<LandmarkFrame> frames_;
+
+  // Ajuste pedido (cualquier hilo); el tracker lo copia a filterParams_.
+  std::atomic<float> tuneMinCutoff_{EngineConfig::kOneEuroMinCutoff};
+  std::atomic<float> tuneBeta_{EngineConfig::kOneEuroBeta};
 
   std::atomic<float> readbackMs_{NAN};
   std::atomic<uint32_t> cropFailures_{0};

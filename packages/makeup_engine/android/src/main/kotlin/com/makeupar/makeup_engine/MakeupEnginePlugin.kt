@@ -12,7 +12,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * Canal `makeup_engine`. Métodos: start, stop, setTint, setRecipe, setRenderOptions, getStats,
+ * Canal `makeup_engine`. Métodos: start, stop, setTint, setRecipe, setRenderOptions, setTrackerTuning,
+ * sampleLiveLook, coachSpeak, coachStop, coachRelease (guía de maquillaje), getStats,
  * resetStats, runBenchmark, analyzeFaceImage y extractPalette (Studio, F4: una foto, sin sesión).
  * Una sola sesión a la vez. Ver lib/makeup_engine.dart para el contrato.
  */
@@ -23,6 +24,11 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private var session: EngineSession? = null
     // Un análisis de foto a la vez, en orden, fuera del hilo de UI (F4).
     private var stillExecutor: ExecutorService? = null
+    // Voz de la guía de maquillaje (se crea al primer pedido).
+    private var coachVoice: CoachVoice? = null
+    // Muestras de la guía: su propio hilo (sin cara, cada una espera hasta
+    // 1,5 s y no tiene que frenar los análisis del Studio).
+    private var coachExecutor: ExecutorService? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         context = binding.applicationContext
@@ -37,6 +43,10 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         session = null
         stillExecutor?.shutdown()
         stillExecutor = null
+        coachVoice?.shutdown()
+        coachVoice = null
+        coachExecutor?.shutdown()
+        coachExecutor = null
         context = null
         textures = null
     }
@@ -68,6 +78,13 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 session?.setRenderOptions(showLandmarks, region, lightAdaptation)
                 result.success(null)
             }
+            "setTrackerTuning" -> {
+                val minCutoff = call.argument<Double>("minCutoff") ?: Double.NaN
+                val beta = call.argument<Double>("beta") ?: Double.NaN
+                val smoothMesh = call.argument<Boolean>("smoothMesh") ?: false
+                session?.setTrackerTuning(minCutoff.toFloat(), beta.toFloat(), smoothMesh)
+                result.success(null)
+            }
             "getStats" -> result.success(session?.stats())
             "resetStats" -> {
                 session?.resetStats()
@@ -75,6 +92,27 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
             "runBenchmark" -> runBenchmark(result)
             "analyzeFaceImage" -> analyzeStill(call, result) { analyzer, bytes -> analyzer.analyzeFace(bytes) }
+            "sampleLiveLook" -> sampleLiveLook(result)
+            "coachSpeak" -> {
+                val text = call.argument<String>("text")
+                val locale = call.argument<String>("locale") ?: "es"
+                val currentContext = context
+                if (text.isNullOrEmpty() || currentContext == null) {
+                    result.success(false)
+                } else {
+                    val voice = coachVoice ?: CoachVoice(currentContext).also { coachVoice = it }
+                    result.success(voice.speak(text, locale))
+                }
+            }
+            "coachStop" -> {
+                coachVoice?.stop()
+                result.success(null)
+            }
+            "coachRelease" -> {
+                coachVoice?.shutdown()
+                coachVoice = null
+                result.success(null)
+            }
             "extractPalette" -> analyzeStill(call, result) { analyzer, bytes -> analyzer.palette(bytes) }
             else -> result.notImplemented()
         }
@@ -171,14 +209,7 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             result.error("bad_image", "Faltan los bytes de la foto", null)
             return
         }
-        // Prioridad de fondo: la sesión de cámara y el tracker en vivo van primero
-        // (el pool de LiteRT se crea desde este hilo).
-        val executor = stillExecutor ?: Executors.newSingleThreadExecutor { runnable ->
-            Thread({
-                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-                runnable.run()
-            }, "makeup-still")
-        }.also { stillExecutor = it }
+        val executor = backgroundExecutor()
         val mainHandler = Handler(Looper.getMainLooper())
         val cameraActive = session != null
         executor.execute {
@@ -197,6 +228,42 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
         }
     }
+
+    /**
+     * Guía de maquillaje: mide la cara de la sesión en vivo en el executor de
+     * fondo del Studio. Responde List<Double>, o null sin sesión o sin cara.
+     */
+    private fun sampleLiveLook(result: MethodChannel.Result) {
+        val current = session
+        if (current == null) {
+            result.success(null)
+            return
+        }
+        val mainHandler = Handler(Looper.getMainLooper())
+        val executor = coachExecutor ?: newBackgroundExecutor("makeup-coach").also { coachExecutor = it }
+        executor.execute {
+            val outcome = runCatching { current.sampleLiveLook() }
+            mainHandler.post {
+                outcome.fold(
+                    onSuccess = { values -> result.success(values?.map { it.toDouble() }) },
+                    onFailure = { result.error("analysis_failed", it.message, null) },
+                )
+            }
+        }
+    }
+
+    // Prioridad de fondo: la sesión de cámara y el tracker en vivo van primero
+    // (el pool de LiteRT del Studio se crea desde este hilo).
+    private fun backgroundExecutor(): ExecutorService =
+        stillExecutor ?: newBackgroundExecutor("makeup-still").also { stillExecutor = it }
+
+    private fun newBackgroundExecutor(name: String): ExecutorService =
+        Executors.newSingleThreadExecutor { runnable ->
+            Thread({
+                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+                runnable.run()
+            }, name)
+        }
 
     private companion object {
         const val CHANNEL = "makeup_engine"

@@ -178,6 +178,8 @@ void TrackingState::submitLandmarks(const float* landmarks, int floatCount, floa
       stableBefore_[n * 2 + 1] = filtered_[i + 1];
     }
   }
+  filterParams_.minCutoff = tuneMinCutoff_.load(std::memory_order_relaxed);
+  filterParams_.beta = tuneBeta_.load(std::memory_order_relaxed);
   // dt del primer resultado: cualquier valor > 0 (el filtro devuelve x tal cual).
   for (int i = 0; i < kFloats; ++i) {
     filtered_[i] = filters_[i].filter(raw_[i], continuous ? dt : 1.0f, filterParams_);
@@ -376,6 +378,17 @@ bool TrackingState::landmarksForRender(int64_t targetTimestampNs, float frameDtS
   return true;
 }
 
+// --- Cualquier hilo ---
+
+void TrackingState::setFilterTuning(float minCutoff, float beta) {
+  // NaN o fuera de rango: se recorta (std::clamp con NaN no es seguro).
+  const float cutoff = std::isfinite(minCutoff) ? minCutoff : EngineConfig::kOneEuroMinCutoff;
+  const float b = std::isfinite(beta) ? beta : EngineConfig::kOneEuroBeta;
+  tuneMinCutoff_.store(std::clamp(cutoff, EngineConfig::kOneEuroTuneMinCutoff, EngineConfig::kOneEuroTuneMaxCutoff),
+                       std::memory_order_relaxed);
+  tuneBeta_.store(std::clamp(b, 0.0f, EngineConfig::kOneEuroTuneMaxBeta), std::memory_order_relaxed);
+}
+
 // --- Stats ---
 
 void TrackingState::snapshotStats(float* out) {
@@ -398,6 +411,8 @@ void TrackingState::snapshotStats(float* out) {
   out[kTrackStatCropFailures] = static_cast<float>(cropFailures_.load(std::memory_order_relaxed));
   // Sin cara la compuerta no se actualiza: 0, no el último valor.
   out[kTrackStatOcclusionGate] = state_ == 2 ? occlusionGate_ : 0.0f;
+  out[kTrackStatFilterMinCutoff] = tuneMinCutoff_.load(std::memory_order_relaxed);
+  out[kTrackStatFilterBeta] = tuneBeta_.load(std::memory_order_relaxed);
 }
 
 void TrackingState::resetStats() {

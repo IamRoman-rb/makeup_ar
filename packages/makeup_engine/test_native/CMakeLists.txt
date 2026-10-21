@@ -27,6 +27,8 @@ add_executable(makeup_engine_host_tests
     studio_locator_test.cpp
     studio_palette_test.cpp
     tracking_state_test.cpp
+    subdivision_test.cpp
+    live_look_sample_test.cpp
     ${ENGINE_CPP}/tracking/roi.cpp
     ${ENGINE_CPP}/tracking/umeyama.cpp
     ${ENGINE_CPP}/tracking/blazeface_decoder.cpp
@@ -40,7 +42,9 @@ add_executable(makeup_engine_host_tests
     ${ENGINE_CPP}/studio/uv_rectify.cpp
     ${ENGINE_CPP}/studio/region_sampling.cpp
     ${ENGINE_CPP}/studio/look_analysis.cpp
-    ${ENGINE_CPP}/studio/palette.cpp)
+    ${ENGINE_CPP}/studio/palette.cpp
+    ${ENGINE_CPP}/mesh/subdivision.cpp
+    ${ENGINE_CPP}/studio/live_look_sample.cpp)
 
 target_include_directories(makeup_engine_host_tests PRIVATE ${ENGINE_CPP} ${CMAKE_CURRENT_SOURCE_DIR})
 

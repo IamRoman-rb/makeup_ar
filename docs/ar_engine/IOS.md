@@ -67,6 +67,8 @@ Con el arnés, en el iPhone y en el E20, con la misma luz:
 - [ ] "Desde foto" y "Paleta" del Studio devuelven valores parecidos a los de Android para la misma foto.
 - [ ] 30 fps estables durante 10 minutos (líneas `TRACK`), sin crecimiento de memoria (Instruments → Allocations).
 - [ ] Al salir y volver a entrar a la pantalla no queda la cámara tomada ni hay crash.
+- [ ] Pendiente en iOS: `setTrackerTuning` (ajuste del One Euro y malla suave, TRACKER.md §9) todavía no está en `engine_c_api`/Swift. El núcleo C++ ya dibuja con la malla subdividida (con `kSmoothMeshDefault` apagado se ve igual que antes); falta el método para el chip del arnés.
+- [ ] Pendiente en iOS: guía de maquillaje (`COACH.md`). El núcleo C++ ya tiene la muestra en vivo (`requestLookSample`/`peekLookSample` en el Renderer, `analyzeLiveSample`); falta exponerla en `engine_c_api` y Swift (`sampleLiveLook`) y la voz con `AVSpeechSynthesizer` (`coachSpeak`, `coachStop`, `coachRelease`). Mientras tanto, en iPhone la guía pide mirar a la cámara y no habla (el plugin Dart atrapa `MissingPluginException`).
 
 ## Revisión de cierre (`perf-auditor`, 2026-10-15)
 

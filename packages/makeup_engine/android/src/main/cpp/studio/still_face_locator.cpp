@@ -20,6 +20,30 @@ float sigmoid(float logit) {
 
 }  // namespace
 
+FacePose measureFacePose(const float* points) {
+  // Ojos (ángulos externos) y nariz en el marco de la línea de los ojos.
+  const float ax = points[mesh::kEyeLeftInImage * 3];
+  const float ay = points[mesh::kEyeLeftInImage * 3 + 1];
+  const float bx = points[mesh::kEyeRightInImage * 3];
+  const float by = points[mesh::kEyeRightInImage * 3 + 1];
+  const float dx = bx - ax;
+  const float dy = by - ay;
+  FacePose pose;
+  pose.eyeDistancePx = std::hypot(dx, dy);
+  if (pose.eyeDistancePx > 0.0f) {
+    const float nx = points[kNoseTip * 3] - 0.5f * (ax + bx);
+    const float ny = points[kNoseTip * 3 + 1] - 0.5f * (ay + by);
+    pose.yawRatio = (nx * dx + ny * dy) / (pose.eyeDistancePx * pose.eyeDistancePx);
+  }
+  return pose;
+}
+
+StillFaceStatus facePoseStatus(const FacePose& pose) {
+  if (!(pose.eyeDistancePx >= EngineConfig::kStillMinEyeDistancePx)) return StillFaceStatus::kFaceTooSmall;
+  if (!(std::fabs(pose.yawRatio) <= EngineConfig::kStillMaxYawRatio)) return StillFaceStatus::kProfile;
+  return StillFaceStatus::kOk;
+}
+
 void StillFaceLocator::begin(int width, int height) {
   width_ = width;
   height_ = height;
@@ -106,19 +130,9 @@ void StillFaceLocator::submitLandmarks(const float* landmarks, int floatCount, f
   }
   ++landmarkPasses_;
 
-  // Ojos (ángulos externos) y nariz en el marco de la línea de los ojos.
-  const float ax = points_[mesh::kEyeLeftInImage * 3];
-  const float ay = points_[mesh::kEyeLeftInImage * 3 + 1];
-  const float bx = points_[mesh::kEyeRightInImage * 3];
-  const float by = points_[mesh::kEyeRightInImage * 3 + 1];
-  const float dx = bx - ax;
-  const float dy = by - ay;
-  eyeDistancePx_ = std::hypot(dx, dy);
-  if (eyeDistancePx_ > 0.0f) {
-    const float nx = points_[kNoseTip * 3] - 0.5f * (ax + bx);
-    const float ny = points_[kNoseTip * 3 + 1] - 0.5f * (ay + by);
-    yawRatio_ = (nx * dx + ny * dy) / (eyeDistancePx_ * eyeDistancePx_);
-  }
+  const FacePose pose = measureFacePose(points_.data());
+  eyeDistancePx_ = pose.eyeDistancePx;
+  yawRatio_ = pose.yawRatio;
 
   if (landmarkPasses_ < EngineConfig::kStillLandmarkPasses) {
     const Roi next = roiFromPoints(points_.data(), mesh::kVertexCount, 3, mesh::kEyeLeftInImage,
@@ -128,13 +142,7 @@ void StillFaceLocator::submitLandmarks(const float* landmarks, int floatCount, f
       return;  // otra pasada de landmarks
     }
   }
-  if (eyeDistancePx_ < EngineConfig::kStillMinEyeDistancePx) {
-    finish(StillFaceStatus::kFaceTooSmall);
-  } else if (std::fabs(yawRatio_) > EngineConfig::kStillMaxYawRatio) {
-    finish(StillFaceStatus::kProfile);
-  } else {
-    finish(StillFaceStatus::kOk);
-  }
+  finish(facePoseStatus(pose));
 }
 
 void StillFaceLocator::fail(StillFaceStatus status) { finish(status); }

@@ -152,6 +152,8 @@ final class TrackerStats {
     this.readbackMs,
     this.cropFailures = 0,
     this.occlusionGate,
+    this.filterMinCutoff,
+    this.filterBeta,
     this.initMs,
     this.backend,
     this.error,
@@ -177,6 +179,8 @@ final class TrackerStats {
       readbackMs: _double(map['readbackMs']),
       cropFailures: _double(map['cropFailures'])?.round() ?? 0,
       occlusionGate: _double(map['occlusionGate']),
+      filterMinCutoff: _double(map['filterMinCutoff']),
+      filterBeta: _double(map['filterBeta']),
       initMs: _double(map['initMs']),
       backend: map['backend'] as String?,
       error: map['error'] as String?,
@@ -223,6 +227,11 @@ final class TrackerStats {
 
   /// Compuerta de oclusión del labial [0, 1]: 0 = nada tapa la boca.
   final double? occlusionGate;
+
+  /// One Euro en uso (Hz y s): los de engine_config.h o los del ajuste en
+  /// vivo ([MakeupEngine.setTrackerTuning]).
+  final double? filterMinCutoff;
+  final double? filterBeta;
 
   /// Carga de los modelos (la primera vez incluye compilar para la GPU).
   final double? initMs;
@@ -362,6 +371,18 @@ final class MakeupEngine {
         'lightAdaptation': lightAdaptation,
       });
 
+  /// Arnés (docs/ar_engine/TRACKER.md §9): ajuste en vivo del filtro One
+  /// Euro del tracker ([minCutoff] en Hz, [beta] en s; se recortan a rango del
+  /// lado nativo) y [smoothMesh], la malla subdividida suave en lugar de los
+  /// triángulos de los 468 landmarks. Para medir en el E20 y después fijar los
+  /// valores en engine_config.h.
+  Future<void> setTrackerTuning({required double minCutoff, required double beta, required bool smoothMesh}) =>
+      _channel.invokeMethod<void>('setTrackerTuning', {
+        'minCutoff': minCutoff,
+        'beta': beta,
+        'smoothMesh': smoothMesh,
+      });
+
   /// Leer a ~2 Hz como máximo: es para el overlay y el arnés, no por frame.
   Future<EngineStats> getStats() async {
     final result = await _channel.invokeMapMethod<Object?, Object?>('getStats');
@@ -379,6 +400,51 @@ final class MakeupEngine {
     final analysis = FaceImageAnalysis.fromValues(values);
     if (analysis == null) throw const MakeupEngineException('bad_response', 'medidas incompletas');
     return analysis;
+  }
+
+  /// Guía de maquillaje (docs/ar_engine/COACH.md): mide la cara de la sesión
+  /// en vivo como [analyzeFaceImage], con los landmarks del tracker (sin
+  /// correr los modelos otra vez). El render recorta la cara a 512 px en el
+  /// próximo frame con cara; la medición corre en un hilo de fondo. null sin
+  /// sesión o si en ~1,5 s no hubo cara. El recorte no se guarda.
+  Future<FaceImageAnalysis?> sampleLiveLook() async {
+    try {
+      final result = await _channel.invokeListMethod<Object?>('sampleLiveLook');
+      if (result == null) return null;
+      final values = [for (final value in result) value is num ? value.toDouble() : double.nan];
+      final analysis = FaceImageAnalysis.fromValues(values);
+      if (analysis == null) throw const MakeupEngineException('bad_response', 'medidas incompletas');
+      return analysis;
+    } on PlatformException catch (e) {
+      throw MakeupEngineException(e.code, e.message);
+    } on MissingPluginException {
+      return null;  // plataforma sin la guía todavía (iOS: IOS.md)
+    }
+  }
+
+  /// Guía de maquillaje: dice [text] en voz alta con el TextToSpeech de
+  /// Android (corta lo anterior). [locale]: es, en, pt o fr. false si el
+  /// sistema no tiene voz para ese idioma (queda solo el texto).
+  Future<bool> coachSpeak(String text, {required String locale}) async {
+    try {
+      return await _channel.invokeMethod<bool>('coachSpeak', {'text': text, 'locale': locale}) ?? false;
+    } on MissingPluginException {
+      return false;  // sin voz en esta plataforma: queda el texto
+    }
+  }
+
+  /// Calla la voz de la guía.
+  Future<void> coachStop() => _optional('coachStop');
+
+  /// Libera el motor de voz (al salir de la guía).
+  Future<void> coachRelease() => _optional('coachRelease');
+
+  Future<void> _optional(String method) async {
+    try {
+      await _channel.invokeMethod<void>(method);
+    } on MissingPluginException {
+      // Plataforma sin la guía: no hay nada que callar ni liberar.
+    }
   }
 
   /// Studio (F4): colores de una foto de producto o paleta, de mayor a menor

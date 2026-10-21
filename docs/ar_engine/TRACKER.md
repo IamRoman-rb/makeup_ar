@@ -156,3 +156,37 @@ La pestaña Espejo es `TestFilterView(mirrorOnly: true)` sobre la misma sesión 
   - desde el paso a paso vuelve atrás.
 
 Los presets se prueban en el arnés `main_tracker.dart`.
+
+## 9. Precisión: ajuste del One Euro y malla suave (2026-10-20)
+
+Más puntos detectados no se pueden pedir: FaceMesh-V2 da 478 fijos. Lo que se mejora es el temblor y la forma entre puntos.
+
+### One Euro ajustable en vivo
+
+- `kOneEuroMinCutoff` y `kOneEuroBeta` (`engine_config.h`) eran valores provisorios.
+- En el arnés, "Ajuste" abre dos sliders que los cambian en vivo: `MakeupEngine.setTrackerTuning` → `TrackingState::setFilterTuning`, dos atómicos que el tracker copia en el próximo resultado.
+- Menos `minCutoff` da menos temblor y más atraso; más `beta` da menos atraso al moverse.
+- La línea `TRACK` suma `oneEuro=minCutoff/beta mesh=…`, y cada cambio deja una línea `TUNE`.
+- Con las combinaciones medidas en el E20 (jitter quieta y atraso al mover la cabeza) se fijan los valores en `engine_config.h`.
+
+### Malla suave
+
+- **Cómo se arma:** cada triángulo se parte en 4 con un punto por arista (468 + 1365 = 1833 puntos).
+  - Stencils fijos de `mesh/subdivided_mesh.h`, generados por `tools/mesh/gen_subdivided_mesh.py` (`--check`).
+  - Interior: butterfly; borde de la cara: 4 puntos.
+  - Pliegues en el contorno interno de los labios y en el de cada ojo: con la boca cerrada, la malla los cruza con triángulos finitos, y si el stencil los atravesara movería la comisura hacia el otro labio. Las cuerdas de la ranura quedan en el punto medio.
+  - El esquema es interpolante: los landmarks no se mueven y el labial sigue llegando a las comisuras.
+- **Tope:** el punto suave no se aparta del medio de su arista más que `kSmoothMeshMaxOffset` (15 %) del largo de la arista.
+  - Una curva real muestreada cada 60° se corre ~13 %.
+  - En la comisura externa (landmark 61, aristas de 0,65 y 0,13 cm) el esquema se pasaba al 64 %.
+- **UV:** la de un punto nuevo es el punto medio de la arista. Así los mapas de labios, cara y ojos se curvan con la cara en pantalla en lugar de quebrarse en cada triángulo.
+- **Sin cambios** en shaders ni mapas.
+- **Costo por frame:** ~10 mil multiplicaciones en `uploadMesh` (arreglos fijos, hilo de render), un VBO de 1843 puntos (incluido el iris, al final, para el overlay) y 4 veces más triángulos en cada zona. Las listas se expanden una vez por contexto GL.
+- **Modo apagado:** los puntos nuevos son el punto medio (misma imagen que la malla de 468). Por defecto apagada (`kSmoothMeshDefault`) hasta validarla en el E20 con el chip "Malla suave" del arnés.
+
+### En el E20
+
+- `flutter run --profile -t lib/main_tracker.dart -d <id>` → "Ajuste".
+- Probar 2 o 3 combinaciones de sliders; para cada una, la línea `TRACK` quieta (jitter) y la sensación de atraso al girar.
+- Prender y apagar "Malla suave" mirando de cerca comisuras, arco de cupido y delineado.
+- Si mejora y fps/cpu no cambian, se prende por defecto.

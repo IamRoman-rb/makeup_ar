@@ -15,7 +15,9 @@
 #include "mesh/canonical_mesh.h"
 #include "mesh/lips_maps.h"
 #include "mesh/mesh_normals.h"
+#include "mesh/subdivision.h"
 #include "shader_sources.h"
+#include "studio/live_look_sample.h"
 
 namespace makeup {
 
@@ -97,7 +99,7 @@ GLuint Renderer::initGl() {
     setError(error);
     return false;
   }
-  if (!crop_.init(&error)) {
+  if (!crop_.init(&error) || !lookSample_.init(&error)) {
     setError(error);
     return 0;
   }
@@ -236,12 +238,26 @@ bool Renderer::buildMeshGeometry() {
 
   glBindBuffer(GL_ARRAY_BUFFER, meshVbo_.get());
   glBufferData(GL_ARRAY_BUFFER, sizeof(meshPoints_), nullptr, GL_DYNAMIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, uvVbo_.get());
-  glBufferData(GL_ARRAY_BUFFER, sizeof(mesh::kUvs), mesh::kUvs, GL_STATIC_DRAW);
+  // Malla suave (mesh/subdivision.h): UV, normales e índices de la malla
+  // subdividida. Una vez por contexto GL (no por frame): ~90 KB temporales.
+  std::vector<uint16_t> lipsIndices(static_cast<size_t>(mesh::kLipsRegionTriangleCount) * 12);
   {
-    // Una vez por contexto GL (no por frame): ~5,6 KB temporales.
-    std::vector<float> normals(static_cast<size_t>(mesh::kVertexCount) * mesh::kNormalComponents);
-    mesh::computeVertexNormals(normals.data());
+    std::vector<float> uvs(static_cast<size_t>(mesh::kSubVertexCount) * 2);
+    mesh::subdividedUvs(uvs.data());
+    glBindBuffer(GL_ARRAY_BUFFER, uvVbo_.get());
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(uvs.size() * sizeof(float)), uvs.data(), GL_STATIC_DRAW);
+
+    std::vector<float> positions(static_cast<size_t>(mesh::kSubVertexCount) * 3);
+    mesh::subdividePositions(mesh::kPositions, EngineConfig::kSmoothMeshMaxOffset, positions.data());
+    std::vector<uint16_t> triangles(static_cast<size_t>(mesh::kTriangleCount) * 12);
+    if (!mesh::subdivideTriangles(mesh::kTriangles, mesh::kTriangleCount, triangles.data()) ||
+        !mesh::subdivideTriangles(mesh::kLipsRegionTriangles, mesh::kLipsRegionTriangleCount, lipsIndices.data())) {
+      setError("malla suave: arista que no está en la malla");
+      return false;
+    }
+    std::vector<float> normals(static_cast<size_t>(mesh::kSubVertexCount) * mesh::kNormalComponents);
+    mesh::computeNormals(positions.data(), mesh::kSubVertexCount, triangles.data(), mesh::kTriangleCount * 4,
+                         normals.data());
     glBindBuffer(GL_ARRAY_BUFFER, normalVbo_.get());
     glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(normals.size() * sizeof(float)),
                  normals.data(), GL_STATIC_DRAW);
@@ -263,8 +279,8 @@ bool Renderer::buildMeshGeometry() {
   glEnableVertexAttribArray(kNormalAttribute);
   glVertexAttribPointer(kNormalAttribute, mesh::kNormalComponents, GL_FLOAT, GL_FALSE, 0, nullptr);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lipsIbo_.get());
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(mesh::kLipsRegionTriangles),
-               mesh::kLipsRegionTriangles, GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(lipsIndices.size() * sizeof(uint16_t)),
+               lipsIndices.data(), GL_STATIC_DRAW);
 
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -349,7 +365,9 @@ int Renderer::drawFrame(const float* texMatrix, int width, int height, int64_t f
   const float sx = (drawMirrored_ ? -2.0f : 2.0f) / static_cast<float>(width);
   const float imageToClip[4] = {sx, -2.0f / static_cast<float>(height), drawMirrored_ ? 1.0f : -1.0f,
                                 1.0f};
-  if (hasMesh) uploadMesh(landmarks.points);
+  // Solo si algo la dibuja: en la guía de maquillaje hay cara pero no receta.
+  if (hasMesh && (wantLips || wantFace || showLandmarks)) uploadMesh(landmarks.points);
+  runLookSample(hasMesh ? landmarks.points : nullptr, landmarks.alpha, texMatrix, width, height);
   // Luz de la escena: una miniatura cada ~0,5 s, sin la cara; los colores se
   // vuelven a adaptar solo si la ganancia cambió (o la receta, o la opción).
   // Solo si hay maquillaje que adaptar y cara: cada lectura cierra un render
@@ -474,11 +492,16 @@ void Renderer::runCropPass(const float* texMatrix, int width, int height,
   }
 }
 
-// Solo x, y de cada punto: z no se usa para dibujar.
+// Solo x, y de cada punto: z no se usa para dibujar. La malla suave y, al
+// final, los puntos del iris (los usa el overlay).
 void Renderer::uploadMesh(const float* points) {
-  for (int i = 0; i < EngineConfig::kLandmarkCount; ++i) {
-    meshPoints_[i * 2] = points[i * 3];
-    meshPoints_[i * 2 + 1] = points[i * 3 + 1];
+  mesh::subdividePoints(points, smoothMesh_.load(std::memory_order_relaxed), EngineConfig::kSmoothMeshMaxOffset,
+                        meshPoints_.data());
+  for (int i = 0; i < kIrisPointCount; ++i) {
+    const int source = (mesh::kVertexCount + i) * 3;
+    const int target = (mesh::kSubVertexCount + i) * 2;
+    meshPoints_[target] = points[source];
+    meshPoints_[target + 1] = points[source + 1];
   }
   glBindBuffer(GL_ARRAY_BUFFER, meshVbo_.get());
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(meshPoints_), meshPoints_.data());
@@ -568,7 +591,8 @@ void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToCl
   glEnable(GL_BLEND);
   glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
   glBindVertexArray(lipsVao_.get());
-  glDrawElements(GL_TRIANGLES, mesh::kLipsRegionTriangleCount * 3, GL_UNSIGNED_SHORT, nullptr);
+  // Malla suave: 4 triángulos por cada uno de la región.
+  glDrawElements(GL_TRIANGLES, mesh::kLipsRegionTriangleCount * 12, GL_UNSIGNED_SHORT, nullptr);
   glBindVertexArray(0);
   glDisable(GL_BLEND);
   MAKEUP_GL_CHECK("drawLips");
@@ -585,7 +609,9 @@ void Renderer::drawLandmarks(float alpha, const float* imageToClip, int width, i
   glUniform1f(mesh_.pointSize, EngineConfig::kLandmarkPointSizePx);
   glUniform4f(mesh_.color, kLandmarkColor[0], kLandmarkColor[1], kLandmarkColor[2], alpha);
   glBindVertexArray(meshVao_.get());
-  glDrawArrays(GL_POINTS, 0, EngineConfig::kLandmarkCount);
+  // Los landmarks (sin los puntos nuevos de la malla suave) y el iris.
+  glDrawArrays(GL_POINTS, 0, mesh::kVertexCount);
+  glDrawArrays(GL_POINTS, mesh::kSubVertexCount, kIrisPointCount);
   glBindVertexArray(0);
   glDisable(GL_BLEND);
   MAKEUP_GL_CHECK("drawLandmarks");
@@ -597,6 +623,10 @@ GLuint Renderer::cameraTexture() const {
 
 void Renderer::releaseGl() {
   crop_.release();
+  lookSample_.release();
+  // Una lectura en vuelo no va a terminar: se vuelve a pedir con el próximo contexto.
+  int inFlight = kSampleInFlight;
+  lookSampleState_.compare_exchange_strong(inFlight, kSampleRequested, std::memory_order_acq_rel);
   scene_.release();
   sceneLight_.reset();
   faceLayers_.release();
@@ -735,6 +765,59 @@ void Renderer::setRenderOptions(bool showLandmarks, TintRegion region, bool ligh
   showLandmarks_.store(showLandmarks, std::memory_order_relaxed);
   lightAdaptation_.store(lightAdaptation, std::memory_order_relaxed);
   region_.store(static_cast<int>(region), std::memory_order_relaxed);
+}
+
+void Renderer::setSmoothMesh(bool enabled) { smoothMesh_.store(enabled, std::memory_order_relaxed); }
+
+void Renderer::requestLookSample() {
+  int expected = kSampleIdle;
+  if (lookSampleState_.compare_exchange_strong(expected, kSampleRequested, std::memory_order_acq_rel)) return;
+  // Una lista que nadie leyó se descarta: la próxima es más reciente.
+  expected = kSampleReady;
+  lookSampleState_.compare_exchange_strong(expected, kSampleRequested, std::memory_order_acq_rel);
+}
+
+bool Renderer::peekLookSample(const uint8_t** pixels, const float** points, float* imageScale) const {
+  if (lookSampleState_.load(std::memory_order_acquire) != kSampleReady) return false;
+  *pixels = lookSamplePixels_.data();
+  *points = lookSamplePoints_.data();
+  *imageScale = lookSampleScale_;
+  return true;
+}
+
+void Renderer::releaseLookSample() {
+  int expected = kSampleReady;
+  lookSampleState_.compare_exchange_strong(expected, kSampleIdle, std::memory_order_acq_rel);
+}
+
+// Hilo de render, sin allocations: los buffers se crean con el Renderer.
+void Renderer::runLookSample(const float* points, float alpha, const float* texMatrix, int width, int height) {
+  const int state = lookSampleState_.load(std::memory_order_acquire);
+  if (state == kSampleInFlight) {
+    switch (lookSample_.poll(lookSamplePixels_.data())) {
+      case LookSamplePass::Poll::kDone:
+        lookSampleState_.store(kSampleReady, std::memory_order_release);
+        break;
+      case LookSamplePass::Poll::kFailed:
+        lookSampleState_.store(kSampleRequested, std::memory_order_release);  // se reintenta
+        break;
+      case LookSamplePass::Poll::kIdle:
+      case LookSamplePass::Poll::kPending:
+        break;
+    }
+    return;
+  }
+  // Con la cara entera (sin fundido): una cara a medio aparecer mide mal.
+  if (state != kSampleRequested || points == nullptr || alpha < 1.0f) return;
+  const Roi roi = lookSampleRoi(points);
+  if (!roi.valid()) return;
+  if (!lookSample_.issue(roi, quadVao_.get(), cameraTexture(), texMatrix, drawTrackerMatrix_.data(), width,
+                         height)) {
+    return;  // se reintenta en el próximo frame
+  }
+  landmarksToSample(roi, LookSamplePass::kSize, points, lookSamplePoints_.data());
+  lookSampleScale_ = roi.size / static_cast<float>(LookSamplePass::kSize);
+  lookSampleState_.store(kSampleInFlight, std::memory_order_release);
 }
 
 std::string Renderer::glInfo() const {

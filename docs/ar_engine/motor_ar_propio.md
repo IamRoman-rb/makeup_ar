@@ -109,6 +109,9 @@ Principios:
    - **`IMakeupRenderer`, cambio aprobado el 2026-10-16:** se agregó `setTrackingEnabled(bool)`.
    - **Para qué:** el Espejo usa la misma sesión del motor, sin tracker ni receta. La cámara no se abre dos veces y no se cargan los modelos hasta que se pide el filtro.
    - **Respaldo:** el plugin `camera` queda solo como respaldo, para cuando el motor no está disponible.
+   - **Aprobado con el plan del 2026-10-20:** `IMakeupRenderer` no cambia. El motor (plugin `makeup_engine`) suma dos canales:
+     - `setTrackerTuning` (One Euro y malla suave, solo para el arnés; `TRACKER.md` §9);
+     - `sampleLiveLook` y `coachSpeak` (guía de maquillaje, `COACH.md`). La guía mide la cara de la sesión en vivo a pedido, una muestra cada ~1,5 s y nunca por frame. Vuelven solo números.
 4. **La IA (Groq) nunca genera código ni shaders**, solo parámetros validados contra un esquema (ver §5.8).
 
 ---

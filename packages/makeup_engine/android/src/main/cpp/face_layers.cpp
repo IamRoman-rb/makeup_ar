@@ -1,10 +1,13 @@
 #include "face_layers.h"
 
+#include <vector>
+
 #include "engine_config.h"
 #include "gl_program.h"
 #include "mesh/eye_maps.h"
 #include "mesh/face_maps.h"
 #include "mesh/mesh_normals.h"
+#include "mesh/subdivision.h"
 #include "shader_sources.h"
 
 namespace makeup {
@@ -208,15 +211,20 @@ bool FaceLayers::buildGeometry(GLuint pointVbo, GLuint uvVbo, GLuint normalVbo) 
   struct Zone {
     GLuint vao;
     GLuint ibo;
-    const uint16_t* indices;
-    size_t bytes;
+    const uint16_t* triangles;
+    int count;
   };
   const Zone zones[3] = {
-      {faceVao_.get(), faceIbo_.get(), mesh::kFaceRegionTriangles, sizeof(mesh::kFaceRegionTriangles)},
-      {eyesVao_.get(), eyesIbo_.get(), mesh::kEyeRegionTriangles, sizeof(mesh::kEyeRegionTriangles)},
-      {irisVao_.get(), irisIbo_.get(), mesh::kEyeOpeningTriangles, sizeof(mesh::kEyeOpeningTriangles)},
+      {faceVao_.get(), faceIbo_.get(), mesh::kFaceRegionTriangles, mesh::kFaceRegionTriangleCount},
+      {eyesVao_.get(), eyesIbo_.get(), mesh::kEyeRegionTriangles, mesh::kEyeRegionTriangleCount},
+      {irisVao_.get(), irisIbo_.get(), mesh::kEyeOpeningTriangles, mesh::kEyeOpeningTriangleCount},
   };
+  // Malla suave (mesh/subdivision.h): 4 triángulos por cada uno. Una vez por
+  // contexto GL.
+  std::vector<uint16_t> indices;
   for (const Zone& zone : zones) {
+    indices.resize(static_cast<size_t>(zone.count) * 12);
+    if (!mesh::subdivideTriangles(zone.triangles, zone.count, indices.data())) return false;
     glBindVertexArray(zone.vao);
     glBindBuffer(GL_ARRAY_BUFFER, pointVbo);
     glEnableVertexAttribArray(kPointAttribute);
@@ -228,7 +236,8 @@ bool FaceLayers::buildGeometry(GLuint pointVbo, GLuint uvVbo, GLuint normalVbo) 
     glEnableVertexAttribArray(kNormalAttribute);
     glVertexAttribPointer(kNormalAttribute, mesh::kNormalComponents, GL_FLOAT, GL_FALSE, 0, nullptr);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, zone.ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(zone.bytes), zone.indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(indices.size() * sizeof(uint16_t)), indices.data(),
+                 GL_STATIC_DRAW);
   }
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -290,7 +299,7 @@ void FaceLayers::drawFace(const FaceUniforms& face, const LayerFrame& frame) {
   glEnable(GL_BLEND);
   glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
   glBindVertexArray(faceVao_.get());
-  glDrawElements(GL_TRIANGLES, mesh::kFaceRegionTriangleCount * 3, GL_UNSIGNED_SHORT, nullptr);
+  glDrawElements(GL_TRIANGLES, mesh::kFaceRegionTriangleCount * 12, GL_UNSIGNED_SHORT, nullptr);
   glBindVertexArray(0);
   glDisable(GL_BLEND);
   MAKEUP_GL_CHECK("drawFace");
@@ -331,7 +340,7 @@ void FaceLayers::drawEyes(const EyeUniforms& eyes, const LayerFrame& frame) {
   glEnable(GL_BLEND);
   glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
   glBindVertexArray(eyesVao_.get());
-  glDrawElements(GL_TRIANGLES, mesh::kEyeRegionTriangleCount * 3, GL_UNSIGNED_SHORT, nullptr);
+  glDrawElements(GL_TRIANGLES, mesh::kEyeRegionTriangleCount * 12, GL_UNSIGNED_SHORT, nullptr);
   glBindVertexArray(0);
   glDisable(GL_BLEND);
   MAKEUP_GL_CHECK("drawEyes");
@@ -358,7 +367,7 @@ void FaceLayers::drawIris(const IrisUniforms& iris, const LayerFrame& frame, con
   glEnable(GL_BLEND);
   glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
   glBindVertexArray(irisVao_.get());
-  glDrawElements(GL_TRIANGLES, mesh::kEyeOpeningTriangleCount * 3, GL_UNSIGNED_SHORT, nullptr);
+  glDrawElements(GL_TRIANGLES, mesh::kEyeOpeningTriangleCount * 12, GL_UNSIGNED_SHORT, nullptr);
   glBindVertexArray(0);
   glDisable(GL_BLEND);
   MAKEUP_GL_CHECK("drawIris");
