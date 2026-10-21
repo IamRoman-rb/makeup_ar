@@ -116,3 +116,23 @@ No encontró allocations por frame, ni JNI por frame, ni carreras de memoria.
 - fps y temperatura con 4× triángulos y todas las capas;
 - p95/p99 del frame durante la guía, sobre todo cuando coinciden el recorte del tracker y la muestra;
 - memoria durante la guía (~3 MB entre buffer, PBO e imagen por muestra).
+
+## Calibración con ruido (2026-10-21)
+
+`test/features/coach/domain/coach_calibration_test.dart` recorre los 5 tonos de piel de la grilla de calibración, todos los presets y sus zonas, con el ruido de una medida en vivo (`CoachPolicy.measurementNoise`, ΔE 0,015, en 10 direcciones).
+
+**Qué encontró:** con la tolerancia fija, el look **bien puesto** daba "falta" o "sobra". El caso más claro es el rubor del preset natural sobre piel clara (opacidad baja, contraste 0,05–0,12).
+- **Por qué:** el ruido mueve la cantidad estimada hasta ruido / contraste.
+- **Arreglo:** la tolerancia de cantidad suma ese margen (`slack`). Con poco contraste entre el look y el natural, la guía pide más evidencia antes de opinar; con mucho, juzga fino.
+
+**Lo que el test garantiza:**
+- el look bien puesto da "bien" en todos los casos, con ruido;
+- la cara sin maquillaje da "falta" siempre que lo que el look le suma al natural supere 2 × el ruido.
+
+**A calibrar en el E20:** el ruido real. Con la referencia tomada y el maquillaje quieto, la variación de las líneas `COACH` entre muestras da el valor de `measurementNoise`.
+
+## Detalles
+
+- **Vibración:** corta cuando una zona queda bien y más marcada al terminar (`HapticFeedback` de Flutter, sin dependencias). La usuaria tiene el pincel en la mano y no siempre mira la pantalla.
+- **Más entradas:** "Guíame" también desde los looks con IA ("Mis looks").
+- **Arnés:** el botón "Guía" de `lib/main_tracker.dart` abre la guía con el look elegido (presets, o las variantes de "Foto"), sin Firebase. Sirve para calibrar en el E20.

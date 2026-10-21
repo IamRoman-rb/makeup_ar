@@ -38,7 +38,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Referencia Python del compositor de capas (cara y ojos; misma matemática que `face.frag`/`eyes.frag` y `layerOver`): `python -m unittest discover -s tools/makeup`.
 - Grilla de calibración del labial (5 tonos de piel × presets; ajustar `lumaFollow`/opacidad de los presets): `python tools/lips/calibration_grid.py` → `docs/ar_engine/img/lips_calibration.png`. Diseño en `docs/ar_engine/LIPS.md`.
 - Regenerar la malla canónica (si cambia `packages/makeup_engine/third_party/mediapipe_face_geometry`): `python tools/mesh/gen_canonical_mesh.py`.
-- Malla suave (subdivisión de la malla canónica, TRACKER.md §9): `python tools/mesh/gen_subdivided_mesh.py` (`--check` verifica); tests con `python -m unittest discover -s tools/mesh`. En el arnés, "Ajuste" cambia el One Euro y prende la malla suave en vivo (líneas `TRACK`/`TUNE`).
+- Malla suave (subdivisión de la malla canónica, TRACKER.md §9): `python tools/mesh/gen_subdivided_mesh.py` (`--check` verifica); tests con `python -m unittest discover -s tools/mesh`. En el arnés, "Ajuste" cambia el One Euro y prende en vivo la malla suave, el borde real del labial y el contorno fino (TRACKER.md §9–§10; líneas `TRACK`/`TUNE`); "Guía" abre la guía de maquillaje sin Firebase.
 - Spike del motor nativo: `flutter run --profile -t lib/main_spike.dart -d <id>` (no carga Firebase ni RevenueCat).
 - Tests del plugin: `flutter test` dentro de `packages/makeup_engine` (Dart) y `android/gradlew.bat :makeup_engine:testDebugUnitTest` (JVM; necesita `JAVA_HOME` apuntando al JBR de Android Studio).
 - Tests de host del C++ del motor (matemática del tracker, sin GL; necesita Visual Studio con C++): `packages\makeup_engine\test_native\run_host_tests.cmd [filtro]`.

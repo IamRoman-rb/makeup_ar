@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ar_makeup_app/features/ar/domain/makeup_recipe.dart';
@@ -135,6 +136,28 @@ void main() {
     expect(sampler.calls, greaterThanOrEqualTo(3));
     expect(find.text('¡Listo! Tu maquillaje coincide con el look.'), findsOneWidget);
     expect(voice.spoken.last, '¡Listo! Tu maquillaje coincide con el look.');
+    await _close(tester);
+  });
+
+  testWidgets('vibra cuando una zona queda bien y al terminar', (tester) async {
+    final haptics = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'HapticFeedback.vibrate') haptics.add(call.arguments as String);
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final sampler = _FakeSampler([_face(_naturalLip), _face(_painted(0.8)), _face(_painted(0.8))]);
+    await tester.pumpWidget(_app(CoachScreen(look: _look(), renderer: FakeRenderer(), sampler: sampler, voice: _FakeVoice())));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('coach-skip')));
+    await _settle(tester);
+    expect(haptics, isEmpty);
+    for (var i = 0; i < 2; i++) {
+      await tester.pump(const Duration(milliseconds: 1500));
+      await _settle(tester);
+    }
+    // Una sola zona: al quedar bien, terminó (la vibración de "listo").
+    expect(haptics, ['HapticFeedbackType.mediumImpact']);
     await _close(tester);
   });
 

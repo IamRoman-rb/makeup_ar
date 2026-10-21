@@ -9,6 +9,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'features/ar/domain/makeup_recipe.dart';
 import 'features/ar/domain/recipe_presets.dart';
 import 'features/ar/presentation/test_filter_view.dart';
+import 'features/coach/presentation/coach_screen.dart';
+import 'l10n/app_localizations.dart';
 import 'features/studio/data/engine_image_analyzer.dart';
 import 'features/studio/domain/image_look.dart';
 import 'features/studio/domain/image_recipe.dart';
@@ -20,6 +22,10 @@ import 'features/studio/domain/image_recipe.dart';
 ///   `flutter run --profile -t lib/main_tracker.dart -d <id>`
 /// Pide el permiso de cámara antes de montar la vista.
 ///
+/// "Guía" abre la guía de maquillaje (COACH.md) con el look elegido, sin
+/// Firebase: líneas `COACH` en logcat. Mientras está abierta, la vista del
+/// arnés se desmonta (una sola sesión de cámara).
+///
 /// "Ajuste" (TRACKER.md §9): sliders del filtro One Euro del tracker y el
 /// chip "Malla suave", en vivo. La línea TRACK suma los valores en uso
 /// (`oneEuro=minCutoff/beta mesh=suave|lineal`) para comparar el jitter.
@@ -29,7 +35,14 @@ import 'features/studio/domain/image_recipe.dart';
 /// la confianza y el error de ajuste por región); "Paleta" deja los colores de
 /// una foto de producto en una línea `PALETTE ...`. La foto no se guarda.
 void main() {
-  runApp(const MaterialApp(debugShowCheckedModeBanner: false, home: _TrackerHarness()));
+  runApp(const MaterialApp(
+    debugShowCheckedModeBanner: false,
+    // La guía de maquillaje (botón "Guía") usa los textos de la app.
+    locale: Locale('es'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: _TrackerHarness(),
+  ));
 }
 
 class _TrackerHarness extends StatefulWidget {
@@ -51,6 +64,10 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
   final EngineImageAnalyzer _analyzer = EngineImageAnalyzer();
   late List<TestFilterOption> _extraOptions = [_lipLinerOption(), _irisOption()];
   bool _analyzing = false;
+
+  // Look elegido en la vista (para la guía) y guía abierta.
+  TestFilterOption? _selected;
+  bool _coachOpen = false;
 
   // Ajuste en vivo (null hasta leer los valores del motor).
   bool _tuningOpen = false;
@@ -193,6 +210,21 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
     );
   }
 
+  /// Guía de maquillaje con el look elegido (o el primer preset).
+  Future<void> _openCoach() async {
+    final selected = _selected;
+    final look = selected != null && selected.recipe != null
+        ? selected
+        : TestFilterOption(
+            id: RecipePresets.all.first.id,
+            label: RecipePresets.all.first.recipe.name,
+            recipe: RecipePresets.all.first.recipe,
+          );
+    setState(() => _coachOpen = true);
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CoachScreen(look: look)));
+    if (mounted) setState(() => _coachOpen = false);
+  }
+
   Future<Uint8List?> _pickPhoto() async {
     final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 2048, maxHeight: 2048, imageQuality: 95);
     return file?.readAsBytes();
@@ -315,7 +347,8 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
       body: granted == true
           ? Stack(
               children: [
-                Positioned.fill(child: _filterView()),
+                // Con la guía abierta, su vista es la dueña de la cámara.
+                Positioned.fill(child: _coachOpen ? const SizedBox.expand() : _filterView()),
                 SafeArea(
                   child: Align(
                     alignment: Alignment.topRight,
@@ -331,6 +364,7 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
                           ),
                           FilledButton.tonal(onPressed: _analyzing ? null : _analyzePalette, child: const Text('Paleta')),
                           FilledButton.tonal(onPressed: _toggleTuning, child: const Text('Ajuste')),
+                          FilledButton.tonal(onPressed: _coachOpen ? null : _openCoach, child: const Text('Guía')),
                         ],
                       ),
                     ),
@@ -356,6 +390,7 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
 
   Widget _filterView() => TestFilterView(
               extraOptions: _extraOptions,
+              onOptionSelected: (option) => _selected = option,
               labels: const TestFilterLabels(
                 noFilter: 'Sin filtro',
                 intensity: 'Intensidad',

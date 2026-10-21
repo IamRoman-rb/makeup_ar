@@ -186,9 +186,12 @@ abstract final class CoachEvaluator {
     final amount = ((ol * dl + oa * da + ob * db) / contrast2).clamp(0.0, CoachPolicy.maxAmount);
     final fitted = Oklab(base.l + dl * amount, base.a + da * amount, base.b + db * amount);
     if (fitted.distanceTo(observed) > CoachPolicy.toneTolerance) return _tone(observed, expected);
-    final ratio = amount / wanted.opacity;
-    if (ratio < 1 - CoachPolicy.amountLow) return CoachVerdict.tooLittle;
-    if (ratio > 1 + CoachPolicy.amountHigh) return CoachVerdict.tooMuch;
+    // El ruido de la medida (ΔE) mueve la cantidad hasta ruido / contraste: con
+    // poco contraste entre el look y el natural hace falta más evidencia para
+    // decir que falta o que sobra (coach_calibration_test.dart).
+    final slack = CoachPolicy.measurementNoise / math.sqrt(contrast2);
+    if (amount < wanted.opacity * (1 - CoachPolicy.amountLow) - slack) return CoachVerdict.tooLittle;
+    if (amount > wanted.opacity * (1 + CoachPolicy.amountHigh) + slack) return CoachVerdict.tooMuch;
     return CoachVerdict.ok;
   }
 

@@ -15,6 +15,11 @@ abstract final class CoachPolicy {
   static const double amountLow = 0.3;
   static const double amountHigh = 0.35;
 
+  /// Ruido de una región medida en vivo (ΔE OK): la cámara del E20, la
+  /// mediana robusta de cada región y el movimiento entre muestras. A
+  /// calibrar en el E20 (línea COACH).
+  static const double measurementNoise = 0.015;
+
   /// Hasta dónde se busca la cantidad (× la del color de la receta).
   static const double maxAmount = 1.5;
 

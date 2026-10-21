@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:ar_makeup_app/features/ar/data/makeup_renderer_factory.dart';
 import 'package:ar_makeup_app/features/ar/domain/i_makeup_renderer.dart';
@@ -141,14 +142,30 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
       final measurement = await _sampler.sample();
       final ms = watch.elapsedMilliseconds;
       if (!mounted) return;
+      final before = session.verdicts;
+      final wasDone = session.done;
       final toSay = session.add(measurement, _clock.elapsed);
       setState(() => _prompt = session.current);
+      _hapticFor(before, session, wasDone);
       if (toSay != null && !_muted) await _say(toSay);
       // Para medir en el E20 (profile/debug); en release no se pide nada más.
       if (!kReleaseMode) await _log(measurement, ms, session);
     } finally {
       _inFlight = false;
     }
+  }
+
+  /// Vibración corta cuando una zona queda bien y otra más marcada al
+  /// terminar: la usuaria tiene el pincel en la mano y no siempre mira la
+  /// pantalla. HapticFeedback es de Flutter (sin dependencias).
+  void _hapticFor(Map<CoachZone, CoachVerdict> before, CoachSession session, bool wasDone) {
+    if (session.done && !wasDone) {
+      unawaited(HapticFeedback.mediumImpact());
+      return;
+    }
+    final newlyOk = session.verdicts.entries
+        .any((e) => e.value == CoachVerdict.ok && before[e.key] != null && before[e.key] != CoachVerdict.ok);
+    if (newlyOk) unawaited(HapticFeedback.lightImpact());
   }
 
   Future<void> _say(CoachPrompt prompt) async {
