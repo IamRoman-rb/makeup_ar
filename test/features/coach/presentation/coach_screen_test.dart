@@ -216,6 +216,22 @@ void main() {
     await _close(tester);
   });
 
+  testWidgets('sin motor AR: lo avisa y no mide', (tester) async {
+    final sampler = _FakeSampler([_face(_naturalLip)]);
+    await tester.pumpWidget(_app(CoachScreen(
+      look: _look(),
+      renderer: FakeRenderer(available: false),
+      sampler: sampler,
+      voice: _FakeVoice(),
+    )));
+    await _settle(tester);
+    expect(find.byKey(const ValueKey('coach-skip')), findsNothing);
+    await tester.pump(const Duration(seconds: 3));
+    expect(sampler.calls, 0);
+    expect(find.textContaining('no está disponible'), findsWidgets);
+    await _close(tester);
+  });
+
   testWidgets('un look sin zonas revisables lo dice y no mide', (tester) async {
     final sampler = _FakeSampler([_face(_naturalLip)]);
     await tester.pumpWidget(_app(CoachScreen(

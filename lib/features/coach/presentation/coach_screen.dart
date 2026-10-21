@@ -64,6 +64,10 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
   bool _showTarget = false;
   CoachPrompt? _prompt;
 
+  /// El motor no puede dibujar en este equipo (o AR_RENDERER=painter): sin
+  /// cara en vivo no hay qué medir.
+  bool _unavailable = false;
+
   static CoachSession? _sessionFor(MakeupRecipe? recipe) {
     if (recipe == null) return null;
     final target = CoachTarget.from(recipe);
@@ -127,6 +131,7 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
   }
 
   void _startLoop() {
+    if (_unavailable) return;
     _timer?.cancel();
     _timer = Timer.periodic(CoachPolicy.samplePeriod, (_) => unawaited(_tick()));
     unawaited(_tick());
@@ -177,6 +182,14 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
       _voiceWarned = true;
       messenger.showSnackBar(SnackBar(content: Text(l10n.coachVoiceUnavailable)));
     }
+  }
+
+  void _onEngineUnavailable() {
+    if (!mounted || _unavailable) return;
+    _timer?.cancel();
+    _timer = null;
+    unawaited(_voice.stop());
+    setState(() => _unavailable = true);
   }
 
   /// Línea COACH en logcat para medir en el E20 (COACH.md).
@@ -245,10 +258,13 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
                     controls: TestFilterControls.none,
                     showHud: false,
                     labels: _labels(l10n),
+                    onUnavailable: _onEngineUnavailable,
                   )
                 : const SizedBox.expand(),
           ),
-          if (session == null)
+          if (_unavailable)
+            _bottomCard(child: Text(l10n.testFilterUnavailable, style: const TextStyle(fontSize: 16)))
+          else if (session == null)
             _bottomCard(child: Text(l10n.coachNoZones, style: const TextStyle(fontSize: 16)))
           else ...[
             Positioned(top: 8, left: 8, right: 8, child: _ZoneChips(session: session)),
