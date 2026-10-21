@@ -2,8 +2,9 @@ import Flutter
 import Foundation
 
 /// Canal `makeup_engine` en iOS (port de MakeupEnginePlugin.kt). Métodos:
-/// start, stop, setTint, setRecipe, setRenderOptions, getStats, resetStats,
-/// analyzeFaceImage y extractPalette. runBenchmark no está en iOS (el
+/// start, stop, setTint, setRecipe, setRenderOptions, setTrackerTuning,
+/// getStats, resetStats, analyzeFaceImage, extractPalette y la guía de
+/// maquillaje (sampleLiveLook, coachSpeak, coachStop, coachRelease). runBenchmark no está en iOS (el
 /// benchmark del E20 es de Android). Una sola sesión a la vez. Contrato en
 /// lib/makeup_engine.dart.
 public final class MakeupEnginePlugin: NSObject, FlutterPlugin {
@@ -11,6 +12,9 @@ public final class MakeupEnginePlugin: NSObject, FlutterPlugin {
   private var session: EngineSession?
   // Un análisis de foto a la vez, en orden, en segundo plano (F4).
   private let stillQueue = DispatchQueue(label: "makeup-still", qos: .utility)
+  // Guía: muestras en su propia cola (sin cara cada una espera hasta 1,5 s) y voz.
+  private let coachQueue = DispatchQueue(label: "makeup-coach", qos: .utility)
+  private var coachVoice: CoachVoice?
 
   init(textures: FlutterTextureRegistry) {
     self.textures = textures
@@ -26,6 +30,8 @@ public final class MakeupEnginePlugin: NSObject, FlutterPlugin {
   public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
     session?.release()
     session = nil
+    coachVoice?.stop()
+    coachVoice = nil
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -48,6 +54,30 @@ public final class MakeupEnginePlugin: NSObject, FlutterPlugin {
         showLandmarks: args["showLandmarks"] as? Bool ?? false,
         region: Int32(args["region"] as? Int ?? Int(EngineConst.regionFull)),
         lightAdaptation: args["lightAdaptation"] as? Bool ?? true)
+      result(nil)
+    case "setTrackerTuning":
+      session?.setTrackerTuning(
+        minCutoff: float(args["minCutoff"]), beta: float(args["beta"]),
+        smoothMesh: args["smoothMesh"] as? Bool ?? false,
+        lipEdge: args["lipEdge"] as? Bool ?? false,
+        lipContour: args["lipContour"] as? Bool ?? false)
+      result(nil)
+    case "sampleLiveLook":
+      sampleLiveLook(result)
+    case "coachSpeak":
+      guard let text = args["text"] as? String, !text.isEmpty else {
+        result(false)
+        return
+      }
+      let voice = coachVoice ?? CoachVoice()
+      coachVoice = voice
+      result(voice.speak(text, locale: args["locale"] as? String ?? "es"))
+    case "coachStop":
+      coachVoice?.stop()
+      result(nil)
+    case "coachRelease":
+      coachVoice?.stop()
+      coachVoice = nil
       result(nil)
     case "getStats":
       result(session?.stats())
@@ -94,6 +124,19 @@ public final class MakeupEnginePlugin: NSObject, FlutterPlugin {
         if self?.session === newSession { self?.session = nil }
         result(FlutterError(code: error.code, message: error.message, details: nil))
       }
+    }
+  }
+
+  /// Guía: mide la cara de la sesión en vivo en la cola de fondo. Responde
+  /// [Double], o nil sin sesión o sin cara.
+  private func sampleLiveLook(_ result: @escaping FlutterResult) {
+    guard let current = session else {
+      result(nil)
+      return
+    }
+    coachQueue.async {
+      let values = current.sampleLiveLook()
+      DispatchQueue.main.async { result(values?.map { Double($0) }) }
     }
   }
 

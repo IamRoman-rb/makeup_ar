@@ -9,6 +9,7 @@
 
 #include "engine_config.h"
 #include "renderer.h"
+#include "studio/live_look_sample.h"
 #include "studio/look_analysis.h"
 #include "studio/palette.h"
 #include "studio/still_face_locator.h"
@@ -123,6 +124,27 @@ void makeup_set_render_options(MakeupEngine* engine, bool show_landmarks, int32_
 
 void makeup_set_tint(MakeupEngine* engine, float r, float g, float b, float amount) {
   engine->renderer.setTint(r, g, b, amount);
+}
+
+void makeup_set_tracker_tuning(MakeupEngine* engine, float min_cutoff, float beta, bool smooth_mesh, bool lip_edge,
+                               bool lip_contour) {
+  engine->tracking.setFilterTuning(min_cutoff, beta);
+  engine->tracking.setLipContourRefine(lip_contour);
+  engine->renderer.setSmoothMesh(smooth_mesh);
+  engine->renderer.setLipEdgeRefine(lip_edge);
+}
+
+void makeup_look_sample_request(MakeupEngine* engine) { engine->renderer.requestLookSample(); }
+
+bool makeup_look_sample_take(MakeupEngine* engine, float* out, int32_t count) {
+  if (out == nullptr || count < makeup::kLookValueCount) return false;
+  const uint8_t* pixels = nullptr;
+  const float* points = nullptr;
+  float imageScale = 1.0f;
+  if (!engine->renderer.peekLookSample(&pixels, &points, &imageScale)) return false;
+  makeup::analyzeLiveSample(pixels, makeup::LookSamplePass::kSize, points, imageScale, out);
+  engine->renderer.releaseLookSample();
+  return true;
 }
 
 void makeup_set_lips(MakeupEngine* engine, bool enabled, float r, float g, float b, float opacity, int32_t finish,

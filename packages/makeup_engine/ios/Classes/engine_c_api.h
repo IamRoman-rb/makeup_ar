@@ -55,6 +55,18 @@ void makeup_set_geometry(MakeupEngine* engine, const float* display16, const flo
                          int32_t height, bool mirrored);
 void makeup_set_render_options(MakeupEngine* engine, bool show_landmarks, int32_t region, bool light_adaptation);
 void makeup_set_tint(MakeupEngine* engine, float r, float g, float b, float amount);
+// Arnés (TRACKER.md §9–§10): One Euro, malla suave, borde real y contorno fino.
+void makeup_set_tracker_tuning(MakeupEngine* engine, float min_cutoff, float beta, bool smooth_mesh, bool lip_edge,
+                               bool lip_contour);
+
+// --- Guía de maquillaje (docs/ar_engine/COACH.md) ---
+// Cualquier hilo: pide una muestra de la cara (el render la toma en el próximo
+// frame con cara).
+void makeup_look_sample_request(MakeupEngine* engine);
+// Hilo de fondo: si hay una muestra lista la mide y llena [out]
+// (MAKEUP_CONFIG_LOOK_VALUE_COUNT valores, como makeup_still_analyze);
+// false si todavía no hay.
+bool makeup_look_sample_take(MakeupEngine* engine, float* out, int32_t count);
 
 // Receta (como nativeSet* de NativeBridge.kt): colores sRGB [0,1].
 void makeup_set_lips(MakeupEngine* engine, bool enabled, float r, float g, float b, float opacity, int32_t finish,

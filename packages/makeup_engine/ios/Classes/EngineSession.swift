@@ -90,6 +90,10 @@ final class EngineSession: NSObject, FlutterTexture, AVCaptureVideoDataOutputSam
   private var lastErrorValue: String?
 
   private var released: Bool { stateLock.sync { releasedFlag } }
+  // La guía mide en una cola de fondo con el núcleo: makeup_destroy y cada
+  // medición van bajo este lock (como sampleLock en EngineSession.kt).
+  private let sampleLock = NSLock()
+  private var nativeDestroyed = false
   private var lastError: String? {
     get { stateLock.sync { lastErrorValue } }
     set { stateLock.sync { lastErrorValue = newValue } }
@@ -487,6 +491,7 @@ final class EngineSession: NSObject, FlutterTexture, AVCaptureVideoDataOutputSam
       "intervalP50Ms": t[4], "intervalP95Ms": t[5], "landmarkP50Ms": t[6], "landmarkP95Ms": t[7],
       "detectorP50Ms": t[8], "jitterP50Px": t[9], "presence": t[10], "pitchDeg": t[11], "yawDeg": t[12],
       "rollDeg": t[13], "readbackMs": t[14], "cropFailures": t[15], "occlusionGate": t[16],
+      "filterMinCutoff": t[17], "filterBeta": t[18], "lipContourPx": t[19],
       "initMs": tracker.initMs, "backend": tracker.backend, "error": tracker.error,
     ]
     return [
@@ -559,7 +564,46 @@ final class EngineSession: NSObject, FlutterTexture, AVCaptureVideoDataOutputSam
   }
 
   private func destroyNativeIfIdle() {
-    if renderReleased && trackerReleased { makeup_destroy(engine) }
+    guard renderReleased && trackerReleased else { return }
+    sampleLock.lock()
+    if !nativeDestroyed { makeup_destroy(engine) }
+    nativeDestroyed = true
+    sampleLock.unlock()
+  }
+
+  /// Arnés (TRACKER.md §9–§10).
+  func setTrackerTuning(minCutoff: Float, beta: Float, smoothMesh: Bool, lipEdge: Bool, lipContour: Bool) {
+    if released { return }
+    makeup_set_tracker_tuning(engine, minCutoff, beta, smoothMesh, lipEdge, lipContour)
+  }
+
+  /// Cola de fondo (nunca main ni render). Guía de maquillaje
+  /// (docs/ar_engine/COACH.md): pide una muestra de la cara y la mide con los
+  /// landmarks del tracker. nil si en [timeout] no hubo cara. El recorte vive
+  /// en memoria nativa y se descarta.
+  func sampleLiveLook(timeout: TimeInterval = 1.5) -> [Float]? {
+    let count = Int(config[Int(MAKEUP_CONFIG_LOOK_VALUE_COUNT)])
+    var values = [Float](repeating: 0, count: count)
+    sampleLock.lock()
+    if released || nativeDestroyed {
+      sampleLock.unlock()
+      return nil
+    }
+    makeup_look_sample_request(engine)
+    sampleLock.unlock()
+    let deadline = Date().addingTimeInterval(timeout)
+    while Date() < deadline {
+      sampleLock.lock()
+      if released || nativeDestroyed {
+        sampleLock.unlock()
+        return nil
+      }
+      let ready = makeup_look_sample_take(engine, &values, Int32(count))
+      sampleLock.unlock()
+      if ready { return values }
+      Thread.sleep(forTimeInterval: 0.02)
+    }
+    return nil
   }
 
   private func nativeError() -> String { text { makeup_last_error(engine, $0, $1) } }
