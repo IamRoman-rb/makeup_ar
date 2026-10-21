@@ -186,7 +186,9 @@ void TrackingState::submitLandmarks(const float* landmarks, int floatCount, floa
     }
     contourPx = contour.meanShiftPx;
   }
-  {
+  // El lock de stats solo si cambió (apagado queda en 0 sin tomarlo).
+  if (contourPx != lastLipContourPx_) {
+    lastLipContourPx_ = contourPx;
     std::lock_guard<std::mutex> lock(statsMutex_);
     lipContourPx_ = contourPx;
   }

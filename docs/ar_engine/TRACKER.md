@@ -205,6 +205,7 @@ Son las opciones 3 y 4 de la tabla de precisión. Las dos vienen apagadas y se p
   - en los quemados (un reflejo en el borde tiene la croma lavada).
 - **Fuerza:** sube con el contraste labio/piel. Entre `kOcclusionMinContrast` y el doble va de 0 a 1, así el borde no salta cuando aparece el eje. Sin eje (labio y piel parecidos) no hace nada.
 - **Especificación y tests:** `tools/lips/lip_shading.py` (`refined_mask`, `edge_strength`) y `python -m unittest discover -s tools/lips`.
+- **Vista previa:** `python tools/lips/edge_preview.py` → `docs/ar_engine/img/lips_edge_preview.png`. Labio sintético con la malla corrida 4 px, en 3 tonos de piel: cámara | malla (hoy) | borde real.
 - **Costo:** ninguna lectura de textura nueva y ~15-20 operaciones en la franja. `p` y el sombreado se calculan una vez para el borde y para la oclusión.
 - **Revisión del shader:** aplicados los hallazgos (reflejos, `p` una sola vez, franja apagada con fundido 0 o de espaldas, fuerza gradual).
 - **A medir en el E20:** que el borde no parpadee con poca luz. Si parpadea, bajar `kLipEdgeRefineStrength` o subir `EDGE_LOW/HIGH`.

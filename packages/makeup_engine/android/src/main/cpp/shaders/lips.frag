@@ -155,7 +155,9 @@ void main() {
                     : 0.0;
   // Franja del borde real: 1 sobre el contorno externo, 0 desde EDGE_BAND.
   // De espaldas o con el fundido en 0 no se puede pintar: no cuenta.
-  float edgeBand = uOpacity * vFacing > 0.0 ? uEdgeRefine * (1.0 - smoothstep(0.0, EDGE_BAND, lipsTexel.b)) : 0.0;
+  float edgeBand = uEdgeRefine > 0.0 && uOpacity * vFacing > 0.0
+                       ? uEdgeRefine * (1.0 - smoothstep(0.0, EDGE_BAND, lipsTexel.b))
+                       : 0.0;
   // Fuera del labio, del delineado y de la franja (el borde de la zona
   // dibujada): no cambia el píxel. La rama es coherente por zonas grandes.
   if (w <= 0.0 && liner <= 0.0 && edgeBand <= 0.0) {

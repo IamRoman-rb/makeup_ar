@@ -201,6 +201,7 @@ class TrackingState {
   std::atomic<bool> lipContour_{EngineConfig::kLipContourDefault};
   // Solo tracker: landmarks del tensor con el contorno ajustado.
   std::array<float, kFloats> refined_{};
+  float lastLipContourPx_ = 0.0f;  // solo tracker: último valor publicado
   float lipContourPx_ = 0.0f;  // stats (statsMutex_)
 
   std::atomic<float> readbackMs_{NAN};
