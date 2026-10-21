@@ -16,6 +16,7 @@ import 'package:ar_makeup_app/features/catalog/presentation/step_by_step_screen.
 import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importamos el traductor
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_labels.dart';
+import 'package:ar_makeup_app/features/catalog/presentation/look_cover.dart';
 import 'package:ar_makeup_app/features/catalog/domain/catalog_order.dart';
 
 class CatalogScreen extends StatefulWidget {
@@ -47,7 +48,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
     final createdAt = data['createdAt'];
     return catalogSortKey(order: data['order'], createdAt: createdAt is Timestamp ? createdAt.toDate() : null);
   }
-  final String defaultImage = 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?q=80&w=800&auto=format&fit=crop';
 
   @override
   void initState() {
@@ -282,7 +282,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                               final data = doc.data() as Map<String, dynamic>;
                               final name = data['name'] ?? 'Unknown Look';
                               final category = data['category'] ?? 'COMPLEXION & LIPS';
-                              final image = data['image'] ?? defaultImage;
+                              final image = data['image'];
 
                               final isSaved = savedLooks.contains(doc.id);
                               // Looks del Studio: receta válida para este motor.
@@ -298,7 +298,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                         children: [
                                           ClipRRect(
                                             borderRadius: BorderRadius.circular(15),
-                                            child: Image.network(image, height: 350, width: double.infinity, fit: BoxFit.cover),
+                                            child: LookCover(imageUrl: image is String ? image : null, recipe: recipe),
                                           ),
                                           Positioned(
                                             top: 15,

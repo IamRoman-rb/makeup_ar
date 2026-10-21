@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:ar_makeup_app/features/ar/domain/i_makeup_renderer.dart';
@@ -162,6 +163,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         options: lookOptions,
         initialOptionId: look?.id,
         controls: TestFilterControls.intensity,
+        // El FPS es depuración: a la vista solo en debug/profile (para medir).
+        showStats: !kReleaseMode,
         labels: _labels(l10n),
         onUnavailable: () => _onEngineUnavailable(l10n.testFilterUnavailable),
       );
@@ -205,9 +208,10 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           : Stack(
               children: [
                 Positioned.fill(child: body),
-                // Arriba al centro: a los costados están el FPS y comparar.
+                // Abajo al centro, encima del slider de intensidad: arriba están
+                // el FPS (profile) y comparar.
                 Positioned(
-                  top: 8,
+                  bottom: 72,
                   left: 0,
                   right: 0,
                   child: Center(

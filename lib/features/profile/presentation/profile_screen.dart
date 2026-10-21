@@ -10,6 +10,7 @@ import 'package:ar_makeup_app/features/profile/presentation/account_settings_scr
 import 'package:ar_makeup_app/features/profile/presentation/language_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
+import 'package:ar_makeup_app/features/coach/presentation/coach_screen.dart';
 import 'package:ar_makeup_app/features/my_looks/data/firestore_ai_look_repository.dart';
 import 'package:ar_makeup_app/features/my_looks/presentation/my_looks_screen.dart';
 import 'package:ar_makeup_app/features/studio/data/cloud_recipe_generator.dart';
@@ -69,9 +70,13 @@ class ProfileScreen extends StatelessWidget {
                           CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.grey.shade300,
+                            // Sin foto, un ícono local (antes una foto de Unsplash en cada apertura).
                             backgroundImage: (data['foto_perfil'] != null && data['foto_perfil'].toString().isNotEmpty)
-                                ? NetworkImage(data['foto_perfil']) as ImageProvider
-                                : const NetworkImage('https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800&auto=format&fit=crop'),
+                                ? NetworkImage(data['foto_perfil'].toString())
+                                : null,
+                            child: (data['foto_perfil'] != null && data['foto_perfil'].toString().isNotEmpty)
+                                ? null
+                                : Icon(Icons.person, size: 56, color: Colors.grey.shade600),
                           ),
                           Positioned(
                             bottom: 0,
@@ -159,9 +164,10 @@ class ProfileScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         children: [
-                          Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network('https://images.unsplash.com/photo-1580481072645-022f9a6d4df8?q=80&w=400&auto=format&fit=crop', height: 180, fit: BoxFit.cover, errorBuilder: _decorativeImageFallback))),
+                          // Locales: sin pedirle fotos a un servicio externo en cada apertura.
+                          Expanded(child: _decorativeTile(const [Color(0xFFE8B4B8), Color(0xFFB3122D)], Icons.brush_outlined)),
                           const SizedBox(width: 15),
-                          Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=400&auto=format&fit=crop', height: 180, fit: BoxFit.cover, errorBuilder: _decorativeImageFallback))),
+                          Expanded(child: _decorativeTile(const [Color(0xFFF5EFE6), Color(0xFFD4AF37)], Icons.auto_awesome)),
                         ],
                       ),
                     ),
@@ -178,11 +184,18 @@ class ProfileScreen extends StatelessWidget {
                             builder: (_) => MyLooksScreen(
                               repository: FirestoreAiLookRepository(uid: user.uid),
                               generator: CloudRecipeGenerator(),
-                              onTryOn: (recipe) => Navigator.push(context, MaterialPageRoute(
-                                builder: (_) => CameraScreen(
-                                  initialLook: TestFilterOption(id: 'ai-${recipe.name.hashCode}', label: recipe.name, recipe: recipe),
-                                ),
-                              )),
+                              onTryOn: (recipe) {
+                                final look = TestFilterOption(id: 'ai-${recipe.name.hashCode}', label: recipe.name, recipe: recipe);
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (camera) => CameraScreen(
+                                    initialLook: look,
+                                    // La guía reemplaza a la cámara; al salir vuelve a "Mis looks".
+                                    onOpenCoach: () => Navigator.of(camera).pushReplacement(
+                                      MaterialPageRoute<void>(builder: (_) => CoachScreen(look: look)),
+                                    ),
+                                  ),
+                                ));
+                              },
                             ),
                           )),
                         ),
@@ -293,11 +306,14 @@ class ProfileScreen extends StatelessWidget {
   // Las imágenes decorativas son links externos a Unsplash: si el link
   // vence o cambia (ya pasó), esto evita que la app tire una excepción sin
   // manejar en vez de simplemente mostrar el espacio vacío.
-  Widget _decorativeImageFallback(BuildContext context, Object error, StackTrace? stackTrace) {
+  Widget _decorativeTile(List<Color> colors, IconData icon) {
     return Container(
       height: 180,
-      color: Colors.grey.shade200,
-      child: Icon(Icons.image_not_supported_outlined, color: Colors.grey.shade400),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
+      ),
+      child: Icon(icon, size: 44, color: Colors.white.withValues(alpha: 0.9)),
     );
   }
 }

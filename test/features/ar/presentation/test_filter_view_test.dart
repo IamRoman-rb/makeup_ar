@@ -39,9 +39,13 @@ final class FakeRenderer implements IMakeupRenderer {
   @override
   Future<void> setTrackingEnabled(bool enabled) async => tracking.add(enabled);
 
+  int statsCalls = 0;
+
   @override
-  Future<MakeupRendererStats> stats() async =>
-      const MakeupRendererStats(renderFps: 28, tracking: FaceTrackingState.tracking, trackerHz: 14, landmarkMs: 21);
+  Future<MakeupRendererStats> stats() async {
+    statsCalls++;
+    return const MakeupRendererStats(renderFps: 28, tracking: FaceTrackingState.tracking, trackerHz: 14, landmarkMs: 21);
+  }
 
   @override
   Future<void> stop() async => stops++;
@@ -154,6 +158,18 @@ void main() {
     expect(find.text('Sin filtro'), findsNothing);
     expect(find.text('Labios'), findsNothing);
     expect(find.text('Comparar'), findsOneWidget);
+  });
+
+  testWidgets('showStats: false oculta el FPS y no pide métricas; comparar sigue', (tester) async {
+    final renderer = FakeRenderer();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: TestFilterView(labels: labels, renderer: renderer, showStats: false)),
+    ));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.textContaining('fps'), findsNothing);
+    expect(find.text('Comparar'), findsOneWidget);
+    expect(renderer.statsCalls, 0);
   });
 
   test('las opciones son "sin filtro" + los presets, con su color', () {

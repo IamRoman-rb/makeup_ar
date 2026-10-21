@@ -139,6 +139,7 @@ class TestFilterView extends StatefulWidget {
     this.mirrorOnly = false,
     this.controls = TestFilterControls.full,
     this.showHud = true,
+    this.showStats = true,
   });
 
   final TestFilterLabels labels;
@@ -175,6 +176,10 @@ class TestFilterView extends StatefulWidget {
   /// Badge de FPS y botón de comparar arriba (la guía de maquillaje los oculta:
   /// ahí la usuaria tiene que ver su cara tal cual).
   final bool showHud;
+
+  /// Badge de FPS y estado del tracker (texto de depuración). La app lo oculta
+  /// en release; el arnés y los builds de profile lo muestran para medir.
+  final bool showStats;
 
   @override
   State<TestFilterView> createState() => _TestFilterViewState();
@@ -274,8 +279,8 @@ class _TestFilterViewState extends State<TestFilterView> {
 
   /// Nunca hay más de un pedido de métricas en vuelo: los demás se descartan.
   Future<void> _pollStats() async {
-    // En el Espejo no hay indicador que actualizar.
-    if (_statsInFlight || widget.mirrorOnly) return;
+    // Sin indicador a la vista no hay nada que actualizar.
+    if (_statsInFlight || widget.mirrorOnly || !widget.showHud || !widget.showStats) return;
     _statsInFlight = true;
     try {
       final stats = await _renderer.stats();
@@ -371,7 +376,7 @@ class _TestFilterViewState extends State<TestFilterView> {
           ),
         if (!widget.mirrorOnly) ...[
           if (widget.showHud) ...[
-            Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
+            if (widget.showStats) Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
             Positioned(top: 8, right: 8, child: _buildCompareButton()),
           ],
           if (_buildControls() case final controls?) Positioned(left: 0, right: 0, bottom: 0, child: controls),
