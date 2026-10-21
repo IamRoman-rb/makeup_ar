@@ -154,6 +154,7 @@ final class TrackerStats {
     this.occlusionGate,
     this.filterMinCutoff,
     this.filterBeta,
+    this.lipContourPx,
     this.initMs,
     this.backend,
     this.error,
@@ -181,6 +182,7 @@ final class TrackerStats {
       occlusionGate: _double(map['occlusionGate']),
       filterMinCutoff: _double(map['filterMinCutoff']),
       filterBeta: _double(map['filterBeta']),
+      lipContourPx: _double(map['lipContourPx']),
       initMs: _double(map['initMs']),
       backend: map['backend'] as String?,
       error: map['error'] as String?,
@@ -232,6 +234,10 @@ final class TrackerStats {
   /// vivo ([MakeupEngine.setTrackerTuning]).
   final double? filterMinCutoff;
   final double? filterBeta;
+
+  /// Ajuste medio del contorno de labios en el último resultado (px del
+  /// recorte de 256; 0 con la segunda pasada apagada o sin borde).
+  final double? lipContourPx;
 
   /// Carga de los modelos (la primera vez incluye compilar para la GPU).
   final double? initMs;
@@ -374,13 +380,23 @@ final class MakeupEngine {
   /// Arnés (docs/ar_engine/TRACKER.md §9): ajuste en vivo del filtro One
   /// Euro del tracker ([minCutoff] en Hz, [beta] en s; se recortan a rango del
   /// lado nativo) y [smoothMesh], la malla subdividida suave en lugar de los
-  /// triángulos de los 468 landmarks. Para medir en el E20 y después fijar los
-  /// valores en engine_config.h.
-  Future<void> setTrackerTuning({required double minCutoff, required double beta, required bool smoothMesh}) =>
+  /// triángulos de los 468 landmarks; [lipEdge], el borde del labial que sigue
+  /// al color real del labio, y [lipContour], la segunda pasada que ajusta el
+  /// contorno de los labios al borde real (TRACKER.md §10). Para medir en el E20 y después
+  /// fijar los valores en engine_config.h.
+  Future<void> setTrackerTuning({
+    required double minCutoff,
+    required double beta,
+    required bool smoothMesh,
+    bool lipEdge = false,
+    bool lipContour = false,
+  }) =>
       _channel.invokeMethod<void>('setTrackerTuning', {
         'minCutoff': minCutoff,
         'beta': beta,
         'smoothMesh': smoothMesh,
+        'lipEdge': lipEdge,
+        'lipContour': lipContour,
       });
 
   /// Leer a ~2 Hz como máximo: es para el overlay y el arnés, no por frame.

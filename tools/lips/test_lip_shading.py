@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lip_shading import LipLiner, LipOcclusion, LipParams, from_ok, liner_alpha, hex_to_srgb, oklab_to_linear_in_gamut, occlusion_visibility, shade, srgb_to_oklab, to_ok  # noqa: E402
+from lip_shading import LipEdge, LipLiner, LipOcclusion, edge_strength, refined_mask, LipParams, from_ok, liner_alpha, hex_to_srgb, oklab_to_linear_in_gamut, occlusion_visibility, shade, srgb_to_oklab, to_ok  # noqa: E402
 from sample_region_reference import srgb_to_lin  # noqa: E402
 
 
@@ -168,6 +168,72 @@ class ShadeTest(unittest.TestCase):
         np.testing.assert_allclose(out[2], camera[2], atol=1e-9)
         free = shade(camera, np.ones(3), np.ones(3), p, liner=np.full(3, 0.8), liner_lab=liner_lab)
         np.testing.assert_allclose(out[1], free[1], atol=1e-9)  # el labio, igual que sin mano
+
+    def _edge(self):
+        skin_rgb = np.array([0.82, 0.64, 0.56])
+        lip_rgb = np.array([0.72, 0.42, 0.42])
+        skin_c = to_ok(srgb_to_lin(skin_rgb))
+        lip_c = to_ok(srgb_to_lin(lip_rgb))
+        skin = skin_c[1:] / skin_c[0]
+        d = lip_c[1:] / lip_c[0] - skin
+        return skin_rgb, lip_rgb, LipEdge(strength=1.0, skin=skin, axis=d / np.dot(d, d))
+
+    def test_borde_retira_el_labial_de_la_piel_y_lo_extiende_al_labio(self):
+        skin_rgb, lip_rgb, edge = self._edge()
+        lip_l = float(to_ok(srgb_to_lin(lip_rgb))[0])
+        camera = np.stack([skin_rgb, lip_rgb])
+        # Sobre el contorno: la malla se pasó sobre la piel (máscara 0,7) y no
+        # llegó a un borde de labio (máscara 0).
+        refined = refined_mask(camera, np.array([0.7, 0.0]), np.array([0.05, 0.05]), edge, lip_l)
+        self.assertLess(float(refined[0]), 0.1)
+        self.assertGreater(float(refined[1]), 0.85)
+        # Lejos del contorno (distancia >= EDGE_BAND) la máscara no cambia.
+        far = refined_mask(camera, np.array([0.7, 0.0]), np.array([0.8, 0.8]), edge, lip_l)
+        np.testing.assert_allclose(far, [0.7, 0.0])
+
+    def test_borde_no_crece_en_lo_oscuro_ni_sin_contraste(self):
+        skin_rgb, lip_rgb, edge = self._edge()
+        lip_l = float(to_ok(srgb_to_lin(lip_rgb))[0])
+        # La boca abierta junto a la comisura: oscura y rojiza.
+        mouth = np.array([[0.25, 0.08, 0.08]])
+        self.assertAlmostEqual(float(refined_mask(mouth, np.array([0.0]), np.array([0.05]), edge, lip_l)[0]), 0.0)
+        # Sin borde (strength 0) es exactamente la máscara.
+        off = LipEdge(strength=0.0, skin=edge.skin, axis=edge.axis)
+        camera = np.stack([skin_rgb, lip_rgb])
+        np.testing.assert_array_equal(refined_mask(camera, np.array([0.7, 0.0]), np.array([0.05, 0.05]), off, lip_l),
+                                      [0.7, 0.0])
+
+    def test_borde_respeta_los_reflejos_y_el_eje_cero(self):
+        skin_rgb, lip_rgb, edge = self._edge()
+        lip_l = float(to_ok(srgb_to_lin(lip_rgb))[0])
+        # Reflejo en el borde: croma lavada (parece piel), no pierde el labial.
+        burned = np.array([[1.0, 0.97, 0.95]])
+        self.assertAlmostEqual(float(refined_mask(burned, np.array([0.8]), np.array([0.05]), edge, lip_l)[0]), 0.8)
+        # Sin eje la máscara queda (la CPU manda 0).
+        zero = LipEdge(strength=1.0, skin=edge.skin, axis=np.zeros(2))
+        camera = np.stack([skin_rgb, lip_rgb])
+        np.testing.assert_array_equal(refined_mask(camera, np.array([0.7, 0.0]), np.array([0.05, 0.05]), zero, lip_l),
+                                      [0.7, 0.0])
+
+    def test_fuerza_del_borde_sube_con_el_contraste(self):
+        self.assertEqual(edge_strength(np.zeros(2)), 0.0)
+        self.assertEqual(edge_strength(np.array([10.0, 0.0]), enabled=False), 0.0)
+        # |labio − piel| = 1 / |eje|: 0,02 (poco) no actúa, 0,045 a medias, 0,1 pleno.
+        self.assertEqual(edge_strength(np.array([50.0, 0.0])), 0.0)
+        self.assertAlmostEqual(edge_strength(np.array([1 / 0.045, 0.0])), 0.5, places=6)
+        self.assertEqual(edge_strength(np.array([10.0, 0.0])), 1.0)
+
+    def test_borde_en_shade_pinta_el_labio_fuera_de_la_malla(self):
+        skin_rgb, lip_rgb, edge = self._edge()
+        p = self.params()
+        camera = np.stack([skin_rgb, lip_rgb])
+        plain = shade(camera, np.array([0.7, 0.0]), np.zeros(2), p, distance=np.array([0.05, 0.05]))
+        refined = shade(camera, np.array([0.7, 0.0]), np.zeros(2), p, edge=edge, distance=np.array([0.05, 0.05]))
+        # La piel vuelve a ser la cámara; el labio fuera de la malla se pinta.
+        self.assertGreater(float(np.abs(plain[0] - camera[0]).max()), 0.05)
+        np.testing.assert_allclose(refined[0], camera[0], atol=0.03)
+        np.testing.assert_allclose(plain[1], camera[1], atol=1e-9)
+        self.assertGreater(float(np.abs(refined[1] - camera[1]).max()), 0.05)
 
     def test_oclusion_ignora_la_luz_quemada(self):
         # Labio quemado por una ventana: rojo saturado y verde/azul altos, la

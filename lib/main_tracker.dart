@@ -57,6 +57,8 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
   double? _minCutoff;
   double? _beta;
   bool _smoothMesh = false;
+  bool _lipEdge = false;
+  bool _lipContour = false;
 
   @override
   void initState() {
@@ -89,6 +91,7 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
           'detP50=${_f(t.detectorP50Ms)} readback=${_f(t.readbackMs)} cropFails=${t.cropFailures} jitter=${_f(t.jitterP50Px, 2)} '
           'presence=${_f(t.presence, 2)} occl=${_f(t.occlusionGate, 2)} yaw=${_f(t.yawDeg)} pitch=${_f(t.pitchDeg)} roll=${_f(t.rollDeg)} '
           'oneEuro=${_f(t.filterMinCutoff, 2)}/${_f(t.filterBeta, 3)} mesh=${_smoothMesh ? 'suave' : 'lineal'} '
+          'borde=${_lipEdge ? 'real' : 'malla'} contour=${_f(t.lipContourPx, 2)} '
           'runs=${t.landmarkRuns}/${t.detectorRuns} losses=${t.losses} init=${_f(t.initMs, 0)} '
           'backend="${t.backend ?? '-'}" error="${s.error ?? t.error ?? '-'}"');
     } on Exception catch (e) {
@@ -117,8 +120,15 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
     final minCutoff = _minCutoff;
     final beta = _beta;
     if (minCutoff == null || beta == null) return;
-    await _engine.setTrackerTuning(minCutoff: minCutoff, beta: beta, smoothMesh: _smoothMesh);
-    debugPrint('TUNE oneEuro=${_f(minCutoff, 2)}/${_f(beta, 3)} mesh=${_smoothMesh ? 'suave' : 'lineal'}');
+    await _engine.setTrackerTuning(
+      minCutoff: minCutoff,
+      beta: beta,
+      smoothMesh: _smoothMesh,
+      lipEdge: _lipEdge,
+      lipContour: _lipContour,
+    );
+    debugPrint('TUNE oneEuro=${_f(minCutoff, 2)}/${_f(beta, 3)} mesh=${_smoothMesh ? 'suave' : 'lineal'} '
+        'borde=${_lipEdge ? 'real' : 'malla'} contorno=${_lipContour ? 'fino' : 'modelo'}');
   }
 
   Widget _tuningPanel() {
@@ -149,13 +159,34 @@ class _TrackerHarnessState extends State<_TrackerHarness> {
             onChanged: (value) => setState(() => _beta = value),
             onChangeEnd: (_) => unawaited(_sendTuning()),
           ),
-          FilterChip(
-            label: const Text('Malla suave'),
-            selected: _smoothMesh,
-            onSelected: (value) {
-              setState(() => _smoothMesh = value);
-              unawaited(_sendTuning());
-            },
+          Wrap(
+            spacing: 6,
+            children: [
+              FilterChip(
+                label: const Text('Malla suave'),
+                selected: _smoothMesh,
+                onSelected: (value) {
+                  setState(() => _smoothMesh = value);
+                  unawaited(_sendTuning());
+                },
+              ),
+              FilterChip(
+                label: const Text('Borde real'),
+                selected: _lipEdge,
+                onSelected: (value) {
+                  setState(() => _lipEdge = value);
+                  unawaited(_sendTuning());
+                },
+              ),
+              FilterChip(
+                label: const Text('Contorno fino'),
+                selected: _lipContour,
+                onSelected: (value) {
+                  setState(() => _lipContour = value);
+                  unawaited(_sendTuning());
+                },
+              ),
+            ],
           ),
         ],
       ),

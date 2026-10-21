@@ -55,7 +55,8 @@ internal object NativeBridge {
     const val TRACK_STAT_OCCLUSION_GATE = 16
     const val TRACK_STAT_FILTER_MIN_CUTOFF = 17
     const val TRACK_STAT_FILTER_BETA = 18
-    const val TRACK_STAT_COUNT = 19
+    const val TRACK_STAT_LIP_CONTOUR_PX = 19
+    const val TRACK_STAT_COUNT = 20
 
     // Bits de nativeDrawFrame(); mismo valor que FrameFlag en renderer.h.
     const val FRAME_FLAG_CROP_READY = 1
@@ -141,8 +142,18 @@ internal object NativeBridge {
     /** Guía: la muestra lista medida (CONFIG_LOOK_VALUE_COUNT floats), o null si no hay. */
     @JvmStatic external fun nativeLookSampleTake(handle: Long): FloatArray?
 
-    /** Arnés: One Euro del tracker (se recorta a rango) y malla suave del render. */
-    @JvmStatic external fun nativeSetTrackerTuning(handle: Long, minCutoff: Float, beta: Float, smoothMesh: Boolean)
+    /**
+     * Arnés: One Euro del tracker (se recorta a rango), malla suave, borde real
+     * del labial y segunda pasada sobre la boca (contorno fino).
+     */
+    @JvmStatic external fun nativeSetTrackerTuning(
+        handle: Long,
+        minCutoff: Float,
+        beta: Float,
+        smoothMesh: Boolean,
+        lipEdge: Boolean,
+        lipContour: Boolean,
+    )
     @JvmStatic external fun nativeSetTint(handle: Long, r: Float, g: Float, b: Float, amount: Float)
 
     /**

@@ -168,6 +168,28 @@ void TrackingState::submitLandmarks(const float* landmarks, int floatCount, floa
   }
   // El recorte sigue siendo del tracker (kReady) hasta finishSubmit().
   updateAppearance(landmarks, inFlight_.size);
+  // Segunda pasada sobre la boca: el contorno externo de los labios al borde
+  // real (con el eje piel->labio que aprendió la oclusión).
+  float contourPx = 0.0f;
+  if (lipContour_.load(std::memory_order_relaxed)) {
+    std::copy(landmarks, landmarks + kFloats, refined_.begin());
+    const LipContourResult contour = refineLipContour(
+        cropPixels_.data(), inFlight_.size, refined_.data(),
+        Chroma{appearance_.skinChromaA, appearance_.skinChromaB},
+        Chroma{appearance_.occlusionAxisA, appearance_.occlusionAxisB}, EngineConfig::kLipContourSearchPx,
+        EngineConfig::kLipContourMaxShiftPx);
+    for (int n = 0; n < mesh::kLipsOuterCount && contour.refined > 0; ++n) {
+      const int i = mesh::kLipsOuter[n];
+      const Point2 p = roiToImage(roi, refined_[i * 3] * inv, refined_[i * 3 + 1] * inv);
+      raw_[i * 3] = p.x;
+      raw_[i * 3 + 1] = p.y;
+    }
+    contourPx = contour.meanShiftPx;
+  }
+  {
+    std::lock_guard<std::mutex> lock(statsMutex_);
+    lipContourPx_ = contourPx;
+  }
   // Jitter: desplazamiento medio (2D) de los puntos estables de Procrustes
   // entre dos resultados filtrados. Con la cara quieta, es el temblor.
   float jitterSum = 0.0f;
@@ -380,6 +402,8 @@ bool TrackingState::landmarksForRender(int64_t targetTimestampNs, float frameDtS
 
 // --- Cualquier hilo ---
 
+void TrackingState::setLipContourRefine(bool enabled) { lipContour_.store(enabled, std::memory_order_relaxed); }
+
 void TrackingState::setFilterTuning(float minCutoff, float beta) {
   // NaN o fuera de rango: se recorta (std::clamp con NaN no es seguro).
   const float cutoff = std::isfinite(minCutoff) ? minCutoff : EngineConfig::kOneEuroMinCutoff;
@@ -413,6 +437,7 @@ void TrackingState::snapshotStats(float* out) {
   out[kTrackStatOcclusionGate] = state_ == 2 ? occlusionGate_ : 0.0f;
   out[kTrackStatFilterMinCutoff] = tuneMinCutoff_.load(std::memory_order_relaxed);
   out[kTrackStatFilterBeta] = tuneBeta_.load(std::memory_order_relaxed);
+  out[kTrackStatLipContourPx] = lipContourPx_;
 }
 
 void TrackingState::resetStats() {

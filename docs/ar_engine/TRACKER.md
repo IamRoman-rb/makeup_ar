@@ -190,3 +190,37 @@ Más puntos detectados no se pueden pedir: FaceMesh-V2 da 478 fijos. Lo que se m
 - Probar 2 o 3 combinaciones de sliders; para cada una, la línea `TRACK` quieta (jitter) y la sensación de atraso al girar.
 - Prender y apagar "Malla suave" mirando de cerca comisuras, arco de cupido y delineado.
 - Si mejora y fps/cpu no cambian, se prende por defecto.
+
+## 10. Precisión: borde real del labial y segunda pasada sobre la boca (2026-10-21)
+
+Son las opciones 3 y 4 de la tabla de precisión. Las dos vienen apagadas y se prenden con chips del arnés ("Ajuste" → "Borde real" y "Contorno fino") para compararlas en el E20.
+
+### Opción 3: borde real del labial (`lips.frag`, `uEdgeRefine`)
+
+- **Qué hace:** en ~0,85 mm alrededor del contorno externo (canal B del mapa < `EDGE_BAND`), la máscara pasa a ser "cuánto se parece este píxel al labio". Usa la misma proyección `p` de la cromaticidad sobre el eje piel → labio que aprendió la oclusión.
+  - Donde la malla se pasó sobre la piel, el labial se retira.
+  - Donde el labio real asoma afuera de la malla, el labial llega.
+- **Dónde no actúa:**
+  - en los píxeles oscuros (boca abierta, sombra de la comisura);
+  - en los quemados (un reflejo en el borde tiene la croma lavada).
+- **Fuerza:** sube con el contraste labio/piel. Entre `kOcclusionMinContrast` y el doble va de 0 a 1, así el borde no salta cuando aparece el eje. Sin eje (labio y piel parecidos) no hace nada.
+- **Especificación y tests:** `tools/lips/lip_shading.py` (`refined_mask`, `edge_strength`) y `python -m unittest discover -s tools/lips`.
+- **Costo:** ninguna lectura de textura nueva y ~15-20 operaciones en la franja. `p` y el sombreado se calculan una vez para el borde y para la oclusión.
+- **Revisión del shader:** aplicados los hallazgos (reflejos, `p` una sola vez, franja apagada con fundido 0 o de espaldas, fuerza gradual).
+- **A medir en el E20:** que el borde no parpadee con poca luz. Si parpadea, bajar `kLipEdgeRefineStrength` o subir `EDGE_LOW/HIGH`.
+
+### Opción 4: segunda pasada sobre la boca (`tracking/lip_contour.h`)
+
+- **Qué hace:** después de cada resultado del modelo, los 20 puntos del contorno externo de los labios (salvo las dos comisuras) se ajustan al borde real del color.
+  - En el recorte de 256 que ya se leyó, se arma un perfil de `p` cada 0,5 px a lo largo de la normal, ±3 px.
+  - Se interpola con precisión subpíxel el cruce de 0,5 (labio → piel) más cercano al punto del modelo.
+  - Tope de 2 px y suavizado 1/4-1/2-1/4 entre vecinos.
+  - Corre antes del One Euro, que sigue suavizando en el tiempo.
+- **Sin modelo nuevo:** visión clásica sobre el mismo recorte, en el hilo del tracker (~15 Hz) y sin allocations.
+- **Más resolución, si hace falta:** con la boca a ~75 px del recorte, la precisión subpíxel compensa. Si en el E20 no alcanza, el mismo algoritmo acepta un recorte dedicado de la boca a resolución de cámara (otro `CropPass`), sin cambiar la lógica.
+- **Tests:** `test_native/lip_contour_test.cpp` (labio sintético: los puntos corridos 1,5 px vuelven al borde; sin eje o sin luz no hace nada; respeta el tope).
+- **Métrica:** la línea `TRACK` muestra `contour=` (ajuste medio en px del recorte).
+
+### Opción 5: modelo propio más denso
+
+Ver `docs/ar_engine/MODEL.md` (fase 3). Hacen falta datos con consentimiento y entrenamiento; eso no se puede hacer sin vos (CLAUDE.md: usar datos o modelos requiere tu aprobación). La infraestructura queda preparada.

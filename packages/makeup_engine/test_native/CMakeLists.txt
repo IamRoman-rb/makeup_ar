@@ -29,12 +29,14 @@ add_executable(makeup_engine_host_tests
     tracking_state_test.cpp
     subdivision_test.cpp
     live_look_sample_test.cpp
+    lip_contour_test.cpp
     ${ENGINE_CPP}/tracking/roi.cpp
     ${ENGINE_CPP}/tracking/umeyama.cpp
     ${ENGINE_CPP}/tracking/blazeface_decoder.cpp
     ${ENGINE_CPP}/tracking/tracking_state.cpp
     ${ENGINE_CPP}/tracking/appearance.cpp
     ${ENGINE_CPP}/tracking/lip_occlusion.cpp
+    ${ENGINE_CPP}/tracking/lip_contour.cpp
     ${ENGINE_CPP}/face_style.cpp
     ${ENGINE_CPP}/scene_light.cpp
     ${ENGINE_CPP}/studio/still_image.cpp

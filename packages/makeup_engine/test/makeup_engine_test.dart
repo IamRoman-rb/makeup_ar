@@ -110,9 +110,10 @@ void main() {
   });
 
   test('setTrackerTuning manda One Euro y malla suave', () async {
-    await MakeupEngine().setTrackerTuning(minCutoff: 0.8, beta: 0.1, smoothMesh: true);
+    await MakeupEngine().setTrackerTuning(minCutoff: 0.8, beta: 0.1, smoothMesh: true, lipEdge: true, lipContour: true);
     expect(calls.single.method, 'setTrackerTuning');
-    expect(calls.single.arguments, {'minCutoff': 0.8, 'beta': 0.1, 'smoothMesh': true});
+    expect(calls.single.arguments,
+        {'minCutoff': 0.8, 'beta': 0.1, 'smoothMesh': true, 'lipEdge': true, 'lipContour': true});
   });
 
   test('getStats parsea las métricas del tracker', () async {
@@ -132,6 +133,7 @@ void main() {
             'occlusionGate': 0.75,
             'filterMinCutoff': 1.5,
             'filterBeta': 0.08,
+            'lipContourPx': 0.7,
             'initMs': 812.0,
             'backend': 'detector=gpu landmarks=gpu',
             'error': null,
@@ -149,6 +151,7 @@ void main() {
     expect(tracker.occlusionGate, 0.75);
     expect(tracker.filterMinCutoff, 1.5);
     expect(tracker.filterBeta, 0.08);
+    expect(tracker.lipContourPx, 0.7);
     expect(tracker.backend, contains('gpu'));
   });
 

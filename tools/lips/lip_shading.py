@@ -34,6 +34,19 @@ OCCLUSION_MIN_LIGHTNESS = 0.05
 # oclusión (lips.frag: OCCLUSION_CLIP_LOW/HIGH).
 OCCLUSION_CLIP_LOW = 0.9
 OCCLUSION_CLIP_HIGH = 0.97
+# Borde que sigue al labio real (lips.frag: EDGE_*): franja alrededor del
+# contorno externo (canal B, distancia normalizada por maxDistance de
+# lips.json: 0,5 ≈ 0,85 mm), p (0 piel, 1 labio) en que el píxel pasa a
+# contar como labio, y sombreado bajo el que la croma no se usa (la boca
+# abierta y las sombras de la comisura: oscuras y rojizas).
+EDGE_BAND = 0.5
+EDGE_LOW = 0.35
+EDGE_HIGH = 0.65
+EDGE_MIN_SHADING = 0.55
+EDGE_SHADING_FEATHER = 0.1
+# Contraste piel-labio en que el borde real empieza a actuar (renderer.cpp;
+# engine_config.h: kOcclusionMinContrast); llega a pleno con el doble.
+EDGE_MIN_CONTRAST = 0.03
 
 
 def _in_gamut(rgb_lin: np.ndarray) -> np.ndarray:
@@ -89,6 +102,51 @@ class LipOcclusion:
     axis: np.ndarray  # (labio − piel) / |labio − piel|²
 
 
+@dataclass(frozen=True)
+class LipEdge:
+    """Borde que sigue al labio real (uEdgeRefine; cromaticidad de la piel y
+    eje piel->labio de uOcclusion, los mismos de la oclusión)."""
+
+    strength: float  # [0, 1]; 0 = máscara del mapa tal cual
+    skin: np.ndarray
+    axis: np.ndarray
+
+
+def refined_mask(camera_srgb: np.ndarray, mask: np.ndarray, distance: np.ndarray, edge: LipEdge | None,
+                 lip_lightness: float) -> np.ndarray:
+    """Máscara del labial con el borde corregido por el color real del píxel.
+
+    Cerca del contorno externo (distance < EDGE_BAND) la máscara del mapa se
+    mezcla con "cuánto se parece este píxel al labio": donde la malla se pasa
+    sobre la piel el labial se retira, donde el labio real asoma fuera de la
+    malla el labial llega. Los píxeles oscuros (sombreado < EDGE_MIN_SHADING)
+    conservan la máscara: su croma es ruido y ahí está la boca abierta; los
+    quemados también (croma lavada: un reflejo en el borde). Sin eje
+    piel->labio la máscara queda tal cual (la CPU manda uEdgeRefine = 0)."""
+    mask = np.asarray(mask, dtype=float)
+    if edge is None or edge.strength <= 0.0 or not np.any(edge.axis):
+        return mask
+    band = (1.0 - _smoothstep(0.0, EDGE_BAND, np.asarray(distance, dtype=float))) * edge.strength
+    lab = to_ok(srgb_to_lin(camera_srgb))
+    chroma = lab[..., 1:] / np.maximum(lab[..., :1], OCCLUSION_MIN_LIGHTNESS)
+    lip_like = _smoothstep(EDGE_LOW, EDGE_HIGH, ((chroma - edge.skin) * edge.axis).sum(axis=-1))
+    shading = np.clip(lab[..., 0] / max(lip_lightness, LIP_LIGHTNESS_MIN), 0.0, SHADING_MAX)
+    clipped = _smoothstep(OCCLUSION_CLIP_LOW, OCCLUSION_CLIP_HIGH, np.max(camera_srgb, axis=-1))
+    trust = _smoothstep(EDGE_MIN_SHADING - EDGE_SHADING_FEATHER, EDGE_MIN_SHADING, shading) * (1.0 - clipped)
+    target = mask + (lip_like - mask) * trust
+    return mask + (target - mask) * band
+
+
+def edge_strength(axis: np.ndarray, enabled: bool = True, strength: float = 1.0) -> float:
+    """uEdgeRefine que manda la CPU (renderer.cpp, drawLips): sube de 0 a
+    [strength] con el contraste piel-labio |labio − piel| = 1 / |eje|, entre
+    kOcclusionMinContrast y el doble. Sin eje (sin contraste), 0."""
+    norm = float(np.hypot(*axis))
+    if not enabled or norm <= 0.0:
+        return 0.0
+    return strength * float(_smoothstep(EDGE_MIN_CONTRAST, 2.0 * EDGE_MIN_CONTRAST, np.array(1.0 / norm)))
+
+
 def occlusion_visibility(camera_srgb: np.ndarray, occlusion: LipOcclusion | None) -> np.ndarray:
     """Factor [0, 1] que multiplica la cobertura del labial y del delineado:
     con la compuerta prendida, 0 en los píxeles con color de piel (la mano)."""
@@ -115,7 +173,8 @@ def liner_alpha(distance: np.ndarray, liner: LipLiner, aa: np.ndarray | float) -
 
 def shade(camera_srgb: np.ndarray, mask: np.ndarray, gloss_map: np.ndarray, p: LipParams,
           sparkle: np.ndarray | float = 0.0, liner: np.ndarray | float = 0.0,
-          liner_lab: np.ndarray | None = None, occlusion: LipOcclusion | None = None) -> np.ndarray:
+          liner_lab: np.ndarray | None = None, occlusion: LipOcclusion | None = None,
+          edge: LipEdge | None = None, distance: np.ndarray | float = 1.0) -> np.ndarray:
     """Color sRGB de salida por píxel (lips.frag).
 
     camera_srgb (..., 3) en [0,1]; mask y gloss_map (...) en [0,1] (canales R
@@ -125,8 +184,12 @@ def shade(camera_srgb: np.ndarray, mask: np.ndarray, gloss_map: np.ndarray, p: L
     de lips.vert) no está: equivale a 1, el labio de frente. liner (...) es la
     cobertura del delineado (liner_alpha) con su color OKLab liner_lab.
     occlusion: la mano delante de la boca (occlusion_visibility).
+    edge, distance: borde que sigue al labio real (refined_mask) con el canal B
+    del mapa (distancia al contorno externo).
     """
     visible = occlusion_visibility(camera_srgb, occlusion)
+    mask = refined_mask(camera_srgb, mask, np.broadcast_to(np.asarray(distance, dtype=float), np.shape(mask)), edge,
+                        p.lip_lightness)
     w = np.clip(mask * p.opacity, 0.0, 1.0) * visible
     lab = to_ok(srgb_to_lin(camera_srgb))
     # Sombreado del píxel relativo al labio medio. OKLab es homogéneo: escalar

@@ -202,6 +202,7 @@ bool Renderer::buildLipsProgram(LipsProgram& out, const char* defines) {
   out.linerLab = glGetUniformLocation(id, "uLinerLab");
   out.linerAmount = glGetUniformLocation(id, "uLinerAmount");
   out.occlusionGate = glGetUniformLocation(id, "uOcclusionGate");
+  out.edgeRefine = glGetUniformLocation(id, "uEdgeRefine");
   out.occlusion = glGetUniformLocation(id, "uOcclusion");
   // Constantes de la sesión: samplers y la transformación UV -> mapa.
   const float* rect = mesh::kLipsMapUvRect;
@@ -579,6 +580,18 @@ void Renderer::drawLips(const RenderLandmarks& landmarks, const float* imageToCl
   glUniform3fv(program.linerLab, 1, drawLips_.linerLab);
   glUniform1f(program.linerAmount, drawLips_.linerAmount * landmarks.alpha);
   glUniform1f(program.occlusionGate, look.occlusionGate);
+  // Borde real (tools/lips/lip_shading.py: edge_strength): hace falta el eje
+  // piel->labio que aprendió la oclusión; sin él la croma no distingue el labio
+  // de la piel. La fuerza sube con el contraste |labio − piel| = 1 / |eje|
+  // entre kOcclusionMinContrast y el doble: sin saltos cuando el eje aparece.
+  float edgeRefine = 0.0f;
+  const float axisNorm = std::hypot(look.occlusionAxisA, look.occlusionAxisB);
+  if (lipEdgeRefine_.load(std::memory_order_relaxed) && axisNorm > 0.0f) {
+    edgeRefine = EngineConfig::kLipEdgeRefineStrength *
+                 smoothstep(EngineConfig::kOcclusionMinContrast, 2.0f * EngineConfig::kOcclusionMinContrast,
+                            1.0f / axisNorm);
+  }
+  glUniform1f(program.edgeRefine, edgeRefine);
   glUniform4f(program.occlusion, look.skinChromaA, look.skinChromaB, look.occlusionAxisA, look.occlusionAxisB);
   glUniform1f(program.sharpness, drawLips_.sharpness);
   glUniform1f(program.light, light);
@@ -768,6 +781,8 @@ void Renderer::setRenderOptions(bool showLandmarks, TintRegion region, bool ligh
 }
 
 void Renderer::setSmoothMesh(bool enabled) { smoothMesh_.store(enabled, std::memory_order_relaxed); }
+
+void Renderer::setLipEdgeRefine(bool enabled) { lipEdgeRefine_.store(enabled, std::memory_order_relaxed); }
 
 void Renderer::requestLookSample() {
   int expected = kSampleIdle;

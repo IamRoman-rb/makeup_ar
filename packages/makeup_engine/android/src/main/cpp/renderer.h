@@ -116,6 +116,10 @@ class Renderer {
   // medio lineal. Cualquier hilo; se aplica en el próximo frame.
   void setSmoothMesh(bool enabled);
 
+  // Borde del labial que sigue al color real del labio (lips.frag: uEdgeRefine).
+  // Cualquier hilo.
+  void setLipEdgeRefine(bool enabled);
+
   // --- Muestra para la guía (docs/ar_engine/COACH.md) ---
   // Cualquier hilo. Pide una muestra de la cara: el render la toma en el
   // próximo frame con cara (descarta una lista sin leer).
@@ -168,6 +172,7 @@ class Renderer {
     GLint linerLab = -1;
     GLint linerAmount = -1;
     GLint occlusionGate = -1;
+    GLint edgeRefine = -1;
     GLint occlusion = -1;
     uint32_t uploadedDisplayVersion = 0;
   };
@@ -283,6 +288,7 @@ class Renderer {
   bool drawLightAdapted_ = false;
   std::atomic<bool> lightAdaptation_{true};
   std::atomic<bool> smoothMesh_{EngineConfig::kSmoothMeshDefault};
+  std::atomic<bool> lipEdgeRefine_{EngineConfig::kLipEdgeRefineDefault};
   // Muestra de la guía: el render pasa kRequested -> kInFlight -> kReady y el
   // analizador kReady -> kIdle. Píxeles y puntos son del render hasta kReady.
   enum LookSampleState : int { kSampleIdle = 0, kSampleRequested, kSampleInFlight, kSampleReady };

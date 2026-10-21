@@ -24,6 +24,7 @@
 #include "engine_config.h"
 #include "stat_window.h"
 #include "tracking/blazeface_decoder.h"
+#include "tracking/lip_contour.h"
 #include "tracking/lip_occlusion.h"
 #include "tracking/one_euro.h"
 #include "tracking/roi.h"
@@ -61,6 +62,7 @@ enum TrackerStatIndex : int {
   kTrackStatOcclusionGate,   // compuerta de oclusión del labial [0, 1] (lip_occlusion.h)
   kTrackStatFilterMinCutoff, // One Euro en uso (setFilterTuning o engine_config.h)
   kTrackStatFilterBeta,
+  kTrackStatLipContourPx,    // ajuste medio del contorno de labios (px del recorte; 0 apagado)
   kTrackStatCount,
 };
 
@@ -133,6 +135,8 @@ class TrackingState {
   // Ajuste del One Euro en vivo (arnés): el tracker lo toma en el próximo
   // resultado. Se recorta a [kOneEuroTuneMin*, kOneEuroTuneMax*].
   void setFilterTuning(float minCutoff, float beta);
+  // Segunda pasada sobre la boca (tracking/lip_contour.h). Cualquier hilo.
+  void setLipContourRefine(bool enabled);
   void snapshotStats(float* out);
   void resetStats();
 
@@ -194,6 +198,10 @@ class TrackingState {
   // Ajuste pedido (cualquier hilo); el tracker lo copia a filterParams_.
   std::atomic<float> tuneMinCutoff_{EngineConfig::kOneEuroMinCutoff};
   std::atomic<float> tuneBeta_{EngineConfig::kOneEuroBeta};
+  std::atomic<bool> lipContour_{EngineConfig::kLipContourDefault};
+  // Solo tracker: landmarks del tensor con el contorno ajustado.
+  std::array<float, kFloats> refined_{};
+  float lipContourPx_ = 0.0f;  // stats (statsMutex_)
 
   std::atomic<float> readbackMs_{NAN};
   std::atomic<uint32_t> cropFailures_{0};

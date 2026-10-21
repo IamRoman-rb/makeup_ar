@@ -82,7 +82,9 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 val minCutoff = call.argument<Double>("minCutoff") ?: Double.NaN
                 val beta = call.argument<Double>("beta") ?: Double.NaN
                 val smoothMesh = call.argument<Boolean>("smoothMesh") ?: false
-                session?.setTrackerTuning(minCutoff.toFloat(), beta.toFloat(), smoothMesh)
+                val lipEdge = call.argument<Boolean>("lipEdge") ?: false
+                val lipContour = call.argument<Boolean>("lipContour") ?: false
+                session?.setTrackerTuning(minCutoff.toFloat(), beta.toFloat(), smoothMesh, lipEdge, lipContour)
                 result.success(null)
             }
             "getStats" -> result.success(session?.stats())

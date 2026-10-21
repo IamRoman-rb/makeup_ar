@@ -66,6 +66,19 @@ struct EngineConfig {
   // Más que esto entre resultados (o tras perder la cara): filtros desde cero.
   static constexpr float kFilterResetGapSeconds = 0.5f;
 
+  // Segunda pasada sobre la boca (tracking/lip_contour.h, TRACKER.md §10):
+  // el contorno externo de los labios se ajusta al borde real de color. En px
+  // del recorte de landmarks (256; la boca mide ~75 px): búsqueda a cada lado
+  // de la normal, paso, tope del ajuste, contraste mínimo de p entre labio y
+  // piel y L mínima para usar la croma. Apagada hasta validarla en el E20
+  // con el chip "Contorno fino" del arnés.
+  static constexpr bool kLipContourDefault = false;
+  static constexpr float kLipContourSearchPx = 3.0f;
+  static constexpr float kLipContourStepPx = 0.5f;
+  static constexpr float kLipContourMaxShiftPx = 2.0f;
+  static constexpr float kLipContourMinContrast = 0.5f;
+  static constexpr float kLipContourMinLightness = 0.15f;
+
   // Extrapolación entre inferencias: hasta 1,5 intervalos (§5.3.3).
   static constexpr float kExtrapolationMaxIntervals = 1.5f;
   // Fundido del maquillaje al aparecer o perder la cara (§5.3.4).
@@ -134,6 +147,12 @@ struct EngineConfig {
   // para volver a adaptar los colores de la receta.
   static constexpr float kLightAdaptSmoothing = 0.4f;
   static constexpr float kLightAdaptEpsilon = 0.004f;
+
+  // Borde real del labial (lips.frag: uEdgeRefine, TRACKER.md §10): la
+  // máscara sigue al color del labio en ~0,85 mm alrededor del contorno.
+  // Apagado hasta validarlo en el E20 con el chip "Borde real" del arnés.
+  static constexpr bool kLipEdgeRefineDefault = false;
+  static constexpr float kLipEdgeRefineStrength = 1.0f;
 
   // L OKLab del labio si todavía no se midió (valor del informe §5.5).
   static constexpr float kLipsFallbackLightness = 0.55f;

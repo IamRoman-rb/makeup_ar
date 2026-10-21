@@ -147,10 +147,13 @@ void nativeSetRenderOptions(JNIEnv*, jclass, jlong handle, jboolean showLandmark
 }
 
 // Ajuste en vivo del arnés: One Euro del tracker y malla suave del render.
-void nativeSetTrackerTuning(JNIEnv*, jclass, jlong handle, jfloat minCutoff, jfloat beta, jboolean smoothMesh) {
+void nativeSetTrackerTuning(JNIEnv*, jclass, jlong handle, jfloat minCutoff, jfloat beta, jboolean smoothMesh,
+                            jboolean lipEdge, jboolean lipContour) {
   Engine* engine = fromHandle(handle);
   engine->tracking.setFilterTuning(minCutoff, beta);
+  engine->tracking.setLipContourRefine(lipContour == JNI_TRUE);
   engine->renderer.setSmoothMesh(smoothMesh == JNI_TRUE);
+  engine->renderer.setLipEdgeRefine(lipEdge == JNI_TRUE);
 }
 
 void nativeSetTint(JNIEnv*, jclass, jlong handle, jfloat r, jfloat g, jfloat b, jfloat amount) {
@@ -445,7 +448,7 @@ const JNINativeMethod kMethods[] = {
     {"nativeGetLastError", "(J)Ljava/lang/String;", reinterpret_cast<void*>(nativeGetLastError)},
     {"nativeSetGeometry", "(J[F[FIIZ)V", reinterpret_cast<void*>(nativeSetGeometry)},
     {"nativeSetRenderOptions", "(JZIZ)V", reinterpret_cast<void*>(nativeSetRenderOptions)},
-    {"nativeSetTrackerTuning", "(JFFZ)V", reinterpret_cast<void*>(nativeSetTrackerTuning)},
+    {"nativeSetTrackerTuning", "(JFFZZZ)V", reinterpret_cast<void*>(nativeSetTrackerTuning)},
     {"nativeSetTint", "(JFFFF)V", reinterpret_cast<void*>(nativeSetTint)},
     {"nativeSetLips", "(JZFFFFIFF)V", reinterpret_cast<void*>(nativeSetLips)},
     {"nativeSetLipLiner", "(JZFFFF)V", reinterpret_cast<void*>(nativeSetLipLiner)},

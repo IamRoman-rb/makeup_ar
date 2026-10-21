@@ -439,6 +439,13 @@ inline constexpr char k_lips_frag[] = R"GLSL(#version 300 es
 //   oclusin (mano, dedos; tracking/lip_occlusion.h): con la compuerta prendida,
 //           w y el delineado se multiplican por mix(1, parecido al labio, compuerta),
 //           donde parecido = smoothstep sobre p = dot((a,b)/L  piel, eje).
+//   borde real (uEdgeRefine; opcin 3 de TRACKER.md 10): en la franja del
+//           contorno externo (canal .b < EDGE_BAND) la mscara se mezcla con
+//           "parecido al labio" (misma p que la oclusin): el labial se retira
+//           de la piel donde la malla se pas y llega al labio que asoma fuera
+//           de ella. Los pxeles oscuros (sombreado < EDGE_MIN_SHADING) y los
+//           quemados conservan la mscara: su croma es ruido (la boca abierta)
+//           o est lavada (un reflejo en el borde).
 //   salida: layerOver(color, cmara, 1 - (1 - w)(1 - delineado)) con blending premultiplicado
 //           (color.glsl): el labial va encima de la base sin pisarla
 //           alrededor de la boca.
@@ -473,6 +480,8 @@ inline constexpr char k_lips_frag[] = R"GLSL(#version 300 es
 //   uOcclusionGate float  compuerta de oclusin [0,1]; 0 = sin oclusin (no se calcula).
 //   uOcclusion     vec4   xy = cromaticidad (a,b)/L de la piel; zw = eje
 //                         piel->labio / |eje| (p = 0 piel, 1 labio).
+//   uEdgeRefine    float  borde real [0,1]; 0 = mscara del mapa tal cual (no se
+//                         calcula). La CPU lo pone en 0 sin eje piel->labio.
 //   uTime          float  (SHIMMER) segundos, mdulo 1000.
 //   uSparkle       float  (SHIMMER) brillo de cada destello, [0,1] (acabado shimmer:
 //                         kLipsSparkle  gloss; efecto glitter en labios: su
@@ -497,6 +506,7 @@ uniform float uLinerAmount;
 uniform float uLinerEdge;
 uniform float uOcclusionGate;
 uniform highp vec4 uOcclusion;
+uniform float uEdgeRefine;
 #ifdef SHIMMER
 uniform highp float uTime;
 uniform float uSparkle;
@@ -526,6 +536,17 @@ uniform float uSparkle;
 // oclusin (centrado en kOcclusionClipValue de la CPU, engine_config.h).
 #define OCCLUSION_CLIP_LOW 0.9
 #define OCCLUSION_CLIP_HIGH 0.97
+// Borde real (tools/lips/lip_shading.py: refined_mask): franja en distancia
+// normalizada al contorno externo (0,5  0,85 mm), p en que el pxel pasa a
+// labio y sombreado bajo el que no se usa la croma.
+#define EDGE_BAND 0.5
+#define EDGE_LOW 0.35
+#define EDGE_HIGH 0.65
+#define EDGE_MIN_SHADING 0.55
+#define EDGE_SHADING_FEATHER 0.1
+// Piso de la L del labio por la que se divide (la CPU ya lo aplica: cubre un
+// uniform sin cargar).
+#define LIP_LIGHTNESS_MIN 0.1
 
 // highp: coordenadas de textura (ver camera_quad.vert).
 in highp vec2 vTexCoord;
@@ -552,9 +573,12 @@ void main() {
   float liner = uLinerAmount > 0.0
                     ? (1.0 - smoothstep(uLinerEdge, uLinerEdge + linerAa, lipsTexel.b)) * uLinerAmount * vFacing
                     : 0.0;
-  // Fuera del labio y del delineado (el borde de la zona dibujada): no cambia
-  // el pxel. La rama es coherente por zonas grandes.
-  if (w <= 0.0 && liner <= 0.0) {
+  // Franja del borde real: 1 sobre el contorno externo, 0 desde EDGE_BAND.
+  // De espaldas o con el fundido en 0 no se puede pintar: no cuenta.
+  float edgeBand = uOpacity * vFacing > 0.0 ? uEdgeRefine * (1.0 - smoothstep(0.0, EDGE_BAND, lipsTexel.b)) : 0.0;
+  // Fuera del labio, del delineado y de la franja (el borde de la zona
+  // dibujada): no cambia el pxel. La rama es coherente por zonas grandes.
+  if (w <= 0.0 && liner <= 0.0 && edgeBand <= 0.0) {
     fragColor = vec4(0.0);
     return;
   }
@@ -562,15 +586,36 @@ void main() {
   // highp: entrada de oklabToLinearInGamut (ver color.glsl). La cmara llega
   // en mediump (srgbToLinear/linearToOklab): ~1e-3 de ruido, invisible.
   highp vec3 lab = linearToOklab(srgbToLinear(camera));
+  // Sombreado del labio real (tambin lo usa el borde real). max: la CPU ya
+  // limita uLipLightness a >= 0,1; esto cubre un uniform sin cargar (0).
+  highp float shading = clamp(lab.x / max(uLipLightness, LIP_LIGHTNESS_MIN), 0.0, SHADING_MAX);
+  // p (0 piel, 1 labio) y luz quemada, para el borde real y la oclusin: una
+  // sola vez. Luz quemada: la croma no dice nada (el canal saturado la lava
+  // hacia la de la piel; P8, kOcclusionClipValue).
+  highp float lipP = 0.0;
+  float clipped = 0.0;
+  if (edgeBand > 0.0 || uOcclusionGate > 0.0) {
+    lipP = dot(lab.yz / max(lab.x, OCCLUSION_MIN_LIGHTNESS) - uOcclusion.xy, uOcclusion.zw);
+    clipped = smoothstep(OCCLUSION_CLIP_LOW, OCCLUSION_CLIP_HIGH, max(max(camera.r, camera.g), camera.b));
+  }
+  if (edgeBand > 0.0) {
+    float lipLike = smoothstep(EDGE_LOW, EDGE_HIGH, lipP);
+    // Oscuro (croma ruidosa, boca abierta) o quemado (croma lavada, reflejo
+    // en el borde): la mscara queda como est.
+    float trust = smoothstep(EDGE_MIN_SHADING - EDGE_SHADING_FEATHER, EDGE_MIN_SHADING, shading) * (1.0 - clipped);
+    float refined = mix(mask, mix(mask, lipLike, trust), edgeBand);
+    w = clamp(refined * uOpacity * vFacing, 0.0, 1.0);
+    if (w <= 0.0 && liner <= 0.0) {
+      fragColor = vec4(0.0);
+      return;
+    }
+  }
   // Oclusin: con la compuerta prendida (la CPU vio muestras del labio con
   // color de piel), el pxel que se parece a la piel pierde el labial y el
   // delineado; el borde sigue al dedo. Rama por uniform: sin oclusin, nada.
   if (uOcclusionGate > 0.0) {
-    highp vec2 chroma = lab.yz / max(lab.x, OCCLUSION_MIN_LIGHTNESS);
-    float lipLike = smoothstep(OCCLUSION_LOW, OCCLUSION_HIGH, dot(chroma - uOcclusion.xy, uOcclusion.zw));
-    // Luz quemada: la croma no dice nada (el canal saturado la lava hacia la
-    // de la piel). Ese pxel nunca pierde el labial (P8; kOcclusionClipValue).
-    float clipped = smoothstep(OCCLUSION_CLIP_LOW, OCCLUSION_CLIP_HIGH, max(max(camera.r, camera.g), camera.b));
+    float lipLike = smoothstep(OCCLUSION_LOW, OCCLUSION_HIGH, lipP);
+    // El pxel quemado nunca pierde el labial.
     float visible = mix(1.0, max(lipLike, clipped), uOcclusionGate);
     w *= visible;
     liner *= visible;
@@ -581,8 +626,6 @@ void main() {
       return;
     }
   }
-  // max: la CPU ya la limita a >= 0,1; esto cubre un uniform sin cargar (0).
-  highp float shading = clamp(lab.x / max(uLipLightness, 0.1), 0.0, SHADING_MAX);
   highp vec3 lit = uTargetLab * shading;
   highp float lightness = clamp(mix(lab.x, lit.x, w * uLumaFollow), 0.0, 1.0);
   highp vec2 ab = mix(lab.yz, lit.yz, w);

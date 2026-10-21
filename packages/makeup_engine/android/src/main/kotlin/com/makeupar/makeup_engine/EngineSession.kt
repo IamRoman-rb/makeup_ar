@@ -422,9 +422,9 @@ internal class EngineSession(
     }
 
     /** Hilo de plataforma. Ajuste en vivo del arnés (TRACKER.md §9). */
-    fun setTrackerTuning(minCutoff: Float, beta: Float, smoothMesh: Boolean) {
+    fun setTrackerTuning(minCutoff: Float, beta: Float, smoothMesh: Boolean, lipEdge: Boolean, lipContour: Boolean) {
         if (released) return
-        NativeBridge.nativeSetTrackerTuning(nativeHandle, minCutoff, beta, smoothMesh)
+        NativeBridge.nativeSetTrackerTuning(nativeHandle, minCutoff, beta, smoothMesh, lipEdge, lipContour)
     }
 
     /**
@@ -466,6 +466,7 @@ internal class EngineSession(
             "occlusionGate" to t[NativeBridge.TRACK_STAT_OCCLUSION_GATE].toDouble(),
             "filterMinCutoff" to t[NativeBridge.TRACK_STAT_FILTER_MIN_CUTOFF].toDouble(),
             "filterBeta" to t[NativeBridge.TRACK_STAT_FILTER_BETA].toDouble(),
+            "lipContourPx" to t[NativeBridge.TRACK_STAT_LIP_CONTOUR_PX].toDouble(),
             "initMs" to tracker.initMs,
             "backend" to tracker.backend,
             "error" to tracker.error,
