@@ -5,7 +5,7 @@ Pedido de la clienta: mientras la usuaria se maquilla de verdad, la app compara 
 ## Qué hace (v1)
 
 - **Entrada:** catálogo → look → espejo con el look → **"Guíame"**. También desde el ícono de cámara del paso a paso.
-  - La guía reemplaza a la cámara: una sola sesión.
+  - La guía reemplaza a la cámara: una sola sesión. El motor admite una sola, así que "Guíame" primero suelta la cámara del espejo (desmonta la vista; su dispose manda el stop) y recién en el frame siguiente abre la guía. Antes la guía arrancaba durante la transición, con la sesión del espejo todavía abierta: el motor respondía `already_started` y la guía decía que el maquillaje en vivo no estaba disponible.
 - **Inicio:** tarjeta "Antes de empezar".
   - **Tomar referencia** (cara lavada, 2 muestras) o **Saltear**.
   - Con referencia, el color natural de labios, rubor y párpados es el de la usuaria. Sin ella se estima desde la piel con la misma luz; los labios quedan aproximados.
@@ -31,6 +31,7 @@ Pedido de la clienta: mientras la usuaria se maquilla de verdad, la app compara 
   - Si el teléfono no tiene voz para el idioma, se avisa una vez y queda solo el texto. Mientras el TextToSpeech arranca, la respuesta del primer pedido espera a saber si hay voz, así el aviso sale con la primera indicación.
   - Al pausar la app o salir (atrás) la voz se calla en el acto y la muestra en vuelo se descarta; al cerrar se libera el TextToSpeech.
   - El manifest del plugin declara la consulta del servicio de voz (`<queries>`), obligatoria desde Android 11.
+- **Sin motor (pasos del look):** si el motor no puede abrir la cámara, la guía no queda en un aviso: muestra los pasos del look en el mismo orden de zonas, con el color de la receta y cuánto aplicar (suave, media o cubriente según la opacidad; delineado fino, medio o grueso y con o sin cola; umbrales `stepLightBelow`/`stepStrongFrom` en `CoachPolicy`). "Hecho" avanza y dice el paso siguiente en voz alta; se puede volver o tocar un paso. Sale de la receta (`CoachStep.fromTarget`): no mide nada, no usa IA ni red.
 - **Privacidad:** el recorte de la cara vive en memoria nativa, se mide y se descarta. No se guarda ni se sube ninguna imagen; solo salen números.
 
 ## Cómo mide

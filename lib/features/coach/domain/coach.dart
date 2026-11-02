@@ -147,6 +147,76 @@ final class CoachTarget {
   bool get isEmpty => zones.isEmpty;
 }
 
+/// Cuánto producto pide una capa del look (pasos sin cámara).
+enum CoachAmount { light, medium, strong }
+
+/// Grosor del delineado del look (pasos sin cámara).
+enum CoachLinerWidth { thin, medium, thick }
+
+/// Un paso del look para seguir sin cámara, cuando el motor no puede abrirla:
+/// sale de la receta, en el orden de aplicación de la guía. No mide nada: dice
+/// qué aplicar, dónde, con qué color y cuánto.
+final class CoachStep {
+  const CoachStep.color(this.zone, RecipeColor this.color, CoachAmount this.amount)
+      : linerWidth = null,
+        wing = false;
+  const CoachStep.liner(CoachLinerWidth this.linerWidth, {required this.wing})
+      : zone = CoachZone.eyeLiner,
+        color = null,
+        amount = null;
+
+  final CoachZone zone;
+
+  /// Color de la receta (null en el delineado de ojos: la receta no lo usa
+  /// para la guía).
+  final RecipeColor? color;
+  final CoachAmount? amount;
+  final CoachLinerWidth? linerWidth;
+
+  /// El delineado termina en cola.
+  final bool wing;
+
+  /// Los pasos de [target], en orden de aplicación (las mismas zonas que
+  /// revisa la guía en vivo).
+  static List<CoachStep> fromTarget(CoachTarget target) {
+    final steps = <CoachStep>[];
+    final liner = target.liner;
+    for (final zone in target.zones) {
+      final color = target.colors[zone];
+      if (zone == CoachZone.eyeLiner && liner != null) {
+        steps.add(CoachStep.liner(_width(liner.thickness), wing: liner.wing >= ImageRecipePolicy.wingMin));
+      } else if (color != null) {
+        steps.add(CoachStep.color(zone, color.color.toRecipeColor(), _amount(color.opacity)));
+      }
+    }
+    return steps;
+  }
+
+  static CoachAmount _amount(double opacity) => opacity < CoachPolicy.stepLightBelow
+      ? CoachAmount.light
+      : opacity < CoachPolicy.stepStrongFrom
+          ? CoachAmount.medium
+          : CoachAmount.strong;
+
+  static CoachLinerWidth _width(double thickness) => thickness < CoachPolicy.stepLightBelow
+      ? CoachLinerWidth.thin
+      : thickness < CoachPolicy.stepStrongFrom
+          ? CoachLinerWidth.medium
+          : CoachLinerWidth.thick;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CoachStep &&
+      other.zone == zone &&
+      other.color?.rgb == color?.rgb &&
+      other.amount == amount &&
+      other.linerWidth == linerWidth &&
+      other.wing == wing;
+
+  @override
+  int get hashCode => Object.hash(zone, color?.rgb, amount, linerWidth, wing);
+}
+
 abstract final class CoachEvaluator {
   /// Veredicto de cada zona de [target] con la medida [current] (status ok).
   /// [baseline]: la referencia con la cara lavada, si se tomó.

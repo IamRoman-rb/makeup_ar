@@ -203,6 +203,42 @@ void main() {
     });
   });
 
+  group('CoachStep', () {
+    test('un paso por zona revisable, en orden de aplicación, con color y cantidad', () {
+      final recipe = MakeupRecipe(
+        name: 'Completo',
+        lips: LipsSpec(color: _red, opacity: 0.8, lumaFollow: 1),
+        cheeks: const CheeksSpec(color: RecipeColor(0xE07A7A), opacity: 0.25),
+        eyes: EyesSpec(
+          shadow: const [EyeShadowLayer(color: RecipeColor(0x6A3A7A), opacity: 0.5, region: ShadowRegion.lid)],
+          liner: const EyeLinerSpec(color: RecipeColor(0x111111), opacity: 0.9, thickness: 0.2),
+        ),
+      );
+      final steps = CoachStep.fromTarget(CoachTarget.from(recipe));
+      expect(steps.map((s) => s.zone), [CoachZone.shadowLid, CoachZone.eyeLiner, CoachZone.cheeks, CoachZone.lips]);
+      expect(steps[0].amount, CoachAmount.medium);
+      expect(steps[1], const CoachStep.liner(CoachLinerWidth.thin, wing: false));
+      expect(steps[2].amount, CoachAmount.light);
+      expect(steps[3].amount, CoachAmount.strong);
+      // El color de la muestra es el de la receta (ida y vuelta por OKLab).
+      for (final (step, rgb) in [(steps[0], 0x6A3A7A), (steps[2], 0xE07A7A), (steps[3], _red.rgb)]) {
+        final color = step.color;
+        expect(color, isNotNull);
+        for (final shift in [16, 8, 0]) {
+          expect(((color?.rgb ?? 0) >> shift) & 0xFF, closeTo((rgb >> shift) & 0xFF, 1));
+        }
+      }
+    });
+
+    test('delineado grueso con cola', () {
+      final recipe = MakeupRecipe(
+        name: 'Gato',
+        eyes: EyesSpec(liner: const EyeLinerSpec(color: RecipeColor(0x111111), opacity: 0.9, thickness: 0.8, wing: 0.6)),
+      );
+      expect(CoachStep.fromTarget(CoachTarget.from(recipe)), [const CoachStep.liner(CoachLinerWidth.thick, wing: true)]);
+    });
+  });
+
   group('CoachSession', () {
     Duration s(int seconds) => Duration(seconds: seconds);
 

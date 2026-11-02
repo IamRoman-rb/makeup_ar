@@ -615,6 +615,56 @@
     "coachWingShort": "Eyeliner: the wing is short, extend it outward.",
     "coachWingLong": "Eyeliner: the wing is long, shorten it.",
     "coachLinerTooFar": "Move closer to the camera to check your eyeliner.",
+    "coachStepsTitle": "Look steps",
+    "coachStepsIntro": "The camera couldn’t be opened to check you. Follow the steps in order and tap “Done” after each one.",
+    "coachStepColor": "{zone}: apply the swatch color {amount}.",
+    "@coachStepColor": {
+        "placeholders": {
+            "zone": {
+                "type": "String"
+            },
+            "amount": {
+                "type": "String"
+            }
+        }
+    },
+    "coachAmountLight": "in a light layer",
+    "coachAmountMedium": "in a medium amount",
+    "coachAmountStrong": "with full coverage",
+    "coachStepLiner": "Eyeliner: trace the lash line with a {width} line.",
+    "@coachStepLiner": {
+        "placeholders": {
+            "width": {
+                "type": "String"
+            }
+        }
+    },
+    "coachStepLinerWing": "Eyeliner: trace the lash line with a {width} line and finish with a wing outward.",
+    "@coachStepLinerWing": {
+        "placeholders": {
+            "width": {
+                "type": "String"
+            }
+        }
+    },
+    "coachLinerWidthThin": "thin",
+    "coachLinerWidthMedium": "medium",
+    "coachLinerWidthThick": "thick",
+    "coachStepProgress": "Step {current} of {total}",
+    "@coachStepProgress": {
+        "placeholders": {
+            "current": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "coachStepNext": "Done, next",
+    "coachStepBack": "Back",
+    "coachStepsFinished": "You finished all the steps of the look!",
+    "coachStepsRestart": "Start over",
     "coachZoneLips": "Lips",
     "coachZoneLipLiner": "Lip liner",
     "coachZoneCheeks": "Blush",

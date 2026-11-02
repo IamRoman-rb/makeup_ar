@@ -953,6 +953,63 @@ class AppLocalizationsEn extends AppLocalizations {
       'Move closer to the camera to check your eyeliner.';
 
   @override
+  String get coachStepsTitle => 'Look steps';
+
+  @override
+  String get coachStepsIntro =>
+      'The camera couldn’t be opened to check you. Follow the steps in order and tap “Done” after each one.';
+
+  @override
+  String coachStepColor(String zone, String amount) {
+    return '$zone: apply the swatch color $amount.';
+  }
+
+  @override
+  String get coachAmountLight => 'in a light layer';
+
+  @override
+  String get coachAmountMedium => 'in a medium amount';
+
+  @override
+  String get coachAmountStrong => 'with full coverage';
+
+  @override
+  String coachStepLiner(String width) {
+    return 'Eyeliner: trace the lash line with a $width line.';
+  }
+
+  @override
+  String coachStepLinerWing(String width) {
+    return 'Eyeliner: trace the lash line with a $width line and finish with a wing outward.';
+  }
+
+  @override
+  String get coachLinerWidthThin => 'thin';
+
+  @override
+  String get coachLinerWidthMedium => 'medium';
+
+  @override
+  String get coachLinerWidthThick => 'thick';
+
+  @override
+  String coachStepProgress(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get coachStepNext => 'Done, next';
+
+  @override
+  String get coachStepBack => 'Back';
+
+  @override
+  String get coachStepsFinished => 'You finished all the steps of the look!';
+
+  @override
+  String get coachStepsRestart => 'Start over';
+
+  @override
   String get coachZoneLips => 'Lips';
 
   @override

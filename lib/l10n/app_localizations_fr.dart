@@ -971,6 +971,63 @@ class AppLocalizationsFr extends AppLocalizations {
       'Rapproche-toi de la caméra pour vérifier l’eye-liner.';
 
   @override
+  String get coachStepsTitle => 'Étapes du look';
+
+  @override
+  String get coachStepsIntro =>
+      'Impossible d’ouvrir la caméra pour te suivre. Suis les étapes dans l’ordre et touche « Fait » après chacune.';
+
+  @override
+  String coachStepColor(String zone, String amount) {
+    return '$zone : applique la couleur de l’échantillon $amount.';
+  }
+
+  @override
+  String get coachAmountLight => 'en couche légère';
+
+  @override
+  String get coachAmountMedium => 'en quantité moyenne';
+
+  @override
+  String get coachAmountStrong => 'bien couvrant';
+
+  @override
+  String coachStepLiner(String width) {
+    return 'Eye-liner : trace la ligne des cils d’un trait $width.';
+  }
+
+  @override
+  String coachStepLinerWing(String width) {
+    return 'Eye-liner : trace la ligne des cils d’un trait $width et termine par une virgule vers l’extérieur.';
+  }
+
+  @override
+  String get coachLinerWidthThin => 'fin';
+
+  @override
+  String get coachLinerWidthMedium => 'moyen';
+
+  @override
+  String get coachLinerWidthThick => 'épais';
+
+  @override
+  String coachStepProgress(int current, int total) {
+    return 'Étape $current sur $total';
+  }
+
+  @override
+  String get coachStepNext => 'Fait, suivant';
+
+  @override
+  String get coachStepBack => 'Précédent';
+
+  @override
+  String get coachStepsFinished => 'Tu as terminé toutes les étapes du look !';
+
+  @override
+  String get coachStepsRestart => 'Recommencer';
+
+  @override
   String get coachZoneLips => 'Lèvres';
 
   @override

@@ -385,20 +385,90 @@ void main() {
     await _close(tester);
   });
 
-  testWidgets('sin motor AR: lo avisa y no mide', (tester) async {
-    final sampler = _FakeSampler([_face(_naturalLip)]);
-    await tester.pumpWidget(_app(CoachScreen(
-      look: _look(),
-      renderer: FakeRenderer(available: false),
-      sampler: sampler,
-      voice: _FakeVoice(),
-    )));
-    await _settle(tester);
-    expect(find.byKey(const ValueKey('coach-skip')), findsNothing);
-    await tester.pump(const Duration(seconds: 3));
-    expect(sampler.calls, 0);
-    expect(find.textContaining('no está disponible'), findsWidgets);
-    await _close(tester);
+  group('sin motor AR: pasos del look', () {
+    final fullLook = _look(
+      recipe: MakeupRecipe(
+        name: 'Completo',
+        lips: const LipsSpec(color: _red, opacity: 0.8, lumaFollow: 1),
+        cheeks: const CheeksSpec(color: RecipeColor(0xE07A7A), opacity: 0.25),
+        eyes: EyesSpec(liner: const EyeLinerSpec(color: RecipeColor(0x111111), opacity: 0.9, thickness: 0.7, wing: 0.6)),
+      ),
+    );
+    const liner = 'Delineado: marcá la línea de las pestañas con un trazo grueso y terminá con una cola hacia afuera.';
+    const cheeks = 'Rubor: aplicá el color de la muestra en una capa suave.';
+    const lips = 'Labios: aplicá el color de la muestra bien cubriente.';
+
+    testWidgets('no mide ni deja la cámara: muestra y dice los pasos en orden', (tester) async {
+      final sampler = _FakeSampler([_face(_naturalLip)]);
+      final voice = _FakeVoice();
+      final renderer = FakeRenderer(available: false);
+      await tester.pumpWidget(_app(CoachScreen(look: fullLook, renderer: renderer, sampler: sampler, voice: voice)));
+      await _settle(tester);
+      expect(find.byKey(const ValueKey('coach-skip')), findsNothing);
+      expect(find.text('Pasos del look'), findsOneWidget);
+      expect(find.text(liner), findsOneWidget);
+      expect(find.text(cheeks), findsOneWidget);
+      expect(find.text(lips), findsOneWidget);
+      expect(find.text('Paso 1 de 3'), findsOneWidget);
+      expect(voice.spoken, [liner]);
+      expect(find.byType(TestFilterView), findsNothing, reason: 'sin motor no se queda con la cámara');
+      await tester.pump(const Duration(seconds: 3));
+      expect(sampler.calls, 0);
+      await _close(tester);
+    });
+
+    testWidgets('"Hecho" avanza y dice el siguiente; al final, empezar de nuevo', (tester) async {
+      final voice = _FakeVoice();
+      await tester.pumpWidget(_app(CoachScreen(
+        look: fullLook,
+        renderer: FakeRenderer(available: false),
+        sampler: _FakeSampler([_face(_naturalLip)]),
+        voice: voice,
+      )));
+      await _settle(tester);
+      await tester.tap(find.byKey(const ValueKey('coach-step-next')));
+      await _settle(tester);
+      expect(find.text('Paso 2 de 3'), findsOneWidget);
+      expect(voice.spoken.last, cheeks);
+      await tester.tap(find.byKey(const ValueKey('coach-step-back')));
+      await _settle(tester);
+      expect(voice.spoken.last, liner);
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byKey(const ValueKey('coach-step-next')));
+        await _settle(tester);
+      }
+      expect(find.byKey(const ValueKey('coach-steps-finished')), findsOneWidget);
+      expect(voice.spoken.last, '¡Terminaste todos los pasos del look!');
+      await tester.tap(find.byKey(const ValueKey('coach-steps-restart')));
+      await _settle(tester);
+      expect(find.text('Paso 1 de 3'), findsOneWidget);
+      expect(voice.spoken.last, liner);
+      // Tocar un paso vuelve a él.
+      await tester.tap(find.text(lips));
+      await _settle(tester);
+      expect(find.text('Paso 3 de 3'), findsOneWidget);
+      await _close(tester);
+    });
+
+    testWidgets('silenciada no habla; al reactivar dice el paso actual', (tester) async {
+      final voice = _FakeVoice();
+      await tester.pumpWidget(_app(CoachScreen(
+        look: fullLook,
+        renderer: FakeRenderer(available: false),
+        sampler: _FakeSampler([_face(_naturalLip)]),
+        voice: voice,
+      )));
+      await _settle(tester);
+      await tester.tap(find.byKey(const ValueKey('coach-mute')));
+      await _settle(tester);
+      await tester.tap(find.byKey(const ValueKey('coach-step-next')));
+      await _settle(tester);
+      expect(voice.spoken, [liner]);
+      await tester.tap(find.byKey(const ValueKey('coach-mute')));
+      await _settle(tester);
+      expect(voice.spoken, [liner, cheeks]);
+      await _close(tester);
+    });
   });
 
   testWidgets('un look sin zonas revisables lo dice y no mide', (tester) async {

@@ -1800,6 +1800,102 @@ abstract class AppLocalizations {
   /// **'Move closer to the camera to check your eyeliner.'**
   String get coachLinerTooFar;
 
+  /// No description provided for @coachStepsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Look steps'**
+  String get coachStepsTitle;
+
+  /// No description provided for @coachStepsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera couldn’t be opened to check you. Follow the steps in order and tap “Done” after each one.'**
+  String get coachStepsIntro;
+
+  /// No description provided for @coachStepColor.
+  ///
+  /// In en, this message translates to:
+  /// **'{zone}: apply the swatch color {amount}.'**
+  String coachStepColor(String zone, String amount);
+
+  /// No description provided for @coachAmountLight.
+  ///
+  /// In en, this message translates to:
+  /// **'in a light layer'**
+  String get coachAmountLight;
+
+  /// No description provided for @coachAmountMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'in a medium amount'**
+  String get coachAmountMedium;
+
+  /// No description provided for @coachAmountStrong.
+  ///
+  /// In en, this message translates to:
+  /// **'with full coverage'**
+  String get coachAmountStrong;
+
+  /// No description provided for @coachStepLiner.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyeliner: trace the lash line with a {width} line.'**
+  String coachStepLiner(String width);
+
+  /// No description provided for @coachStepLinerWing.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyeliner: trace the lash line with a {width} line and finish with a wing outward.'**
+  String coachStepLinerWing(String width);
+
+  /// No description provided for @coachLinerWidthThin.
+  ///
+  /// In en, this message translates to:
+  /// **'thin'**
+  String get coachLinerWidthThin;
+
+  /// No description provided for @coachLinerWidthMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'medium'**
+  String get coachLinerWidthMedium;
+
+  /// No description provided for @coachLinerWidthThick.
+  ///
+  /// In en, this message translates to:
+  /// **'thick'**
+  String get coachLinerWidthThick;
+
+  /// No description provided for @coachStepProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String coachStepProgress(int current, int total);
+
+  /// No description provided for @coachStepNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Done, next'**
+  String get coachStepNext;
+
+  /// No description provided for @coachStepBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get coachStepBack;
+
+  /// No description provided for @coachStepsFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'You finished all the steps of the look!'**
+  String get coachStepsFinished;
+
+  /// No description provided for @coachStepsRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start over'**
+  String get coachStepsRestart;
+
   /// No description provided for @coachZoneLips.
   ///
   /// In en, this message translates to:

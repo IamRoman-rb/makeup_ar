@@ -54,4 +54,10 @@ abstract final class CoachPolicy {
 
   /// Muestras de la referencia con la cara lavada.
   static const int referenceSamples = 2;
+
+  /// Pasos sin cámara: una opacidad de receta (o un grosor de delineado,
+  /// 0..1) debajo de esto se pide "suave" / "fino"; desde [stepStrongFrom],
+  /// "cubriente" / "grueso"; en el medio, "cantidad media" / "medio".
+  static const double stepLightBelow = 0.35;
+  static const double stepStrongFrom = 0.65;
 }

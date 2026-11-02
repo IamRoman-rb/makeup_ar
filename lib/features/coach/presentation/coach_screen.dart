@@ -73,8 +73,15 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
   int _epoch = 0;
 
   /// El motor no puede dibujar en este equipo (o AR_RENDERER=painter): sin
-  /// cara en vivo no hay qué medir.
+  /// cara en vivo no hay qué medir y la guía muestra los pasos del look.
   bool _unavailable = false;
+
+  /// Pasos del look para seguir sin cámara, y el actual (= cantidad: terminó).
+  late final List<CoachStep> _steps = switch (_session) {
+    final session? => CoachStep.fromTarget(session.target),
+    null => const <CoachStep>[],
+  };
+  int _step = 0;
 
   static CoachSession? _sessionFor(MakeupRecipe? recipe) {
     if (recipe == null) return null;
@@ -203,22 +210,56 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
   /// Dice [prompt] con el mismo texto que la pantalla y en el idioma de la
   /// app; corta lo que se estaba diciendo.
   Future<void> _say(CoachPrompt prompt) async {
-    if (!_active || _muted) return;
+    if (!_active) return;
+    await _speak(coachPromptText(AppLocalizations.of(context)!, prompt));
+  }
+
+  /// Hay alguien mirando y la voz no está silenciada (también sin motor: los
+  /// pasos sin cámara se dicen igual).
+  bool get _canSpeak => mounted && _inForeground && !_leaving && !_muted;
+
+  Future<void> _speak(String text) async {
+    if (!_canSpeak) return;
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
-    final spoken = await _voice.speak(coachPromptText(l10n, prompt), locale: _locale(context));
-    if (!spoken && !_voiceWarned && _active) {
+    final spoken = await _voice.speak(text, locale: _locale(context));
+    if (!spoken && !_voiceWarned && mounted && !_leaving) {
       _voiceWarned = true;
       messenger.showSnackBar(SnackBar(content: Text(l10n.coachVoiceUnavailable)));
     }
   }
 
+  /// El motor no pudo abrir la cámara: en lugar de un callejón sin salida,
+  /// la guía pasa a los pasos del look (de la receta, sin medir ni IA).
   void _onEngineUnavailable() {
     if (!mounted || _unavailable) return;
     _timer?.cancel();
     _timer = null;
     unawaited(_voice.stop());
-    setState(() => _unavailable = true);
+    setState(() {
+      _unavailable = true;
+      _step = 0;
+    });
+    _speakStep();
+  }
+
+  /// Dice el paso actual, o que terminó.
+  void _speakStep() {
+    if (_steps.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
+    unawaited(_speak(_step < _steps.length ? coachStepText(l10n, _steps[_step]) : l10n.coachStepsFinished));
+  }
+
+  /// Pasa al paso [index] (0..cantidad; cantidad = terminó) y lo dice.
+  void _goToStep(int index) {
+    final next = index.clamp(0, _steps.length);
+    if (next == _step) return;
+    final forward = next > _step;
+    setState(() => _step = next);
+    if (forward) {
+      unawaited(next == _steps.length ? HapticFeedback.mediumImpact() : HapticFeedback.lightImpact());
+    }
+    _speakStep();
   }
 
   /// Línea COACH en logcat para medir en el E20 (COACH.md).
@@ -237,6 +278,10 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
     setState(() => _muted = muted);
     if (muted) {
       unawaited(_voice.stop());
+      return;
+    }
+    if (_unavailable) {
+      _speakStep();
       return;
     }
     final prompt = _phase == _Phase.running && _active ? _session?.resume(_clock.elapsed) : null;
@@ -305,7 +350,9 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
     return Stack(
       children: [
         Positioned.fill(
-          child: _inForeground
+          // Sin motor no se vuelve a montar la cámara (por ejemplo al volver de
+          // segundo plano): la guía sigue con los pasos.
+          child: _inForeground && !_unavailable
               ? TestFilterView(
                   renderer: _renderer,
                   options: _showTarget ? _target : _bare,
@@ -317,15 +364,106 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
                 )
               : const SizedBox.expand(),
         ),
-        if (_unavailable)
-          _bottomCard(child: Text(l10n.testFilterUnavailable, style: const TextStyle(fontSize: 16)))
-        else if (session == null)
+        if (session == null)
           _bottomCard(child: Text(l10n.coachNoZones, style: const TextStyle(fontSize: 16)))
+        else if (_unavailable)
+          Positioned.fill(child: _stepsView(l10n))
         else ...[
           Positioned(top: 8, left: 8, right: 8, child: _ZoneChips(session: session)),
           _bottomCard(child: _cardContent(l10n)),
         ],
       ],
+    );
+  }
+
+  /// Sin cámara: los pasos del look en orden, con su color. "Hecho" avanza y
+  /// dice el siguiente; tocar un paso vuelve a él.
+  Widget _stepsView(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final finished = _step >= _steps.length;
+    return ColoredBox(
+      color: theme.colorScheme.surface,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text(l10n.coachStepsTitle, style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Text(l10n.coachStepsIntro),
+                  const SizedBox(height: 12),
+                  for (var i = 0; i < _steps.length; i++)
+                    _StepTile(
+                      key: ValueKey('coach-step-$i'),
+                      number: i + 1,
+                      text: coachStepText(l10n, _steps[i]),
+                      color: _steps[i].color,
+                      done: i < _step,
+                      current: i == _step,
+                      onTap: () => _goToStep(i),
+                    ),
+                  if (finished)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        l10n.coachStepsFinished,
+                        key: const ValueKey('coach-steps-finished'),
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (!finished)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        l10n.coachStepProgress(_step + 1, _steps.length),
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          key: const ValueKey('coach-step-back'),
+                          onPressed: _step == 0 ? null : () => _goToStep(_step - 1),
+                          child: Text(l10n.coachStepBack),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: finished
+                            ? FilledButton(
+                                key: const ValueKey('coach-steps-restart'),
+                                onPressed: () => _goToStep(0),
+                                child: Text(l10n.coachStepsRestart),
+                              )
+                            : FilledButton(
+                                key: const ValueKey('coach-step-next'),
+                                onPressed: () => _goToStep(_step + 1),
+                                child: Text(l10n.coachStepNext),
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -405,6 +543,57 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
           ],
         );
     }
+  }
+}
+
+/// Un paso sin cámara: número (o ✓ si ya está), la indicación y el color de
+/// la receta. El actual va resaltado.
+class _StepTile extends StatelessWidget {
+  const _StepTile({
+    super.key,
+    required this.number,
+    required this.text,
+    required this.color,
+    required this.done,
+    required this.current,
+    required this.onTap,
+  });
+
+  final int number;
+  final String text;
+  final RecipeColor? color;
+  final bool done;
+  final bool current;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final swatch = color;
+    return Card(
+      color: current ? Colors.pink.shade50 : null,
+      child: ListTile(
+        selected: current,
+        selectedColor: Colors.black87,
+        leading: done
+            ? const Icon(Icons.check_circle, color: Colors.green)
+            : CircleAvatar(radius: 14, child: Text('$number', style: const TextStyle(fontSize: 13))),
+        title: Text(text),
+        trailing: swatch == null
+            ? null
+            : ExcludeSemantics(
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF000000 | swatch.rgb),
+                    border: Border.all(color: Colors.black26),
+                  ),
+                ),
+              ),
+        onTap: onTap,
+      ),
+    );
   }
 }
 

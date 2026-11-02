@@ -962,6 +962,63 @@ class AppLocalizationsEs extends AppLocalizations {
       'Acercate a la cámara para revisar el delineado.';
 
   @override
+  String get coachStepsTitle => 'Pasos del look';
+
+  @override
+  String get coachStepsIntro =>
+      'No se pudo abrir la cámara para revisarte. Seguí los pasos en orden y tocá «Hecho» al terminar cada uno.';
+
+  @override
+  String coachStepColor(String zone, String amount) {
+    return '$zone: aplicá el color de la muestra $amount.';
+  }
+
+  @override
+  String get coachAmountLight => 'en una capa suave';
+
+  @override
+  String get coachAmountMedium => 'en cantidad media';
+
+  @override
+  String get coachAmountStrong => 'bien cubriente';
+
+  @override
+  String coachStepLiner(String width) {
+    return 'Delineado: marcá la línea de las pestañas con un trazo $width.';
+  }
+
+  @override
+  String coachStepLinerWing(String width) {
+    return 'Delineado: marcá la línea de las pestañas con un trazo $width y terminá con una cola hacia afuera.';
+  }
+
+  @override
+  String get coachLinerWidthThin => 'fino';
+
+  @override
+  String get coachLinerWidthMedium => 'medio';
+
+  @override
+  String get coachLinerWidthThick => 'grueso';
+
+  @override
+  String coachStepProgress(int current, int total) {
+    return 'Paso $current de $total';
+  }
+
+  @override
+  String get coachStepNext => 'Hecho, siguiente';
+
+  @override
+  String get coachStepBack => 'Anterior';
+
+  @override
+  String get coachStepsFinished => '¡Terminaste todos los pasos del look!';
+
+  @override
+  String get coachStepsRestart => 'Empezar de nuevo';
+
+  @override
   String get coachZoneLips => 'Labios';
 
   @override

@@ -15,6 +15,25 @@ String coachZoneName(AppLocalizations l10n, CoachZone zone) => switch (zone) {
       CoachZone.shadowBrowBone => l10n.coachZoneShadowBrowBone,
     };
 
+/// Un paso del look sin cámara (el mismo texto en pantalla y en voz).
+String coachStepText(AppLocalizations l10n, CoachStep step) {
+  final width = step.linerWidth;
+  if (width != null) {
+    final name = switch (width) {
+      CoachLinerWidth.thin => l10n.coachLinerWidthThin,
+      CoachLinerWidth.medium => l10n.coachLinerWidthMedium,
+      CoachLinerWidth.thick => l10n.coachLinerWidthThick,
+    };
+    return step.wing ? l10n.coachStepLinerWing(name) : l10n.coachStepLiner(name);
+  }
+  final amount = switch (step.amount ?? CoachAmount.medium) {
+    CoachAmount.light => l10n.coachAmountLight,
+    CoachAmount.medium => l10n.coachAmountMedium,
+    CoachAmount.strong => l10n.coachAmountStrong,
+  };
+  return l10n.coachStepColor(coachZoneName(l10n, step.zone), amount);
+}
+
 /// La indicación completa (la misma en pantalla y en voz).
 String coachPromptText(AppLocalizations l10n, CoachPrompt prompt) {
   if (prompt.done) return l10n.coachDone;
