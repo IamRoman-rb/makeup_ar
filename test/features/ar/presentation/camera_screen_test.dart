@@ -67,6 +67,41 @@ void main() {
     expect(find.byKey(const ValueKey('camera-open-coach')), findsNothing);
   });
 
+  testWidgets('"Guíame" y comparar comparten la fila de abajo sin taparse ni tapar el slider (E20, es y fr)',
+      (tester) async {
+    tester.view.physicalSize = const Size(720, 1600);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    for (final locale in const [Locale('es'), Locale('fr')]) {
+      await tester.pumpWidget(MaterialApp(
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: CameraScreen(renderer: FakeRenderer(), initialLook: look, onOpenCoach: () {}),
+      ));
+      await tester.pumpAndSettle();
+      final coach = tester.getRect(find.byKey(const ValueKey('camera-open-coach')));
+      final compare = tester.getRect(find.byKey(const ValueKey('filter-compare')));
+      final slider = tester.getRect(find.byType(Slider));
+      expect(coach.right, lessThan(compare.left), reason: '$locale');
+      expect(compare.right, lessThanOrEqualTo(360));
+      expect(compare.bottom, lessThanOrEqualTo(slider.top));
+      expect(coach.bottom, lessThanOrEqualTo(slider.top));
+      expect(tester.takeException(), isNull, reason: 'sin overflow');
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
+
+  testWidgets('sin "Guíame", comparar queda solo abajo a la derecha', (tester) async {
+    await tester.pumpWidget(_app(CameraScreen(renderer: FakeRenderer(), initialLook: look)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('camera-open-coach')), findsNothing);
+    final compare = tester.getRect(find.byKey(const ValueKey('filter-compare')));
+    final view = tester.getRect(find.byType(TestFilterView));
+    expect(view.right - compare.right, closeTo(12, 0.5));
+    expect(compare.bottom, lessThanOrEqualTo(tester.getRect(find.byType(Slider)).top));
+  });
+
   testWidgets('sin motor: espejo de respaldo', (tester) async {
     final renderer = FakeRenderer(available: false);
     await tester.pumpWidget(_app(CameraScreen(renderer: renderer)));

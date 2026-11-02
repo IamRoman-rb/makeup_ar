@@ -306,8 +306,16 @@ void main() {
     final panel = find.descendant(of: find.byType(DraggableScrollableSheet), matching: find.byType(Material)).first;
     final collapsedTop = tester.getTopLeft(panel).dy;
     expect(collapsedTop, greaterThan(body.height * 0.6));
+    // Comparar va encima del panel, cerca de su borde, y lo sigue al arrastrarlo.
+    Rect compare() => tester.getRect(find.byKey(const ValueKey('filter-compare')));
+    expect(compare().bottom, lessThanOrEqualTo(collapsedTop));
+    expect(compare().bottom, greaterThan(collapsedTop - 40));
     await expandStudioPanel(tester);
-    expect(tester.getTopLeft(panel).dy, lessThan(collapsedTop));
+    final expandedTop = tester.getTopLeft(panel).dy;
+    expect(expandedTop, lessThan(collapsedTop));
+    expect(compare().bottom, lessThanOrEqualTo(expandedTop));
+    expect(compare().top, greaterThanOrEqualTo(0));
+    expect(tester.takeException(), isNull);
 
     // Con una sola variante no hay fila de variantes: está en la vista previa.
     await tester.enterText(find.byType(TextField).first, 'rojo');

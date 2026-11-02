@@ -103,7 +103,7 @@ class MakeupEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                     result.success(false)
                 } else {
                     val voice = coachVoice ?: CoachVoice(currentContext).also { coachVoice = it }
-                    result.success(voice.speak(text, locale))
+                    voice.speak(text, locale) { spoken -> result.success(spoken) }
                 }
             }
             "coachStop" -> {

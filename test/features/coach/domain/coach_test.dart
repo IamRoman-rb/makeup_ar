@@ -235,13 +235,56 @@ void main() {
       expect(session.focus, CoachZone.shadowLid);
     });
 
-    test('sin cara o lejos avisa y no toca los veredictos', () {
+    test('sin cara o lejos avisa en pantalla, no lo dice y no toca los veredictos', () {
       final session = CoachSession(CoachTarget.from(_lipsRecipe()))..baseline = _baseline;
       session.add(_measure(lips: _paint(_naturalLip, _red, 0.8)), s(0));
-      expect(session.add(_measure(status: PhotoLookStatus.noFace), s(1)), const CoachPrompt.issue(CoachIssue.lookAtCamera));
-      expect(session.add(_measure(status: PhotoLookStatus.faceTooSmall), s(2)), const CoachPrompt.issue(CoachIssue.comeCloser));
-      expect(session.add(_measure(status: PhotoLookStatus.badImage), s(3)), const CoachPrompt.issue(CoachIssue.moreLight));
+      expect(session.add(_measure(status: PhotoLookStatus.noFace), s(1)), isNull);
+      expect(session.current, const CoachPrompt.issue(CoachIssue.lookAtCamera));
+      expect(session.add(_measure(status: PhotoLookStatus.faceTooSmall), s(2)), isNull);
+      expect(session.current, const CoachPrompt.issue(CoachIssue.comeCloser));
+      expect(session.add(_measure(status: PhotoLookStatus.badImage), s(3)), isNull);
+      expect(session.current, const CoachPrompt.issue(CoachIssue.moreLight));
       expect(session.verdicts[CoachZone.lips], CoachVerdict.ok);
+    });
+
+    test('al volver la cara, la misma indicación no se repite antes de tiempo', () {
+      final session = CoachSession(CoachTarget.from(_lipsRecipe()))..baseline = _baseline;
+      const missing = CoachPrompt.zone(CoachZone.lips, CoachVerdict.tooLittle);
+      expect(session.add(_measure(lips: _naturalLip), s(0)), missing);
+      expect(session.add(_measure(status: PhotoLookStatus.noFace), s(1)), isNull);
+      expect(session.add(_measure(lips: _naturalLip), s(2)), isNull);
+      expect(session.current, missing);
+      // Pasado repeatAfter sí se recuerda.
+      expect(session.add(_measure(lips: _naturalLip), s(6)), missing);
+    });
+
+    test('"Listo" se dice una sola vez aunque una zona se mueva y vuelva', () {
+      final session = CoachSession(CoachTarget.from(_lipsRecipe()))..baseline = _baseline;
+      final good = _measure(lips: _paint(_naturalLip, _red, 0.8));
+      final bare = _measure(lips: _naturalLip);
+      expect(session.add(good, s(0)), const CoachPrompt.done());
+      session.add(bare, s(1));
+      expect(session.add(bare, s(2)), const CoachPrompt.zone(CoachZone.lips, CoachVerdict.tooLittle));
+      session.add(good, s(3));
+      expect(session.add(good, s(4)), isNull);
+      expect(session.done, isTrue);
+      expect(session.current, const CoachPrompt.done());
+    });
+
+    test('resume: al reactivar la voz dice lo que está en pantalla, salvo avisos de toma y "Listo"', () {
+      final session = CoachSession(CoachTarget.from(_lipsRecipe()))..baseline = _baseline;
+      expect(session.resume(s(0)), isNull, reason: 'sin medidas todavía');
+      const missing = CoachPrompt.zone(CoachZone.lips, CoachVerdict.tooLittle);
+      session.add(_measure(lips: _naturalLip), s(0));
+      expect(session.resume(s(1)), missing);
+      // Cuenta como dicha: no se repite enseguida.
+      expect(session.add(_measure(lips: _naturalLip), s(2)), isNull);
+      session.add(_measure(status: PhotoLookStatus.noFace), s(3));
+      expect(session.resume(s(3)), isNull);
+      final good = _measure(lips: _paint(_naturalLip, _red, 0.8));
+      session.add(good, s(4));
+      expect(session.add(good, s(5)), const CoachPrompt.done());
+      expect(session.resume(s(6)), isNull);
     });
 
     test('la referencia promedia las muestras que salieron bien', () {

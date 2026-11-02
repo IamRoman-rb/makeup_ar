@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,16 +50,31 @@ final class _FakeSampler implements ICoachSampler {
   }
 }
 
+/// Cada muestra queda pendiente hasta que el test la completa.
+final class _GateSampler implements ICoachSampler {
+  final List<Completer<LookMeasurements>> pending = [];
+
+  @override
+  Future<LookMeasurements> sample() {
+    final completer = Completer<LookMeasurements>();
+    pending.add(completer);
+    return completer.future;
+  }
+}
+
 final class _FakeVoice implements ICoachVoice {
   final List<String> spoken = [];
   int stops = 0;
   int releases = 0;
   bool available = true;
 
+  /// El motor de voz no contesta nunca (servicio colgado).
+  bool hang = false;
+
   @override
-  Future<bool> speak(String text, {required String locale}) async {
+  Future<bool> speak(String text, {required String locale}) {
     spoken.add(text);
-    return available;
+    return hang ? Completer<bool>().future : Future.value(available);
   }
 
   @override
@@ -178,6 +195,158 @@ void main() {
     expect(find.text('Acercate un poco a la cámara.'), findsOneWidget);
     expect(voice.spoken, hasLength(1));
     await _close(tester);
+  });
+
+  testWidgets('reactivar la voz dice la indicación que está en pantalla', (tester) async {
+    final voice = _FakeVoice();
+    await tester.pumpWidget(_app(CoachScreen(
+      look: _look(),
+      renderer: FakeRenderer(),
+      sampler: _FakeSampler([_face(_naturalLip)]),
+      voice: voice,
+    )));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('coach-skip')));
+    await _settle(tester);
+    const expected = 'Labios: falta color, sumá un poco más.';
+    expect(voice.spoken, [expected]);
+    await tester.tap(find.byKey(const ValueKey('coach-mute')));
+    await tester.pump();
+    expect(find.byTooltip('Activar voz'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('coach-mute')));
+    await _settle(tester);
+    expect(find.byTooltip('Silenciar'), findsOneWidget);
+    expect(voice.spoken, [expected, expected]);
+    await _close(tester);
+  });
+
+  testWidgets('una muestra inválida se muestra pero no se dice', (tester) async {
+    final voice = _FakeVoice();
+    final sampler = _FakeSampler([_face(_naturalLip), const LookMeasurements(status: PhotoLookStatus.noFace)]);
+    await tester.pumpWidget(_app(CoachScreen(look: _look(), renderer: FakeRenderer(), sampler: sampler, voice: voice)));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('coach-skip')));
+    await _settle(tester);
+    await tester.pump(const Duration(milliseconds: 1500));
+    await _settle(tester);
+    expect(find.text('Mirá de frente a la cámara.'), findsOneWidget);
+    expect(voice.spoken, ['Labios: falta color, sumá un poco más.']);
+    expect(find.byIcon(Icons.arrow_upward), findsOneWidget, reason: 'el veredicto de labios no cambia');
+    await _close(tester);
+  });
+
+  testWidgets('al pausar se calla, deja de medir y descarta la muestra en vuelo', (tester) async {
+    final voice = _FakeVoice();
+    final sampler = _GateSampler();
+    await tester.pumpWidget(_app(CoachScreen(look: _look(), renderer: FakeRenderer(), sampler: sampler, voice: voice)));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('coach-skip')));
+    await _settle(tester);
+    expect(sampler.pending, hasLength(1));
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    expect(voice.stops, 1);
+    sampler.pending.single.complete(_face(_naturalLip));
+    await _settle(tester);
+    await tester.pump(const Duration(seconds: 3));
+    expect(voice.spoken, isEmpty);
+    expect(sampler.pending, hasLength(1), reason: 'en pausa no se mide');
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await _settle(tester);
+    expect(sampler.pending, hasLength(2));
+    sampler.pending.last.complete(_face(_naturalLip));
+    await _settle(tester);
+    expect(voice.spoken, ['Labios: falta color, sumá un poco más.']);
+    await _close(tester);
+  });
+
+  testWidgets('si el motor de voz no responde, la guía sigue midiendo', (tester) async {
+    final voice = _FakeVoice()..hang = true;
+    final sampler = _FakeSampler([_face(_naturalLip), _face(_painted(0.8)), _face(_painted(0.8))]);
+    await tester.pumpWidget(_app(CoachScreen(look: _look(), renderer: FakeRenderer(), sampler: sampler, voice: voice)));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('coach-skip')));
+    await _settle(tester);
+    expect(voice.spoken, hasLength(1));
+    for (var i = 0; i < 2; i++) {
+      await tester.pump(const Duration(milliseconds: 1500));
+      await _settle(tester);
+    }
+    expect(sampler.calls, 3);
+    expect(find.text('¡Listo! Tu maquillaje coincide con el look.'), findsOneWidget);
+    await _close(tester);
+  });
+
+  testWidgets('pausar y volver rápido descarta la muestra pedida antes de la pausa', (tester) async {
+    final voice = _FakeVoice();
+    final sampler = _GateSampler();
+    await tester.pumpWidget(_app(CoachScreen(look: _look(), renderer: FakeRenderer(), sampler: sampler, voice: voice)));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('coach-skip')));
+    await _settle(tester);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await _settle(tester);
+    // La vieja llega tarde: no cuenta. La nueva sí.
+    sampler.pending.first.complete(_face(_naturalLip));
+    await _settle(tester);
+    expect(voice.spoken, isEmpty);
+    expect(find.text('Mirá a la cámara para empezar.'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1500));
+    await _settle(tester);
+    sampler.pending.last.complete(_face(_naturalLip));
+    await _settle(tester);
+    expect(voice.spoken, ['Labios: falta color, sumá un poco más.']);
+    await _close(tester);
+  });
+
+  testWidgets('pausar durante la referencia vuelve a "Antes de empezar" sin referencia a medias', (tester) async {
+    final sampler = _GateSampler();
+    await tester.pumpWidget(_app(CoachScreen(look: _look(), renderer: FakeRenderer(), sampler: sampler, voice: _FakeVoice())));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('coach-reference')));
+    await _settle(tester);
+    expect(find.text('Quedate quieta mirando a la cámara…'), findsOneWidget);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    sampler.pending.single.complete(_face(_naturalLip));
+    await _settle(tester);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await _settle(tester);
+    expect(find.text('Antes de empezar'), findsOneWidget);
+    expect(find.text('No se pudo tomar la referencia. Seguimos sin ella.'), findsNothing);
+    expect(sampler.pending, hasLength(1), reason: 'no mide hasta que elija de nuevo');
+    await _close(tester);
+  });
+
+  testWidgets('al salir se calla enseguida y libera la voz', (tester) async {
+    final voice = _FakeVoice();
+    final sampler = _GateSampler();
+    await tester.pumpWidget(_app(Builder(
+      builder: (context) => TextButton(
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => CoachScreen(look: _look(), renderer: FakeRenderer(), sampler: sampler, voice: voice),
+        )),
+        child: const Text('abrir'),
+      ),
+    )));
+    await tester.tap(find.text('abrir'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('coach-skip')));
+    await _settle(tester);
+
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.pop();
+    await tester.pump();
+    expect(voice.stops, 1, reason: 'antes de que termine la transición');
+    expect(voice.releases, 0);
+    sampler.pending.single.complete(_face(_naturalLip));
+    await tester.pumpAndSettle();
+    expect(voice.spoken, isEmpty);
+    expect(voice.releases, 1);
   });
 
   testWidgets('sin voz para el idioma avisa una vez', (tester) async {

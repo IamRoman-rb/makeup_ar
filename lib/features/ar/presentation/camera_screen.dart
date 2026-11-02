@@ -167,6 +167,16 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         showStats: !kReleaseMode,
         labels: _labels(l10n),
         onUnavailable: () => _onEngineUnavailable(l10n.testFilterUnavailable),
+        // Abajo, en la fila de comparar (a su izquierda), encima del slider.
+        bottomAction: onOpenCoach == null
+            ? null
+            : FilledButton.icon(
+                key: const ValueKey('camera-open-coach'),
+                onPressed: onOpenCoach,
+                style: FilledButton.styleFrom(backgroundColor: Colors.pink, minimumSize: const Size(48, 48)),
+                icon: const Icon(Icons.record_voice_over_outlined, size: 18),
+                label: Text(l10n.coachGuideMe),
+              ),
       );
     } else if (_isCameraInitialized && controller != null) {
       body = Transform(
@@ -203,29 +213,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
             ),
         ],
       ),
-      body: onOpenCoach == null || _fallbackMirror || !_inForeground
-          ? body
-          : Stack(
-              children: [
-                Positioned.fill(child: body),
-                // Abajo al centro, encima del slider de intensidad: arriba están
-                // el FPS (profile) y comparar.
-                Positioned(
-                  bottom: 72,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: FilledButton.icon(
-                      key: const ValueKey('camera-open-coach'),
-                      onPressed: onOpenCoach,
-                      style: FilledButton.styleFrom(backgroundColor: Colors.pink),
-                      icon: const Icon(Icons.record_voice_over_outlined, size: 18),
-                      label: Text(l10n.coachGuideMe),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      body: body,
       bottomNavigationBar: const SharedBottomNav(currentIndex: 2),
     );
   }

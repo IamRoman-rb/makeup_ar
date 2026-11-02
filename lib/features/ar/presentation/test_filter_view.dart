@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -101,8 +102,9 @@ final class TestFilterLabels {
       };
 }
 
-/// Controles de abajo de [TestFilterView]. El badge de FPS y el botón de
-/// comparar se ven siempre (salvo en el Espejo).
+/// Controles de abajo de [TestFilterView]. El badge de FPS (arriba) y el botón
+/// de comparar (abajo, encima de estos controles) se ven siempre, salvo en el
+/// Espejo.
 enum TestFilterControls {
   /// Opciones, zonas, puntos, acabado e intensidad (arnés del tracker).
   full,
@@ -143,6 +145,8 @@ class TestFilterView extends StatefulWidget {
     this.showHud = true,
     this.showStats = true,
     this.cameraPermission,
+    this.bottomAction,
+    this.coveredBottom,
   });
 
   final TestFilterLabels labels;
@@ -182,13 +186,24 @@ class TestFilterView extends StatefulWidget {
   /// Qué controles se ven abajo.
   final TestFilterControls controls;
 
-  /// Badge de FPS y botón de comparar arriba (la guía de maquillaje los oculta:
-  /// ahí la usuaria tiene que ver su cara tal cual).
+  /// Badge de FPS (arriba) y botón de comparar (abajo a la derecha, al
+  /// alcance del pulgar). La guía de maquillaje los oculta: ahí la usuaria
+  /// tiene que ver su cara tal cual.
   final bool showHud;
 
   /// Badge de FPS y estado del tracker (texto de depuración). La app lo oculta
   /// en release; el arnés y los builds de profile lo muestran para medir.
   final bool showStats;
+
+  /// Botón de quien monta la vista, en la misma fila que comparar y a su
+  /// izquierda ("Guíame" en el Espejo con un look): comparten la fila sin
+  /// taparse. No se ve en el Espejo sin look.
+  final Widget? bottomAction;
+
+  /// Fracción del alto de la vista (0..1) que tapa desde abajo un panel de
+  /// quien la monta (el panel arrastrable del Studio): la fila de comparar se
+  /// ubica justo encima y lo sigue al arrastrarlo.
+  final ValueListenable<double>? coveredBottom;
 
   @override
   State<TestFilterView> createState() => _TestFilterViewState();
@@ -253,6 +268,12 @@ class _TestFilterViewState extends State<TestFilterView> {
   @override
   void didUpdateWidget(TestFilterView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // El botón desapareció con el dedo encima (no llega el pointer up): vuelve
+    // el look para cuando reaparezca.
+    if (_comparing && (widget.mirrorOnly || !widget.showHud)) {
+      _comparing = false;
+      unawaited(_applyLook());
+    }
     if (widget.mirrorOnly != oldWidget.mirrorOnly) unawaited(_syncMirror());
     if (identical(widget.options, oldWidget.options) && identical(widget.extraOptions, oldWidget.extraOptions)) {
       return;
@@ -445,36 +466,120 @@ class _TestFilterViewState extends State<TestFilterView> {
             ),
           ),
         if (!widget.mirrorOnly) ...[
-          if (widget.showHud) ...[
-            if (widget.showStats) Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
-            Positioned(top: 8, right: 8, child: _buildCompareButton()),
-          ],
-          if (_buildControls() case final controls?) Positioned(left: 0, right: 0, bottom: 0, child: controls),
+          if (widget.showHud && widget.showStats) Positioned(top: 8, left: 8, child: _FpsBadge(stats: _stats)),
+          if (_buildBottom() case final bottom?) _positionBottom(bottom),
         ],
       ],
     );
   }
 
-  /// Mientras se mantiene apretado: cámara sin maquillaje (antes/después).
-  Widget _buildCompareButton() {
-    return Listener(
-      onPointerDown: (_) => _setComparing(true),
-      onPointerUp: (_) => _setComparing(false),
-      onPointerCancel: (_) => _setComparing(false),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: _comparing ? Colors.white24 : Colors.black54,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white54),
+  /// Abajo de todo los controles; encima, la fila de comparar (y la acción de
+  /// quien monta la vista). Sin controles ni panel debajo, la fila respeta el
+  /// área de gestos del sistema.
+  Widget? _buildBottom() {
+    final controls = _buildControls();
+    final actions = _buildActionRow();
+    if (actions == null) return controls;
+    final row = Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 12), child: actions);
+    final bare = controls == null && widget.coveredBottom == null;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (bare) SafeArea(top: false, child: row) else row,
+        ?controls,
+      ],
+    );
+  }
+
+  /// Pegado abajo, o encima del panel de quien monta la vista
+  /// ([TestFilterView.coveredBottom]); nunca más arriba que [_minTopGap].
+  Widget _positionBottom(Widget bottom) {
+    final covered = widget.coveredBottom;
+    if (covered == null) return Positioned(left: 0, right: 0, bottom: 0, child: bottom);
+    return Positioned.fill(
+      child: LayoutBuilder(
+        builder: (context, constraints) => ValueListenableBuilder<double>(
+          valueListenable: covered,
+          child: bottom,
+          builder: (context, fraction, child) {
+            final height = constraints.maxHeight;
+            final inset = math.min(height * fraction.clamp(0.0, 1.0), math.max(0.0, height - _minTopGap));
+            return Padding(
+              padding: EdgeInsets.only(bottom: inset),
+              child: Align(alignment: Alignment.bottomCenter, child: child),
+            );
+          },
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.compare, color: Colors.white, size: 18),
-            const SizedBox(width: 6),
-            Text(widget.labels.compare, style: const TextStyle(color: Colors.white, fontSize: 12)),
-          ],
+      ),
+    );
+  }
+
+  /// Espacio que la fila de comparar deja arriba cuando el panel de abajo
+  /// sube casi hasta el tope (que siga a la vista).
+  static const double _minTopGap = 72;
+
+  /// La acción de quien monta la vista a la izquierda, comparar a la derecha
+  /// (donde llega el pulgar). La acción conserva su ancho; si no entran,
+  /// el texto de comparar pasa a dos líneas en lugar de taparla.
+  Widget? _buildActionRow() {
+    final action = widget.bottomAction;
+    final compare = widget.showHud ? _buildCompareButton() : null;
+    if (action == null && compare == null) return null;
+    return Row(
+      mainAxisAlignment: action == null ? MainAxisAlignment.end : MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        ?action,
+        if (action != null && compare != null) const SizedBox(width: 12),
+        if (compare != null) Flexible(child: compare),
+      ],
+    );
+  }
+
+  /// Mientras se mantiene apretado: cámara sin maquillaje (antes/después).
+  /// Al soltar o si el sistema cancela el toque (otro gesto, una llamada),
+  /// vuelve el look. Área táctil de 48 dp como mínimo; apretado se invierte
+  /// (fondo blanco) para que se note sin mirar el texto.
+  Widget _buildCompareButton() {
+    final foreground = _comparing ? Colors.black : Colors.white;
+    return Semantics(
+      button: true,
+      label: widget.labels.compare,
+      excludeSemantics: true,
+      child: Listener(
+        key: const ValueKey('filter-compare'),
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (_) => _setComparing(true),
+        onPointerUp: (_) => _setComparing(false),
+        onPointerCancel: (_) => _setComparing(false),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              // Negro al 65 %: el texto blanco mantiene más de 4,5:1 aunque la
+              // cámara detrás sea blanca.
+              color: _comparing ? Colors.white : Colors.black.withValues(alpha: 0.65),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white70, width: 1.5),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.compare, color: foreground, size: 20),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      widget.labels.compare,
+                      style: TextStyle(color: foreground, fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
