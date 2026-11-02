@@ -30,7 +30,9 @@ class CameraScreen extends StatefulWidget {
   final VoidCallback? onOpenTutorial;
 
   /// Botón "Guíame" sobre la cámara (guía de maquillaje con el look; null =
-  /// sin botón). Callback por la misma razón que [onOpenTutorial].
+  /// sin botón). Callback por la misma razón que [onOpenTutorial]. La guía
+  /// abre su propia sesión del motor, que admite una sola: esta pantalla
+  /// suelta la cámara antes de llamarlo, y quien lo pasa la reemplaza.
   final VoidCallback? onOpenCoach;
 
   /// Inyectable para tests; por defecto, el de `AR_RENDERER`.
@@ -48,6 +50,23 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
   /// false mientras la app no está en primer plano: no se usa la cámara.
   bool _inForeground = true;
+
+  /// Abriendo la guía: la vista del filtro ya se desmontó (su dispose detiene
+  /// el motor) para que la guía pueda abrir la cámara.
+  bool _handingOff = false;
+
+  /// El motor admite una sola sesión y la ruta anterior se desmonta recién al
+  /// terminar la transición: si la guía arrancara antes, el motor respondería
+  /// "already_started" y la guía diría que el maquillaje en vivo no está
+  /// disponible. Primero se suelta la cámara y en el frame siguiente (ya con
+  /// el stop enviado, que llega antes que el start de la guía) se navega.
+  void _openCoach(VoidCallback open) {
+    if (_handingOff) return;
+    setState(() => _handingOff = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) open();
+    });
+  }
 
   /// Solo el look elegido. La lista se crea una vez: si fuera nueva en cada
   /// build, TestFilterView reconstruiría sus opciones y reenviaría la receta.
@@ -154,7 +173,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     final onOpenCoach = widget.onOpenCoach;
 
     final Widget body;
-    if (!_inForeground) {
+    if (!_inForeground || _handingOff) {
       body = const SizedBox.expand();
     } else if (!_fallbackMirror) {
       body = TestFilterView(
@@ -172,7 +191,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
             ? null
             : FilledButton.icon(
                 key: const ValueKey('camera-open-coach'),
-                onPressed: onOpenCoach,
+                onPressed: () => _openCoach(onOpenCoach),
                 style: FilledButton.styleFrom(backgroundColor: Colors.pink, minimumSize: const Size(48, 48)),
                 icon: const Icon(Icons.record_voice_over_outlined, size: 18),
                 label: Text(l10n.coachGuideMe),

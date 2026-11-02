@@ -1,11 +1,80 @@
+import 'package:ar_makeup_app/features/ar/domain/i_makeup_renderer.dart';
+import 'package:ar_makeup_app/features/ar/domain/makeup_recipe.dart';
 import 'package:ar_makeup_app/features/ar/domain/recipe_presets.dart';
 import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
+import 'package:ar_makeup_app/features/coach/domain/coach.dart';
+import 'package:ar_makeup_app/features/coach/presentation/coach_screen.dart';
+import 'package:ar_makeup_app/features/studio/domain/image_look.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'test_filter_view_test.dart' show FakeRenderer;
+
+/// El motor nativo admite una sola sesión: un start con otra abierta falla
+/// ("already_started").
+final class _SingleSessionEngine {
+  bool open = false;
+}
+
+final class _ExclusiveRenderer implements IMakeupRenderer {
+  _ExclusiveRenderer(this.engine);
+
+  final _SingleSessionEngine engine;
+  int stops = 0;
+  int rejected = 0;
+
+  @override
+  String? get unavailableReason => rejected > 0 ? 'already_started' : null;
+
+  @override
+  Future<MakeupSurface?> start() async {
+    if (engine.open) {
+      rejected++;
+      return null;
+    }
+    engine.open = true;
+    return const MakeupSurface(textureId: 3, width: 720, height: 1280);
+  }
+
+  @override
+  Future<void> stop() async {
+    stops++;
+    engine.open = false;
+  }
+
+  @override
+  Future<void> applyRecipe(MakeupRecipe? recipe) async {}
+
+  @override
+  Future<void> setShowLandmarks(bool show) async {}
+
+  @override
+  Future<void> setLightAdaptation(bool enabled) async {}
+
+  @override
+  Future<void> setTrackingEnabled(bool enabled) async {}
+
+  @override
+  Future<MakeupRendererStats> stats() async => MakeupRendererStats.empty;
+}
+
+final class _NoFaceSampler implements ICoachSampler {
+  @override
+  Future<LookMeasurements> sample() async => const LookMeasurements(status: PhotoLookStatus.noFace);
+}
+
+final class _SilentVoice implements ICoachVoice {
+  @override
+  Future<bool> speak(String text, {required String locale}) async => true;
+
+  @override
+  Future<void> stop() async {}
+
+  @override
+  Future<void> release() async {}
+}
 
 Widget _app(Widget home) => MaterialApp(
       locale: const Locale('es'),
@@ -54,13 +123,43 @@ void main() {
     expect(find.text('Ver tutorial'), findsOneWidget);
   });
 
+  testWidgets('"Guíame" suelta la cámara antes de abrir la guía', (tester) async {
+    // Como el motor real: una sola sesión a la vez.
+    final engine = _SingleSessionEngine();
+    final mirror = _ExclusiveRenderer(engine);
+    final coach = _ExclusiveRenderer(engine);
+    await tester.pumpWidget(_app(Builder(
+      builder: (context) => CameraScreen(
+        renderer: mirror,
+        initialLook: look,
+        onOpenCoach: () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+          builder: (_) => CoachScreen(look: look, renderer: coach, sampler: _NoFaceSampler(), voice: _SilentVoice()),
+        )),
+      ),
+    )));
+    await tester.pumpAndSettle();
+    expect(engine.open, isTrue);
+
+    await tester.tap(find.byKey(const ValueKey('camera-open-coach')));
+    await tester.pumpAndSettle();
+    expect(mirror.stops, 1);
+    expect(coach.rejected, 0, reason: 'el motor no estaba ocupado al arrancar la guía');
+    expect(find.byKey(const ValueKey('coach-skip')), findsOneWidget, reason: 'la guía en vivo, no los pasos sin cámara');
+    expect(find.text('Pasos del look'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('"Guíame" sobre la cámara solo con un look y su callback', (tester) async {
     var opened = 0;
     await tester.pumpWidget(_app(CameraScreen(renderer: FakeRenderer(), initialLook: look, onOpenCoach: () => opened++)));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('camera-open-coach')));
-    expect(opened, 1);
     expect(find.text('Guíame'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('camera-open-coach')));
+    expect(opened, 0, reason: 'primero se suelta la cámara');
+    await tester.pump();
+    expect(opened, 1);
+    // Un segundo toque mientras se abre no la abre dos veces.
+    expect(find.byKey(const ValueKey('camera-open-coach')), findsNothing);
 
     await tester.pumpWidget(_app(CameraScreen(renderer: FakeRenderer(), initialLook: look)));
     await tester.pumpAndSettle();
