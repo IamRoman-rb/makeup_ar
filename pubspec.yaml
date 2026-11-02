@@ -40,8 +40,6 @@ dependencies:
   google_fonts: ^8.2.1
   intl: ^0.20.3
   image_picker: 1.0.8
-  no_screenshot: ^2.0.1
-  flutter_launcher_icons: ^0.14.4
   video_player: ^2.14.0
   purchases_flutter: ^10.9.1
   camera: ^0.12.0+2
@@ -69,6 +67,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  # Genera los íconos (flutter_launcher_icons abajo); no va dentro de la app.
+  flutter_launcher_icons: ^0.14.4
   drift_dev: ^2.35.2
   build_runner: ^2.17.1
 
@@ -85,6 +85,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    # Borradores de política y términos (lib/features/legal) y licencias de terceros.
+    - assets/legal/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

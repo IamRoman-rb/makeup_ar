@@ -11,11 +11,20 @@ import '../domain/password_hasher.dart';
 /// [IAuthRepository] sobre la base local: cuentas con contraseña hasheada
 /// ([PasswordHasher]) y una sesión abierta por dispositivo.
 final class DriftAuthRepository implements IAuthRepository {
-  DriftAuthRepository(this._db, {this._hasher = const PasswordHasher(), this._clock = DateTime.now});
+  DriftAuthRepository(
+    this._db, {
+    this._hasher = const PasswordHasher(),
+    this._clock = DateTime.now,
+    this._allowLocalAdmin = LocalAdminPolicy.enabled,
+  });
 
   final AppDatabase _db;
   final PasswordHasher _hasher;
   final DateTime Function() _clock;
+
+  /// false en builds de tienda: nadie es admin, aunque la fila diga que sí
+  /// (una base creada con un build interno no da privilegios en uno público).
+  final bool _allowLocalAdmin;
 
   AppUser? _current;
 
@@ -51,8 +60,9 @@ final class DriftAuthRepository implements IAuthRepository {
     final id = newId();
     final failure = await _db.transaction(() async {
       if (await _findByEmail(normalized) != null) return AuthFailure.emailInUse;
-      // Sin servidor que lo decida, la primera cuenta del dispositivo es admin.
-      final isFirst = (await (_db.select(_db.users)..limit(1)).get()).isEmpty;
+      // Sin servidor que lo decida, la primera cuenta del dispositivo es admin
+      // (solo en builds internos: LocalAdminPolicy).
+      final isFirst = _allowLocalAdmin && (await (_db.select(_db.users)..limit(1)).get()).isEmpty;
       await _db.into(_db.users).insert(UsersCompanion.insert(
             id: id,
             email: normalized,
@@ -144,8 +154,20 @@ final class DriftAuthRepository implements IAuthRepository {
   Future<void> deleteAccount() async {
     final user = _current;
     if (user == null) return;
-    // La sesión, los guardados y Mis looks se borran en cascada.
-    await (_db.delete(_db.users)..where((u) => u.id.equals(user.id))).go();
+    final now = _clock().millisecondsSinceEpoch;
+    await _db.transaction(() async {
+      // Borradores del Studio: no tienen clave foránea, se borran de verdad
+      // (no con lápida: son datos de la persona).
+      await (_db.delete(_db.lookDrafts)..where((d) => d.createdBy.equals(user.id))).go();
+      // Los looks publicados son contenido del catálogo: quedan, sin autor.
+      await (_db.update(_db.looks)..where((l) => l.createdBy.equals(user.id))).write(LooksCompanion(
+        createdBy: const Value(null),
+        updatedAt: Value(now),
+        dirty: const Value(true),
+      ));
+      // La sesión, los guardados y Mis looks se borran en cascada.
+      await (_db.delete(_db.users)..where((u) => u.id.equals(user.id))).go();
+    });
     _current = null;
   }
 
@@ -173,12 +195,12 @@ final class DriftAuthRepository implements IAuthRepository {
 
   static String? _date(DateTime? date) => date == null ? null : formatIsoDate(date);
 
-  static AppUser _toUser(UserRow row) {
+  AppUser _toUser(UserRow row) {
     final premiumUntil = row.premiumUntil;
     return AppUser(
       id: row.id,
       email: row.email,
-      isAdmin: row.isAdmin,
+      isAdmin: _allowLocalAdmin && row.isAdmin,
       premiumUntil: premiumUntil == null ? null : DateTime.fromMillisecondsSinceEpoch(premiumUntil),
       profile: UserProfile(
         name: row.name,

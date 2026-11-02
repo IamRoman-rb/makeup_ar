@@ -67,8 +67,8 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-    <string>Necesitamos acceso a la cámara para aplicar el maquillaje virtual.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Necesitamos acceso al micrófono para grabar videos de los looks.</string>
+	<string>La cámara muestra el maquillaje virtual en vivo y la guía de maquillaje. Las imágenes se procesan en el teléfono: no se guardan ni se envían.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Elegís una foto para tu perfil (se guarda solo en este teléfono, sin datos de ubicación) o, en el Studio, una foto de referencia que se analiza en el teléfono y no se guarda.</string>
 </dict>
 </plist>

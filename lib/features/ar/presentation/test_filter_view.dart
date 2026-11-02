@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import '../domain/i_makeup_renderer.dart';
 import '../domain/makeup_recipe.dart';
 import '../domain/recipe_adjustments.dart';
 import '../domain/recipe_presets.dart';
+import 'camera_permission_gate.dart';
 
 /// Opción del selector: un preset local o "sin filtro" (paso directo).
 final class TestFilterOption {
@@ -140,12 +142,19 @@ class TestFilterView extends StatefulWidget {
     this.controls = TestFilterControls.full,
     this.showHud = true,
     this.showStats = true,
+    this.cameraPermission,
   });
 
   final TestFilterLabels labels;
 
   /// Inyectable para tests; por defecto, el de `AR_RENDERER`.
   final IMakeupRenderer? renderer;
+
+  /// Permiso de cámara pedido en contexto antes de abrir la cámara. null =
+  /// el del sistema en Android cuando la vista crea su propio renderer (el
+  /// motor nativo no lo pide); en iOS lo pide el motor y en los tests con un
+  /// renderer inyectado no se pide.
+  final ICameraPermission? cameraPermission;
 
   /// El renderer no puede mostrar maquillaje (ver [IMakeupRenderer.start]).
   final VoidCallback? onUnavailable;
@@ -188,12 +197,27 @@ class TestFilterView extends StatefulWidget {
 class _TestFilterViewState extends State<TestFilterView> {
   static const Duration _statsPeriod = Duration(seconds: 1);
 
-  late final IMakeupRenderer _renderer = widget.renderer ?? createMakeupRenderer();
+  late final IMakeupRenderer _rendererInstance = widget.renderer ?? createMakeupRenderer();
+
+  /// Si la persona niega la cámara (o el diálogo del sistema desmonta la
+  /// vista), el renderer nativo nunca se crea: dispose no lo construye solo
+  /// para detenerlo.
+  bool _rendererUsed = false;
+
+  IMakeupRenderer get _renderer {
+    _rendererUsed = true;
+    return _rendererInstance;
+  }
   late List<TestFilterOption> _options = _buildOptions();
   final ValueNotifier<MakeupRendererStats> _stats = ValueNotifier(MakeupRendererStats.empty);
 
   MakeupSurface? _surface;
   bool _unavailable = false;
+
+  /// Sin permiso de cámara (no se llama a onUnavailable: el espejo de
+  /// respaldo volvería a pedir el permiso que la persona acaba de negar).
+  CameraAccess? _cameraDenied;
+  bool _starting = false;
   Timer? _statsTimer;
   bool _statsInFlight = false;
   bool _lookInFlight = false;
@@ -244,7 +268,7 @@ class _TestFilterViewState extends State<TestFilterView> {
   void dispose() {
     _statsTimer?.cancel();
     _stats.dispose();
-    unawaited(_renderer.stop());
+    if (_rendererUsed) unawaited(_rendererInstance.stop());
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     super.dispose();
   }
@@ -256,7 +280,44 @@ class _TestFilterViewState extends State<TestFilterView> {
     if (mounted) await _applyLook();
   }
 
-  Future<void> _start() async {
+  ICameraPermission? get _cameraPermission =>
+      widget.cameraPermission ?? (widget.renderer == null && Platform.isAndroid ? const SystemCameraPermission() : null);
+
+  /// Reintento desde la vista de permiso denegado (un toque de la persona).
+  void _retryCamera() {
+    if (_starting) return;
+    setState(() => _cameraDenied = null);
+    unawaited(_start(userInitiated: true));
+  }
+
+  Future<void> _start({bool userInitiated = false}) async {
+    if (_starting) return;
+    _starting = true;
+    try {
+      final permission = _cameraPermission;
+      if (permission != null) {
+        CameraAccess access;
+        try {
+          access = await ensureCameraAccess(context, permission, userInitiated: userInitiated);
+        } catch (e) {
+          // Canal de permission_handler roto: mejor la vista de permiso que un
+          // spinner eterno.
+          debugPrint('TestFilterView: no se pudo consultar el permiso (${e.runtimeType})');
+          access = CameraAccess.denied;
+        }
+        if (!mounted) return;
+        if (access != CameraAccess.granted) {
+          setState(() => _cameraDenied = access);
+          return;
+        }
+      }
+      await _startRenderer();
+    } finally {
+      _starting = false;
+    }
+  }
+
+  Future<void> _startRenderer() async {
     // Antes de abrir la cámara: un Espejo no llega a cargar los modelos.
     if (widget.mirrorOnly) await _renderer.setTrackingEnabled(false);
     final surface = await _renderer.start();
@@ -349,6 +410,15 @@ class _TestFilterViewState extends State<TestFilterView> {
   @override
   Widget build(BuildContext context) {
     final surface = _surface;
+    final denied = _cameraDenied;
+    if (denied != null) {
+      return CameraDeniedView(
+        access: denied,
+        onRetry: _retryCamera,
+        onOpenSettings: () => unawaited(_cameraPermission?.openSettings()),
+        fallbackText: widget.labels.unavailable,
+      );
+    }
     if (_unavailable) {
       return Center(
         child: Padding(

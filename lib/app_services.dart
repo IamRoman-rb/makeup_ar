@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:ar_makeup_app/features/auth/data/account_deletion.dart';
 import 'package:ar_makeup_app/features/auth/data/drift_auth_repository.dart';
 import 'package:ar_makeup_app/features/auth/data/profile_photo_store.dart';
 import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
@@ -73,6 +74,10 @@ abstract final class AppServices {
 
   static ProfilePhotoStore get photos => _photos ??= ProfilePhotoStore();
 
+  /// Borrado de la cuenta en la base, las fotos y RevenueCat.
+  static AccountDeletion accountDeletion() =>
+      AccountDeletion(auth: auth, photos: photos, logOutPurchases: VipService.logOutUser);
+
   /// Sin servidor, el generador local (sin IA).
   static IRecipeGenerator get recipeGenerator => _generator;
 
@@ -94,7 +99,7 @@ abstract final class AppServices {
       final until = await VipService.activeUntil();
       if (auth.currentUser?.id == userId) await auth.setPremiumUntil(until);
     } catch (e) {
-      debugPrint('VIP sin actualizar: $e');
+      debugPrint('VIP sin actualizar (${e.runtimeType})');
     }
   }
 

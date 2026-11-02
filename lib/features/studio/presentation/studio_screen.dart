@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/data/picked_files.dart';
 import '../../ar/domain/i_makeup_renderer.dart';
 import '../../ar/domain/makeup_recipe.dart';
 import '../../ar/presentation/test_filter_view.dart';
@@ -20,10 +21,16 @@ import 'recipe_editor_panel.dart';
 /// Elige una foto y devuelve sus bytes (null si se cancela).
 typedef ImageBytesPicker = Future<Uint8List?> Function();
 
-/// Galería con image_picker. La foto queda en memoria: no se guarda.
+/// Galería con image_picker. La foto queda en memoria: no se guarda, y la
+/// copia que deja image_picker en la caché se borra apenas se lee.
 Future<Uint8List?> pickGalleryImage() async {
   final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 2048, maxHeight: 2048, imageQuality: 95);
-  return file?.readAsBytes();
+  if (file == null) return null;
+  try {
+    return await file.readAsBytes();
+  } finally {
+    await discardPickedFile(file.path);
+  }
 }
 
 /// Studio (F3, solo admins): prompt -> 3 variantes generadas por IA, vista

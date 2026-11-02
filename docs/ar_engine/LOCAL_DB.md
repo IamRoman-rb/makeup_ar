@@ -14,7 +14,7 @@ Desde noviembre de 2026 la app no usa Firebase: cuentas, catálogo, guardados, b
 | `users/{uid}/ai_looks` + callables `saveAiLook`/`deleteAiLook` | tabla `ai_looks` (`DriftAiLookRepository` valida y pone el tope) |
 | Storage `profile_pictures/` | archivo en la carpeta de documentos de la app (`ProfilePhotoStore`) |
 | Callable `generateRecipe` (LLM) | `LocalRecipeGenerator`: sin IA, el preset más parecido (`PromptFallback`) |
-| `is_admin` puesto desde la consola | la primera cuenta creada en el dispositivo es admin |
+| `is_admin` puesto desde la consola | la primera cuenta creada en el dispositivo es admin, **solo en debug/profile o con `--dart-define=LOCAL_ADMIN=true`** (`LocalAdminPolicy`); en un build de tienda nadie es admin |
 | Webhook de RevenueCat → `premium_until` | el SDK informa el vencimiento (`VipService.purchase/restore/activeUntil`) y se guarda en `users.premium_until` |
 | App Check | no aplica (no hay backend) |
 
@@ -51,6 +51,8 @@ Todas las tablas menos `sessions` tienen:
 
 Los ids son UUID v4 (`newId()`), así no chocan con los de otros dispositivos. La excepción es `users`: borrar la cuenta borra la fila de verdad (datos personales); cuando haya servidor, borrar la cuenta también será una llamada a la API.
 
+Borrar la cuenta (`AccountDeletion`, `docs/compliance/DATA_INVENTORY.md`): en una transacción se borran la fila de `users` (en cascada sesión, `saved_looks` y `ai_looks`) y los `look_drafts` del usuario (de verdad, sin lápida), y los `looks` que publicó quedan con `created_by = NULL` (`dirty`). Después se borran todas sus fotos (`ProfilePhotoStore.deleteAllFor`) y se hace `Purchases.logOut()`.
+
 Plan para el servidor (no implementado):
 
 1. Auth en el servidor (tokens). Las cuentas locales se migran al registrarse en el servidor, o se descartan.
@@ -64,7 +66,8 @@ Plan para el servidor (no implementado):
 - **Seguridad de las cuentas locales:** no es seguridad real (la base está en el teléfono). El hash evita la contraseña en claro en la base o en un backup. `PasswordHasher.defaultIterations = 20000`: medir el login en el E20 y bajar si pasa de ~300 ms; las iteraciones se guardan por usuario y un login con iteraciones viejas rehace el hash.
 - **Sin "olvidé mi contraseña":** sin servidor no hay mail. Hay "Cambiar contraseña" (pide la actual).
 - **VIP:** sin webhook, el vencimiento lo informa el SDK de RevenueCat en el teléfono. Se refresca al arrancar y después del login (`AppServices.refreshVip`), sin bloquear.
-- **Admin:** la primera cuenta del dispositivo. Ve el Studio, el editor del catálogo y los videos.
+- **Admin:** la primera cuenta del dispositivo, solo en builds internos (`LocalAdminPolicy`: debug, profile o `LOCAL_ADMIN=true`). Ve el Studio, el editor del catálogo y los videos. En release la columna `is_admin` se ignora al leer: una base creada con un build interno no da privilegios en uno de tienda (antes, cualquier usuario de la tienda veía los videos VIP gratis).
+- **Foto de perfil:** se re-codifica a PNG de 512 px como máximo, sin metadatos (`ProfilePhotoStore.sanitize`); el avatar se decodifica con `ResizeImage` (resuelve el pendiente de memoria de la revisión perf-auditor para el avatar).
 - **Catálogo:** los looks y tutoriales que estaban en Firestore no se migraron; la base nueva arranca con los presets.
 
 ## Tests

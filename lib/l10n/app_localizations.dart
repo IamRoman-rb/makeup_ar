@@ -228,12 +228,6 @@ abstract class AppLocalizations {
   /// **'Email Address'**
   String get email;
 
-  /// No description provided for @age.
-  ///
-  /// In en, this message translates to:
-  /// **'Age'**
-  String get age;
-
   /// No description provided for @dob.
   ///
   /// In en, this message translates to:
@@ -360,36 +354,6 @@ abstract class AppLocalizations {
   /// **'Enter your current password and choose a new one.'**
   String get changePasswordDesc;
 
-  /// No description provided for @notifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Notifications'**
-  String get notifications;
-
-  /// No description provided for @pushNotif.
-  ///
-  /// In en, this message translates to:
-  /// **'Push Notifications'**
-  String get pushNotif;
-
-  /// No description provided for @pushNotifDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Alerts for new looks and features.'**
-  String get pushNotifDesc;
-
-  /// No description provided for @emailNotif.
-  ///
-  /// In en, this message translates to:
-  /// **'Email Newsletters'**
-  String get emailNotif;
-
-  /// No description provided for @emailNotifDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Weekly beauty tips and inspiration.'**
-  String get emailNotifDesc;
-
   /// No description provided for @dangerZone.
   ///
   /// In en, this message translates to:
@@ -405,7 +369,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteAccountDesc.
   ///
   /// In en, this message translates to:
-  /// **'Once you delete your account, there is no going back. Please be certain.'**
+  /// **'This deletes from this phone your account, profile, photo, saved looks and My looks. It cannot be undone. If you have VIP, deleting the account does not cancel the subscription: cancel it in the store.'**
   String get deleteAccountDesc;
 
   /// No description provided for @deleteMyAccountBtn.
@@ -1629,7 +1593,7 @@ abstract class AppLocalizations {
   /// No description provided for @vipHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Unlock the videos of every tutorial'**
+  /// **'Unlock the videos of the tutorials that include one'**
   String get vipHeadline;
 
   /// No description provided for @signupPhotoFailed.
@@ -1949,6 +1913,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change'**
   String get changeBtn;
+
+  /// Título y enlace de la política de privacidad.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get privacyPolicy;
+
+  /// Título y enlace de los términos y condiciones.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms and conditions'**
+  String get termsOfService;
+
+  /// Enlace a las licencias de terceros.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party licences'**
+  String get thirdPartyLicenses;
+
+  /// Banner mientras faltan datos del responsable o la revisión legal.
+  ///
+  /// In en, this message translates to:
+  /// **'DRAFT — not for publication: operator details or legal review are missing.'**
+  String get legalDraftBanner;
+
+  /// No se pudo abrir el documento legal.
+  ///
+  /// In en, this message translates to:
+  /// **'The document could not be opened.'**
+  String get legalLoadError;
+
+  /// Pantalla de privacidad y datos.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy and data'**
+  String get privacyCenterTitle;
+
+  /// Resumen de dónde quedan los datos.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account and profile are stored only on this phone. The camera and the photos you choose are processed on the phone and are not uploaded.'**
+  String get privacyCenterIntro;
+
+  /// Sección con los datos de la cuenta.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data on this phone'**
+  String get privacyYourData;
+
+  /// Botón para copiar los datos de la cuenta.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy my data'**
+  String get privacyCopyData;
+
+  /// Aviso al copiar los datos.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data was copied to the clipboard.'**
+  String get privacyDataCopied;
+
+  /// Sección de derechos.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rights'**
+  String get privacyRightsTitle;
+
+  /// Cómo ejercer los derechos; contact es el email del responsable o un marcador.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you can see and copy your data; correct it in Edit profile and delete it with Delete account. For other requests write to: {contact}'**
+  String privacyRightsBody(String contact);
+
+  /// Gestionar o cancelar el VIP.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage or cancel subscription'**
+  String get manageSubscription;
+
+  /// Pasos para cancelar en Google Play.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Google Play > your profile > Payments & subscriptions > Subscriptions, choose this app and tap Cancel subscription.'**
+  String get manageSubscriptionAndroid;
+
+  /// Pasos para cancelar en el iPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings > your name > Subscriptions, choose this app and tap Cancel Subscription.'**
+  String get manageSubscriptionIos;
+
+  /// Aviso: borrar la cuenta no cancela.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account or uninstalling the app does not cancel the subscription.'**
+  String get manageSubscriptionNote;
+
+  /// Título del enlace de la tienda.
+  ///
+  /// In en, this message translates to:
+  /// **'Store link'**
+  String get manageSubscriptionLink;
+
+  /// Botón copiar enlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get copyLink;
+
+  /// Aviso al copiar un enlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied.'**
+  String get linkCopied;
+
+  /// Casilla de aceptación en el registro.
+  ///
+  /// In en, this message translates to:
+  /// **'I have read and accept the privacy policy and the terms and conditions.'**
+  String get signupAcceptLegal;
+
+  /// Error: falta aceptar.
+  ///
+  /// In en, this message translates to:
+  /// **'To create an account you must accept the privacy policy and the terms.'**
+  String get signupMustAccept;
+
+  /// Error: no llega a la edad mínima configurada.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be at least {age} years old to create an account.'**
+  String signupUnderMinimumAge(int age);
+
+  /// Aviso: la cuenta es local.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is stored only on this phone. Without a server there is no email password recovery.'**
+  String get signupLocalNotice;
+
+  /// Aviso bajo la foto de perfil.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Stored only on this phone, reduced and without location data.'**
+  String get profilePhotoNotice;
+
+  /// Etiqueta de accesibilidad del avatar editable.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photo. Tap to change it.'**
+  String get profilePhotoA11y;
+
+  /// Botón quitar la foto de perfil.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get removePhoto;
+
+  /// La cuenta se borró pero quedó algún archivo.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account was deleted, but the profile photo could not be removed. Uninstalling the app removes it.'**
+  String get deleteAccountPartial;
+
+  /// No se pudo borrar la cuenta.
+  ///
+  /// In en, this message translates to:
+  /// **'The account could not be deleted. Nothing was changed; please try again.'**
+  String get deleteAccountError;
+
+  /// Precio de un plan con renovación.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} every {period}'**
+  String vipPricePerPeriod(String price, String period);
+
+  /// Precio de un pago único.
+  ///
+  /// In en, this message translates to:
+  /// **'{price}, one-time payment'**
+  String vipOneTime(String price);
+
+  /// Prueba gratuita informada por la tienda.
+  ///
+  /// In en, this message translates to:
+  /// **'Free trial: {duration}'**
+  String vipFreeTrial(String duration);
+
+  /// Precio de introducción informado por la tienda.
+  ///
+  /// In en, this message translates to:
+  /// **'Introductory price: {price} for {duration}'**
+  String vipIntroOffer(String price, String duration);
+
+  /// Aviso de renovación automática; store es Google Play o App Store.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscriptions renew automatically at the end of each period at the price shown until you cancel them in {store}. Payment is charged to your {store} account when you confirm the purchase. Cancel before the renewal to avoid being charged for the next period. Deleting your account or the app does not cancel the subscription.'**
+  String vipAutoRenewNotice(String store);
+
+  /// Duración en días.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{day} other{{count} days}}'**
+  String vipPeriodDays(int count);
+
+  /// Duración en semanas.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{week} other{{count} weeks}}'**
+  String vipPeriodWeeks(int count);
+
+  /// Duración en meses.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{month} other{{count} months}}'**
+  String vipPeriodMonths(int count);
+
+  /// Duración en años.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{year} other{{count} years}}'**
+  String vipPeriodYears(int count);
+
+  /// Título de la explicación antes del permiso de cámara.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera access'**
+  String get cameraRationaleTitle;
+
+  /// Para qué se usa la cámara (antes del diálogo del sistema).
+  ///
+  /// In en, this message translates to:
+  /// **'The camera shows the virtual makeup and the makeup guide live. Images are processed on this phone: they are not recorded or sent.'**
+  String get cameraRationaleBody;
+
+  /// Seguir al diálogo del sistema.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get cameraRationaleContinue;
+
+  /// No pedir el permiso ahora.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get cameraRationaleNotNow;
+
+  /// Sin permiso de cámara.
+  ///
+  /// In en, this message translates to:
+  /// **'Without camera access the live makeup can\'t be shown. You can allow it whenever you want.'**
+  String get cameraDeniedBody;
+
+  /// Volver a pedir el permiso de cámara.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow camera'**
+  String get cameraAllow;
+
+  /// Abrir los ajustes de la app (permiso denegado para siempre).
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get cameraOpenSettings;
 }
 
 class _AppLocalizationsDelegate

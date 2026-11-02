@@ -20,7 +20,6 @@
     "joinSubtitle": "Únete a Lumière Beauty para una experiencia cosmética única.",
     "fullName": "Nombre y Apellido",
     "email": "Correo Electrónico",
-    "age": "Edad",
     "dob": "Fecha de Nacimiento",
     "skinType": "Tipo de Piel",
     "skinTone": "Tono de Piel",
@@ -42,14 +41,9 @@
     "security": "Seguridad",
     "changePassword": "Cambiar Contraseña",
     "changePasswordDesc": "Ingresá tu contraseña actual y elegí una nueva.",
-    "notifications": "Notificaciones",
-    "pushNotif": "Notificaciones Push",
-    "pushNotifDesc": "Alertas sobre nuevos looks y funciones.",
-    "emailNotif": "Boletín por Correo",
-    "emailNotifDesc": "Inspiración y tips de belleza semanales.",
     "dangerZone": "Zona de Peligro",
     "deleteAccount": "Eliminar Cuenta",
-    "deleteAccountDesc": "Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, asegúrate.",
+    "deleteAccountDesc": "Se borran de este teléfono tu cuenta, tu perfil, tu foto, tus looks guardados y Mis looks. No se puede deshacer. Si tenés VIP, borrar la cuenta no cancela la suscripción: cancelala en la tienda.",
     "deleteMyAccountBtn": "Eliminar Mi Cuenta",
     "selectLanguageTitle": "Idioma / Language",
     "selectLanguageDesc": "Selecciona tu idioma preferido para la aplicación.",
@@ -651,7 +645,7 @@
     "vipNothingToRestore": "No encontramos ninguna compra para restaurar.",
     "vipRestore": "Restaurar compras",
     "vipNoPlans": "Todavía no hay ningún plan VIP configurado.",
-    "vipHeadline": "Desbloquea los videos de todos los tutoriales",
+    "vipHeadline": "Desbloqueá los videos de los tutoriales que los incluyen",
     "signupPhotoFailed": "Tu cuenta se creó, pero no pudimos guardar la foto. Puedes agregarla después desde tu perfil.",
     "startupError": "No se pudo iniciar la app. Revisa tu conexión.",
     "commonRetry": "Reintentar",
@@ -704,5 +698,143 @@
     "currentPassword": "Contraseña actual",
     "newPassword": "Contraseña nueva",
     "passwordChanged": "Contraseña cambiada.",
-    "changeBtn": "Cambiar"
+    "changeBtn": "Cambiar",
+    "privacyPolicy": "Política de privacidad",
+    "termsOfService": "Términos y condiciones",
+    "thirdPartyLicenses": "Licencias de terceros",
+    "legalDraftBanner": "BORRADOR — no publicar: faltan datos del responsable o la revisión legal.",
+    "legalLoadError": "No se pudo abrir el documento.",
+    "privacyCenterTitle": "Privacidad y datos",
+    "privacyCenterIntro": "Tu cuenta y tu perfil se guardan solo en este teléfono. La cámara y las fotos que elegís se procesan en el teléfono y no se suben.",
+    "privacyYourData": "Tus datos en este teléfono",
+    "privacyCopyData": "Copiar mis datos",
+    "privacyDataCopied": "Tus datos se copiaron al portapapeles.",
+    "privacyRightsTitle": "Tus derechos",
+    "privacyRightsBody": "Acá podés ver y copiar tus datos; corregirlos en Editar perfil y borrarlos con Eliminar cuenta. Para otros pedidos escribí a: {contact}",
+    "@privacyRightsBody": {
+        "description": "Cómo ejercer los derechos; contact es el email del responsable o un marcador.",
+        "placeholders": {
+            "contact": {
+                "type": "String"
+            }
+        }
+    },
+    "manageSubscription": "Gestionar o cancelar la suscripción",
+    "manageSubscriptionAndroid": "Abrí Google Play > tu perfil > Pagos y suscripciones > Suscripciones, elegí esta app y tocá Cancelar suscripción.",
+    "manageSubscriptionIos": "Abrí Ajustes > tu nombre > Suscripciones, elegí esta app y tocá Cancelar suscripción.",
+    "manageSubscriptionNote": "Borrar la cuenta o desinstalar la app no cancela la suscripción.",
+    "manageSubscriptionLink": "Enlace de la tienda",
+    "copyLink": "Copiar enlace",
+    "linkCopied": "Enlace copiado.",
+    "signupAcceptLegal": "Leí y acepto la política de privacidad y los términos y condiciones.",
+    "signupMustAccept": "Para crear la cuenta tenés que aceptar la política de privacidad y los términos.",
+    "signupUnderMinimumAge": "Para crear una cuenta tenés que tener al menos {age} años.",
+    "@signupUnderMinimumAge": {
+        "description": "Error: no llega a la edad mínima configurada.",
+        "placeholders": {
+            "age": {
+                "type": "int"
+            }
+        }
+    },
+    "signupLocalNotice": "Tu cuenta se guarda solo en este teléfono. Sin servidor no hay recuperación de contraseña por email.",
+    "profilePhotoNotice": "Opcional. Se guarda solo en este teléfono, achicada y sin datos de ubicación.",
+    "profilePhotoA11y": "Foto de perfil. Tocá para cambiarla.",
+    "removePhoto": "Quitar foto",
+    "deleteAccountPartial": "Tu cuenta se borró, pero no se pudo quitar la foto de perfil. Desinstalar la app la borra.",
+    "deleteAccountError": "No se pudo borrar la cuenta. No se cambió nada; probá de nuevo.",
+    "vipPricePerPeriod": "{price} cada {period}",
+    "@vipPricePerPeriod": {
+        "description": "Precio de un plan con renovación.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            },
+            "period": {
+                "type": "String"
+            }
+        }
+    },
+    "vipOneTime": "{price}, pago único",
+    "@vipOneTime": {
+        "description": "Precio de un pago único.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            }
+        }
+    },
+    "vipFreeTrial": "Prueba gratis: {duration}",
+    "@vipFreeTrial": {
+        "description": "Prueba gratuita informada por la tienda.",
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "vipIntroOffer": "Precio de introducción: {price} durante {duration}",
+    "@vipIntroOffer": {
+        "description": "Precio de introducción informado por la tienda.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "vipAutoRenewNotice": "Las suscripciones se renuevan solas al final de cada período, al precio indicado, hasta que las canceles en {store}. El cobro se hace en tu cuenta de {store} al confirmar la compra. Cancelá antes de la renovación para que no se cobre el período siguiente. Borrar la cuenta o la app no cancela la suscripción.",
+    "@vipAutoRenewNotice": {
+        "description": "Aviso de renovación automática; store es Google Play o App Store.",
+        "placeholders": {
+            "store": {
+                "type": "String"
+            }
+        }
+    },
+    "vipPeriodDays": "{count, plural, =1{día} other{{count} días}}",
+    "@vipPeriodDays": {
+        "description": "Duración en días.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodWeeks": "{count, plural, =1{semana} other{{count} semanas}}",
+    "@vipPeriodWeeks": {
+        "description": "Duración en semanas.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodMonths": "{count, plural, =1{mes} other{{count} meses}}",
+    "@vipPeriodMonths": {
+        "description": "Duración en meses.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodYears": "{count, plural, =1{año} other{{count} años}}",
+    "@vipPeriodYears": {
+        "description": "Duración en años.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "cameraRationaleTitle": "Acceso a la cámara",
+    "cameraRationaleBody": "La cámara muestra en vivo el maquillaje virtual y la guía de maquillaje. Las imágenes se procesan en este teléfono: no se graban ni se envían.",
+    "cameraRationaleContinue": "Continuar",
+    "cameraRationaleNotNow": "Ahora no",
+    "cameraDeniedBody": "Sin acceso a la cámara no se puede mostrar el maquillaje en vivo. Podés permitirlo cuando quieras.",
+    "cameraAllow": "Permitir cámara",
+    "cameraOpenSettings": "Abrir ajustes"
 }

@@ -14,6 +14,7 @@ import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:ar_makeup_app/features/coach/presentation/coach_screen.dart';
 import 'package:ar_makeup_app/features/my_looks/presentation/my_looks_screen.dart';
+import 'package:ar_makeup_app/features/legal/presentation/privacy_center_screen.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 import 'package:ar_makeup_app/features/profile/presentation/profile_labels.dart';
 
@@ -76,22 +77,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             radius: 50,
                             backgroundColor: Colors.grey.shade300,
                             // Sin foto, un ícono local (antes una foto de Unsplash en cada apertura).
-                            backgroundImage: hasPhoto ? FileImage(File(photoPath)) : null,
+                            // Decodificada al tamaño del círculo, no a la de la foto.
+                            backgroundImage: hasPhoto ? ResizeImage(FileImage(File(photoPath)), width: 300) : null,
                             child: hasPhoto ? null : Icon(Icons.person, size: 56, color: Colors.grey.shade600),
                           ),
                           Positioned(
                             bottom: 0,
                             right: 0,
-                            child: GestureDetector(
-                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen())),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFD4AF37),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                            child: Semantics(
+                              button: true,
+                              label: l10n.editProfile,
+                              child: GestureDetector(
+                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen())),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFD4AF37),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                                  ),
+                                  child: const Icon(Icons.edit, color: Colors.white, size: 16),
                                 ),
-                                child: const Icon(Icons.edit, color: Colors.white, size: 16),
                               ),
                             ),
                           ),
@@ -219,22 +225,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const AccountSettingsScreen()),
-                              );
-                            },
-                            child: _buildListTile(Icons.person_outline, l10n.accountSettings), // <-- Traducido
+                          _buildListTile(
+                            Icons.person_outline,
+                            l10n.accountSettings,
+                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AccountSettingsScreen())),
                           ),
-
-                          // Convertí el botón de idioma en una lista para que el diseño sea perfecto
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const LanguageScreen()));
-                            },
-                            child: _buildListTile(Icons.language, l10n.appLanguage), // <-- Traducido
+                          _buildListTile(
+                            Icons.privacy_tip_outlined,
+                            l10n.privacyCenterTitle,
+                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacyCenterScreen())),
+                          ),
+                          _buildListTile(
+                            Icons.language,
+                            l10n.appLanguage,
+                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LanguageScreen())),
                           ),
 
                           GestureDetector(
@@ -290,19 +294,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildListTile(IconData icon, String title) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.grey.shade700, size: 22),
-          const SizedBox(width: 15),
-          Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: const Color(0xFF1A1A1A))),
-          const Spacer(),
-          const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
-        ],
+  /// Fila de ajustes: botón real (foco, lector de pantalla, área táctil).
+  Widget _buildListTile(IconData icon, String title, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(15),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.grey.shade700, size: 22),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: const Color(0xFF1A1A1A))),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

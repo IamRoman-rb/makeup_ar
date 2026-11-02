@@ -146,4 +146,73 @@ void main() {
     expect(await db.select(db.sessions).get(), isEmpty);
     expect(await repo.signIn(email: 'ana@mail.com', password: 'secreta'), AuthFailure.wrongCredentials);
   });
+
+  group('admin local (LocalAdminPolicy)', () {
+    DriftAuthRepository storeRepo() => DriftAuthRepository(
+          db,
+          hasher: const PasswordHasher(iterations: 1),
+          clock: () => DateTime(2026, 11, 2),
+          allowLocalAdmin: false,
+        );
+
+    test('en un build de tienda la primera cuenta no es admin ni ve el contenido VIP', () async {
+      final store = storeRepo();
+      await store.signUp(email: 'ana@mail.com', password: 'secreta', profile: _profile);
+      final user = store.currentUser;
+      expect(user?.isAdmin, isFalse);
+      expect(user?.canSeePremiumAt(DateTime(2026, 11, 2)), isFalse);
+      final row = await db.select(db.users).getSingle();
+      expect(row.isAdmin, isFalse);
+    });
+
+    test('una fila marcada admin por un build interno no da privilegios en uno de tienda', () async {
+      await repo.signUp(email: 'ana@mail.com', password: 'secreta', profile: _profile);
+      expect(repo.currentUser?.isAdmin, isTrue);
+      final store = storeRepo();
+      final restored = await store.restoreSession();
+      expect(restored?.isAdmin, isFalse);
+    });
+  });
+
+  test('borrar la cuenta borra sus borradores del Studio y deja sin autor sus looks publicados', () async {
+    await repo.signUp(email: 'ana@mail.com', password: 'secreta', profile: _profile);
+    final uid = repo.currentUser?.id ?? '';
+    await repo.signOut();
+    await repo.signUp(email: 'bea@mail.com', password: 'secreta', profile: _profile);
+    final otherUid = repo.currentUser?.id ?? '';
+    await repo.signOut();
+    await repo.signIn(email: 'ana@mail.com', password: 'secreta');
+
+    Future<void> draft(String id, String owner) => db.into(db.lookDrafts).insert(LookDraftsCompanion.insert(
+          id: id,
+          name: 'Borrador',
+          category: 'Lips',
+          recipe: '{}',
+          recipeSchema: 'makeup-recipe/2',
+          minEngine: 1,
+          createdBy: owner,
+          createdAt: 1,
+          updatedAt: 1,
+        ));
+    await draft('d1', uid);
+    await draft('d2', otherUid);
+    await db.into(db.looks).insert(LooksCompanion.insert(
+          id: 'l1',
+          name: 'Publicado',
+          category: 'Lips',
+          createdBy: Value(uid),
+          createdAt: 1,
+          updatedAt: 1,
+        ));
+
+    await repo.deleteAccount();
+
+    final drafts = await db.select(db.lookDrafts).get();
+    expect(drafts.map((d) => d.id), ['d2']);
+    final look = await db.select(db.looks).getSingle();
+    expect(look.createdBy, isNull);
+    expect(look.dirty, isTrue);
+    final users = await db.select(db.users).get();
+    expect(users.map((u) => u.email), ['bea@mail.com']);
+  });
 }

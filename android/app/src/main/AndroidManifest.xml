@@ -1,7 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Cámara: maquillaje en vivo y Guía. Los frames se procesan en el
+         teléfono y no se guardan ni se envían (docs/compliance/DATA_INVENTORY.md).
+         Sin RECORD_AUDIO: la app no graba audio (CameraController usa
+         enableAudio: false y el motor nativo no abre el micrófono). -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-feature android:name="android.hardware.camera" />
+    <!-- Se usa la cámara frontal; la trasera no es requisito para instalar. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
         android:label="ar_makeup_app"
         android:name="${applicationName}"

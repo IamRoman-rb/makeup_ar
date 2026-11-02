@@ -20,7 +20,6 @@
     "joinSubtitle": "Rejoignez Lumière Beauty pour une expérience cosmétique unique.",
     "fullName": "Nom Complet",
     "email": "Adresse E-mail",
-    "age": "Âge",
     "dob": "Date de Naissance",
     "skinType": "Type de Peau",
     "skinTone": "Teint de Peau",
@@ -42,14 +41,9 @@
     "security": "Sécurité",
     "changePassword": "Changer le Mot de Passe",
     "changePasswordDesc": "Saisissez votre mot de passe actuel et choisissez-en un nouveau.",
-    "notifications": "Notifications",
-    "pushNotif": "Notifications Push",
-    "pushNotifDesc": "Alertes pour de nouveaux looks et fonctionnalités.",
-    "emailNotif": "Newsletter par E-mail",
-    "emailNotifDesc": "Conseils de beauté hebdomadaires et inspiration.",
     "dangerZone": "Zone de Danger",
     "deleteAccount": "Supprimer le Compte",
-    "deleteAccountDesc": "Une fois votre compte supprimé, il n'y a pas de retour en arrière. Soyez certain.",
+    "deleteAccountDesc": "Cela efface de ce téléphone votre compte, votre profil, votre photo, vos looks enregistrés et Mes looks. C'est irréversible. Si vous êtes VIP, supprimer le compte ne résilie pas l'abonnement : résiliez-le dans la boutique.",
     "deleteMyAccountBtn": "Supprimer Mon Compte",
     "selectLanguageTitle": "Langue / Language",
     "selectLanguageDesc": "Sélectionnez votre langue préférée pour l'application.",
@@ -348,7 +342,7 @@
     "vipNothingToRestore": "Aucun achat à restaurer.",
     "vipRestore": "Restaurer les achats",
     "vipNoPlans": "Aucune offre VIP n'est encore configurée.",
-    "vipHeadline": "Débloquez les vidéos de tous les tutoriels",
+    "vipHeadline": "Débloquez les vidéos des tutoriels qui en contiennent",
     "signupPhotoFailed": "Votre compte a été créé, mais la photo n'a pas pu être enregistrée. Vous pourrez l'ajouter plus tard depuis votre profil.",
     "startupError": "Impossible de démarrer l'application. Vérifiez votre connexion.",
     "commonRetry": "Réessayer",
@@ -401,5 +395,143 @@
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Nouveau mot de passe",
     "passwordChanged": "Mot de passe modifié.",
-    "changeBtn": "Modifier"
+    "changeBtn": "Modifier",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions générales",
+    "thirdPartyLicenses": "Licences tierces",
+    "legalDraftBanner": "BROUILLON — ne pas publier : il manque les données du responsable ou la relecture juridique.",
+    "legalLoadError": "Impossible d'ouvrir le document.",
+    "privacyCenterTitle": "Confidentialité et données",
+    "privacyCenterIntro": "Votre compte et votre profil sont conservés uniquement sur ce téléphone. La caméra et les photos choisies sont traitées sur le téléphone et ne sont pas envoyées.",
+    "privacyYourData": "Vos données sur ce téléphone",
+    "privacyCopyData": "Copier mes données",
+    "privacyDataCopied": "Vos données ont été copiées dans le presse-papiers.",
+    "privacyRightsTitle": "Vos droits",
+    "privacyRightsBody": "Ici, vous pouvez voir et copier vos données ; les corriger dans Modifier le profil et les effacer avec Supprimer le compte. Pour d'autres demandes, écrivez à : {contact}",
+    "@privacyRightsBody": {
+        "description": "Cómo ejercer los derechos; contact es el email del responsable o un marcador.",
+        "placeholders": {
+            "contact": {
+                "type": "String"
+            }
+        }
+    },
+    "manageSubscription": "Gérer ou résilier l'abonnement",
+    "manageSubscriptionAndroid": "Ouvrez Google Play > votre profil > Paiements et abonnements > Abonnements, choisissez cette application et appuyez sur Résilier l'abonnement.",
+    "manageSubscriptionIos": "Ouvrez Réglages > votre nom > Abonnements, choisissez cette application et touchez Annuler l'abonnement.",
+    "manageSubscriptionNote": "Supprimer le compte ou désinstaller l'application ne résilie pas l'abonnement.",
+    "manageSubscriptionLink": "Lien de la boutique",
+    "copyLink": "Copier le lien",
+    "linkCopied": "Lien copié.",
+    "signupAcceptLegal": "J'ai lu et j'accepte la politique de confidentialité et les conditions générales.",
+    "signupMustAccept": "Pour créer un compte, vous devez accepter la politique de confidentialité et les conditions.",
+    "signupUnderMinimumAge": "Vous devez avoir au moins {age} ans pour créer un compte.",
+    "@signupUnderMinimumAge": {
+        "description": "Error: no llega a la edad mínima configurada.",
+        "placeholders": {
+            "age": {
+                "type": "int"
+            }
+        }
+    },
+    "signupLocalNotice": "Votre compte est conservé uniquement sur ce téléphone. Sans serveur, pas de récupération du mot de passe par e-mail.",
+    "profilePhotoNotice": "Facultatif. Conservée uniquement sur ce téléphone, réduite et sans données de localisation.",
+    "profilePhotoA11y": "Photo de profil. Touchez pour la changer.",
+    "removePhoto": "Retirer la photo",
+    "deleteAccountPartial": "Votre compte a été supprimé, mais la photo de profil n'a pas pu être effacée. Désinstaller l'application l'efface.",
+    "deleteAccountError": "Le compte n'a pas pu être supprimé. Rien n'a été modifié ; réessayez.",
+    "vipPricePerPeriod": "{price} par {period}",
+    "@vipPricePerPeriod": {
+        "description": "Precio de un plan con renovación.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            },
+            "period": {
+                "type": "String"
+            }
+        }
+    },
+    "vipOneTime": "{price}, paiement unique",
+    "@vipOneTime": {
+        "description": "Precio de un pago único.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            }
+        }
+    },
+    "vipFreeTrial": "Essai gratuit : {duration}",
+    "@vipFreeTrial": {
+        "description": "Prueba gratuita informada por la tienda.",
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "vipIntroOffer": "Prix de lancement : {price} pendant {duration}",
+    "@vipIntroOffer": {
+        "description": "Precio de introducción informado por la tienda.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "vipAutoRenewNotice": "Les abonnements se renouvellent automatiquement à la fin de chaque période, au prix indiqué, jusqu'à leur résiliation dans {store}. Le paiement est débité de votre compte {store} à la confirmation de l'achat. Résiliez avant le renouvellement pour ne pas être débité de la période suivante. Supprimer le compte ou l'application ne résilie pas l'abonnement.",
+    "@vipAutoRenewNotice": {
+        "description": "Aviso de renovación automática; store es Google Play o App Store.",
+        "placeholders": {
+            "store": {
+                "type": "String"
+            }
+        }
+    },
+    "vipPeriodDays": "{count, plural, =1{jour} other{{count} jours}}",
+    "@vipPeriodDays": {
+        "description": "Duración en días.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodWeeks": "{count, plural, =1{semaine} other{{count} semaines}}",
+    "@vipPeriodWeeks": {
+        "description": "Duración en semanas.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodMonths": "{count, plural, =1{mois} other{{count} mois}}",
+    "@vipPeriodMonths": {
+        "description": "Duración en meses.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodYears": "{count, plural, =1{an} other{{count} ans}}",
+    "@vipPeriodYears": {
+        "description": "Duración en años.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "cameraRationaleTitle": "Accès à la caméra",
+    "cameraRationaleBody": "La caméra affiche en direct le maquillage virtuel et le guide de maquillage. Les images sont traitées sur ce téléphone : elles ne sont ni enregistrées ni envoyées.",
+    "cameraRationaleContinue": "Continuer",
+    "cameraRationaleNotNow": "Pas maintenant",
+    "cameraDeniedBody": "Sans accès à la caméra, le maquillage en direct ne peut pas être affiché. Vous pouvez l'autoriser quand vous voulez.",
+    "cameraAllow": "Autoriser la caméra",
+    "cameraOpenSettings": "Ouvrir les réglages"
 }

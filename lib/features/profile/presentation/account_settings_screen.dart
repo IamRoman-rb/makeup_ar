@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/data/account_deletion.dart';
 import 'package:ar_makeup_app/features/auth/presentation/auth_messages.dart';
 import 'package:ar_makeup_app/features/auth/presentation/login_screen.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- Importación del traductor
@@ -13,8 +14,7 @@ class AccountSettingsScreen extends StatefulWidget {
 }
 
 class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
-  bool _pushNotifications = true;
-  bool _emailNewsletters = false;
+  bool _deleting = false;
 
   /// Sin servidor no hay mail de recuperación: se cambia con la actual.
   Future<void> _changePassword() async {
@@ -70,26 +70,29 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     );
   }
 
+  /// Base, fotos y RevenueCat (AccountDeletion). Si la base falla no se
+  /// borró nada y se avisa; si queda algún archivo, la cuenta igual se borró
+  /// y se dice qué quedó.
   Future<void> _performAccountDeletion() async {
-    try {
-      final user = AppServices.auth.currentUser;
-      if (user != null) {
-        final photo = user.profile.photoPath;
-        // La sesión, los guardados y Mis looks se borran con la cuenta.
-        await AppServices.auth.deleteAccount();
-        await AppServices.photos.delete(photo);
-
-        if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
-          );
+    if (_deleting) return;
+    setState(() => _deleting = true);
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await AppServices.accountDeletion().run();
+    if (!mounted) return;
+    setState(() => _deleting = false);
+    switch (result) {
+      case AccountDeletionResult.failed:
+        messenger.showSnackBar(SnackBar(content: Text(l10n.deleteAccountError)));
+      case AccountDeletionResult.deleted || AccountDeletionResult.deletedWithLeftovers || AccountDeletionResult.notSignedIn:
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+        if (result == AccountDeletionResult.deletedWithLeftovers) {
+          messenger.showSnackBar(SnackBar(content: Text(l10n.deleteAccountPartial)));
         }
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errorWithDetails('$e'))));
     }
   }
 
@@ -135,29 +138,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 child: Text(l10n.changeBtn),
               ),
             ),
-            const SizedBox(height: 40),
-
-            // SECCIÓN: NOTIFICACIONES
-            Text(l10n.notifications, style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A1A))),
-            const SizedBox(height: 15),
-
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.pushNotif, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500)),
-              subtitle: Text(l10n.pushNotifDesc, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600)),
-              activeThumbColor: const Color(0xFFD4AF37),
-              value: _pushNotifications,
-              onChanged: (val) => setState(() => _pushNotifications = val),
-            ),
-            const Divider(height: 20),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.emailNotif, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500)),
-              subtitle: Text(l10n.emailNotifDesc, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600)),
-              activeThumbColor: const Color(0xFFD4AF37),
-              value: _emailNewsletters,
-              onChanged: (val) => setState(() => _emailNewsletters = val),
-            ),
+            // Sin sección de notificaciones: la app no manda notificaciones ni
+            // mails, y unos interruptores que no hacen nada serían engañosos.
             const SizedBox(height: 50),
 
             // SECCIÓN: PELIGRO
@@ -178,13 +160,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   const SizedBox(height: 10),
                   Text(
                     l10n.deleteAccountDesc,
-                    style: GoogleFonts.inter(fontSize: 13, color: Colors.red.shade300, height: 1.4),
+                    // red.shade300 sobre red.shade50 no llegaba al contraste 4,5:1 (WCAG AA).
+                    style: GoogleFonts.inter(fontSize: 13, color: Colors.red.shade900, height: 1.4),
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      onPressed: _deleteAccountConfirmation,
+                      onPressed: _deleting ? null : _deleteAccountConfirmation,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.red.shade700,
                         side: BorderSide(color: Colors.red.shade200),

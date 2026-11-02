@@ -12,7 +12,9 @@ Map<String, Object?> _arb(String lang) =>
 
 Set<String> _messages(Map<String, Object?> arb) => {for (final key in arb.keys) if (!key.startsWith('@')) key};
 
-final RegExp _placeholder = RegExp(r'\{(\w+)\}');
+/// `{nombre}` o `{nombre, plural, ...}`. No cuenta el texto de una rama de
+/// plural (`=1{day}`, `one{día}`): ahí la llave va pegada a un selector.
+final RegExp _placeholder = RegExp(r'(?<![=\w])\{(\w+)[},]');
 
 void main() {
   const languages = ['en', 'es', 'pt', 'fr'];

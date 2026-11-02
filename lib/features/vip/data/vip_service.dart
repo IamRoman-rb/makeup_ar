@@ -48,7 +48,38 @@ class VipService {
     try {
       await Purchases.logIn(userId);
     } catch (e) {
-      debugPrint('Error en Purchases.logIn: $e');
+      // Sin el detalle: el mensaje del SDK puede incluir el id del usuario.
+      debugPrint('VipService: Purchases.logIn falló (${e.runtimeType})');
+    }
+  }
+
+  /// Desata el SDK del usuario local (al borrar la cuenta): RevenueCat pasa a
+  /// un id anónimo nuevo y deja de asociar este teléfono con esa cuenta. Los
+  /// registros que RevenueCat ya tiene de ese id se borran del lado del
+  /// servidor (API REST con la secret key; pendiente, ver
+  /// docs/compliance/DATA_INVENTORY.md). No tira: un fallo de red no puede
+  /// frenar el borrado de la cuenta.
+  static Future<bool> logOutUser() async {
+    if (!_available) return true;
+    try {
+      if (await Purchases.isAnonymous) return true;
+      await Purchases.logOut();
+      return true;
+    } catch (e) {
+      debugPrint('VipService: logOut falló (${e.runtimeType})');
+      return false;
+    }
+  }
+
+  /// Enlace de la tienda para gestionar o cancelar la suscripción, si
+  /// RevenueCat lo informa; null sin RevenueCat, sin suscripción o sin red.
+  static Future<String?> managementUrl() async {
+    if (!_available) return null;
+    try {
+      return (await Purchases.getCustomerInfo()).managementURL;
+    } catch (e) {
+      debugPrint('VipService: sin managementURL (${e.runtimeType})');
+      return null;
     }
   }
 

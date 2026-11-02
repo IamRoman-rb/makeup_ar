@@ -1,7 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Firma de release (docs/compliance/RELEASE_CHECKLIST.md). android/key.properties
+// está en .gitignore y lo crea el operador con storeFile, storePassword,
+// keyAlias y keyPassword. Sin ese archivo, un build release de prueba se firma
+// con la key de debug, pero los tasks que generan algo publicable fallan.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) keystorePropertiesFile.inputStream().use { load(it) }
+}
+val hasReleaseKeystore = keystorePropertiesFile.exists()
 
 android {
     namespace = "com.example.ar_makeup_app"
@@ -21,10 +33,44 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
+    }
+}
+
+// Un AAB/APK de release firmado con la key de debug no se puede publicar (y
+// Google Play rechaza com.example.*): se corta antes de compilar.
+gradle.taskGraph.whenReady {
+    val publishing = allTasks.any { it.path == ":app:bundleRelease" || it.path == ":app:assembleRelease" }
+    if (!publishing) return@whenReady
+    if (!hasReleaseKeystore) {
+        throw GradleException(
+            "Falta android/key.properties: el release no se firma con la key de debug " +
+                "(docs/compliance/RELEASE_CHECKLIST.md).",
+        )
+    }
+    if (android.defaultConfig.applicationId?.startsWith("com.example.") == true) {
+        throw GradleException(
+            "applicationId com.example.* no se puede publicar: definí el definitivo " +
+                "(docs/compliance/RELEASE_CHECKLIST.md).",
+        )
     }
 }
 

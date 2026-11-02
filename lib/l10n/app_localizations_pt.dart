@@ -77,9 +77,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get email => 'E-mail';
 
   @override
-  String get age => 'Idade';
-
-  @override
   String get dob => 'Data de Nascimento';
 
   @override
@@ -143,21 +140,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get changePasswordDesc => 'Digite sua senha atual e escolha uma nova.';
 
   @override
-  String get notifications => 'Notificações';
-
-  @override
-  String get pushNotif => 'Notificações Push';
-
-  @override
-  String get pushNotifDesc => 'Alertas sobre novos looks e recursos.';
-
-  @override
-  String get emailNotif => 'Boletim por E-mail';
-
-  @override
-  String get emailNotifDesc => 'Dicas de beleza semanais e inspiração.';
-
-  @override
   String get dangerZone => 'Zona de Perigo';
 
   @override
@@ -165,7 +147,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deleteAccountDesc =>
-      'Depois de excluir sua conta, não há como voltar. Tenha certeza.';
+      'São apagados deste telefone sua conta, seu perfil, sua foto, seus looks salvos e Meus looks. Não é possível desfazer. Se você tem VIP, excluir a conta não cancela a assinatura: cancele-a na loja.';
 
   @override
   String get deleteMyAccountBtn => 'Excluir Minha Conta';
@@ -847,7 +829,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get vipNoPlans => 'Ainda não há nenhum plano VIP configurado.';
 
   @override
-  String get vipHeadline => 'Desbloqueie os vídeos de todos os tutoriais';
+  String get vipHeadline =>
+      'Desbloqueie os vídeos dos tutoriais que os incluem';
 
   @override
   String get signupPhotoFailed =>
@@ -1034,4 +1017,196 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get changeBtn => 'Alterar';
+
+  @override
+  String get privacyPolicy => 'Política de privacidade';
+
+  @override
+  String get termsOfService => 'Termos e condições';
+
+  @override
+  String get thirdPartyLicenses => 'Licenças de terceiros';
+
+  @override
+  String get legalDraftBanner =>
+      'RASCUNHO — não publicar: faltam dados do responsável ou a revisão jurídica.';
+
+  @override
+  String get legalLoadError => 'Não foi possível abrir o documento.';
+
+  @override
+  String get privacyCenterTitle => 'Privacidade e dados';
+
+  @override
+  String get privacyCenterIntro =>
+      'Sua conta e seu perfil ficam guardados só neste telefone. A câmera e as fotos que você escolhe são processadas no telefone e não são enviadas.';
+
+  @override
+  String get privacyYourData => 'Seus dados neste telefone';
+
+  @override
+  String get privacyCopyData => 'Copiar meus dados';
+
+  @override
+  String get privacyDataCopied =>
+      'Seus dados foram copiados para a área de transferência.';
+
+  @override
+  String get privacyRightsTitle => 'Seus direitos';
+
+  @override
+  String privacyRightsBody(String contact) {
+    return 'Aqui você pode ver e copiar seus dados; corrigi-los em Editar perfil e apagá-los com Excluir conta. Para outros pedidos escreva para: $contact';
+  }
+
+  @override
+  String get manageSubscription => 'Gerenciar ou cancelar a assinatura';
+
+  @override
+  String get manageSubscriptionAndroid =>
+      'Abra o Google Play > seu perfil > Pagamentos e assinaturas > Assinaturas, escolha este app e toque em Cancelar assinatura.';
+
+  @override
+  String get manageSubscriptionIos =>
+      'Abra Ajustes > seu nome > Assinaturas, escolha este app e toque em Cancelar Assinatura.';
+
+  @override
+  String get manageSubscriptionNote =>
+      'Excluir a conta ou desinstalar o app não cancela a assinatura.';
+
+  @override
+  String get manageSubscriptionLink => 'Link da loja';
+
+  @override
+  String get copyLink => 'Copiar link';
+
+  @override
+  String get linkCopied => 'Link copiado.';
+
+  @override
+  String get signupAcceptLegal =>
+      'Li e aceito a política de privacidade e os termos e condições.';
+
+  @override
+  String get signupMustAccept =>
+      'Para criar a conta você precisa aceitar a política de privacidade e os termos.';
+
+  @override
+  String signupUnderMinimumAge(int age) {
+    return 'Para criar uma conta você precisa ter pelo menos $age anos.';
+  }
+
+  @override
+  String get signupLocalNotice =>
+      'Sua conta fica guardada só neste telefone. Sem servidor não há recuperação de senha por e-mail.';
+
+  @override
+  String get profilePhotoNotice =>
+      'Opcional. Fica só neste telefone, reduzida e sem dados de localização.';
+
+  @override
+  String get profilePhotoA11y => 'Foto de perfil. Toque para trocá-la.';
+
+  @override
+  String get removePhoto => 'Remover foto';
+
+  @override
+  String get deleteAccountPartial =>
+      'Sua conta foi excluída, mas não foi possível remover a foto de perfil. Desinstalar o app a apaga.';
+
+  @override
+  String get deleteAccountError =>
+      'Não foi possível excluir a conta. Nada foi alterado; tente de novo.';
+
+  @override
+  String vipPricePerPeriod(String price, String period) {
+    return '$price a cada $period';
+  }
+
+  @override
+  String vipOneTime(String price) {
+    return '$price, pagamento único';
+  }
+
+  @override
+  String vipFreeTrial(String duration) {
+    return 'Teste grátis: $duration';
+  }
+
+  @override
+  String vipIntroOffer(String price, String duration) {
+    return 'Preço promocional: $price por $duration';
+  }
+
+  @override
+  String vipAutoRenewNotice(String store) {
+    return 'As assinaturas são renovadas automaticamente ao fim de cada período, pelo preço indicado, até você cancelá-las em $store. A cobrança é feita na sua conta $store ao confirmar a compra. Cancele antes da renovação para não ser cobrado pelo período seguinte. Excluir a conta ou o app não cancela a assinatura.';
+  }
+
+  @override
+  String vipPeriodDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dias',
+      one: 'dia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String vipPeriodWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count semanas',
+      one: 'semana',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String vipPeriodMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count meses',
+      one: 'mês',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String vipPeriodYears(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count anos',
+      one: 'ano',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cameraRationaleTitle => 'Acesso à câmera';
+
+  @override
+  String get cameraRationaleBody =>
+      'A câmera mostra ao vivo a maquiagem virtual e o guia de maquiagem. As imagens são processadas neste telefone: não são gravadas nem enviadas.';
+
+  @override
+  String get cameraRationaleContinue => 'Continuar';
+
+  @override
+  String get cameraRationaleNotNow => 'Agora não';
+
+  @override
+  String get cameraDeniedBody =>
+      'Sem acesso à câmera não é possível mostrar a maquiagem ao vivo. Você pode permitir quando quiser.';
+
+  @override
+  String get cameraAllow => 'Permitir câmera';
+
+  @override
+  String get cameraOpenSettings => 'Abrir ajustes';
 }

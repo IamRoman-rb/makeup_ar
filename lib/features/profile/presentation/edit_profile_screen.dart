@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,8 +6,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:ar_makeup_app/app_services.dart';
 import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
+import 'package:ar_makeup_app/features/legal/domain/legal_info.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 import 'package:ar_makeup_app/features/profile/presentation/profile_labels.dart';
+import 'package:ar_makeup_app/shared/data/picked_files.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -17,13 +20,16 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
 
   DateTime? _selectedDate;
   bool _isLoading = true;
   bool _isSaving = false;
 
   File? _imageFile;
+
+  /// Se tocó "Quitar foto": al guardar el perfil queda sin foto y el archivo
+  /// se borra.
+  bool _removePhoto = false;
 
   /// Foto guardada (ruta local); null sin foto.
   String? _currentPhotoPath;
@@ -49,6 +55,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _loadUserData();
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    // La copia del selector se borra al salir (guardada o no): mientras la
+    // pantalla está abierta, un reintento de guardado la sigue necesitando.
+    final picked = _imageFile;
+    if (picked != null) unawaited(discardPickedFile(picked.path));
+    super.dispose();
+  }
+
   Future<void> _loadUserData() async {
     try {
       final user = await AppServices.auth.restoreSession();
@@ -56,7 +72,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final profile = user.profile;
       setState(() {
         _nameController.text = profile.name;
-        _ageController.text = profile.age == 0 ? '' : '${profile.age}';
         _currentPhotoPath = profile.photoPath;
         _selectedDate = profile.birthDate;
         _selectedSkinType = profile.skinType;
@@ -64,7 +79,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _selectedPreferences = profile.preferences.toSet();
       });
     } catch (e) {
-      debugPrint('Error cargando el perfil: $e');
+      debugPrint('Error cargando el perfil (${e.runtimeType})');
     } finally {
       // Un error de la base no deja el spinner para siempre.
       if (mounted) setState(() => _isLoading = false);
@@ -72,10 +87,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    // Se achica de entrada; al guardarla se vuelve a codificar sin metadatos
+    // (ProfilePhotoStore.save).
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 1024, maxHeight: 1024);
     if (pickedFile != null) {
-      setState(() => _imageFile = File(pickedFile.path));
+      setState(() {
+        _imageFile = File(pickedFile.path);
+        _removePhoto = false;
+      });
     }
+  }
+
+  void _clearPhoto() => setState(() {
+        _imageFile = null;
+        _removePhoto = true;
+      });
+
+  bool get _hasPhoto {
+    if (_imageFile != null) return true;
+    final saved = _currentPhotoPath;
+    return !_removePhoto && saved != null && saved.isNotEmpty;
   }
 
   Future<void> _pickDate() async {
@@ -95,20 +126,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isSaving = true);
     final l10n = AppLocalizations.of(context)!; // Traductor para los mensajes de éxito/error
 
+    final imageFile = _imageFile;
     try {
       final user = AppServices.auth.currentUser;
       if (user != null) {
         final previousPhoto = _currentPhotoPath;
-        var photoPath = previousPhoto;
-        final imageFile = _imageFile;
+        var photoPath = _removePhoto ? null : previousPhoto;
         if (imageFile != null) {
           photoPath = await AppServices.photos.save(user.id, imageFile.path);
         }
+        final birthDate = _selectedDate;
 
         final failure = await AppServices.auth.updateProfile(UserProfile(
           name: _nameController.text.trim(),
-          age: int.tryParse(_ageController.text) ?? 0,
-          birthDate: _selectedDate,
+          // Se calcula de la fecha: no se pide dos veces el mismo dato.
+          age: birthDate == null ? 0 : AgePolicy.ageAt(birthDate, DateTime.now()),
+          birthDate: birthDate,
           skinType: _selectedSkinType,
           skinTone: _selectedSkinTone,
           preferences: _selectedPreferences.toList(),
@@ -124,9 +157,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
       }
     } catch (e) {
+      // Sin el detalle en pantalla: puede traer rutas internas.
+      debugPrint('Perfil sin guardar (${e.runtimeType})');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${l10n.errorSaving} $e', style: GoogleFonts.inter()), backgroundColor: Colors.red),
+          SnackBar(content: Text(l10n.errorSaving, style: GoogleFonts.inter()), backgroundColor: Colors.red.shade800),
         );
       }
     } finally {
@@ -155,30 +190,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             // WIDGET FOTO DE PERFIL
             Center(
-              child: GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: _avatarImage(),
-                      child: _avatarImage() == null ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: const Color(0xFFD4AF37), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+              child: Semantics(
+                button: true,
+                label: l10n.profilePhotoA11y,
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey.shade300,
+                        backgroundImage: _avatarImage(),
+                        child: _avatarImage() == null ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: const Color(0xFFD4AF37), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 30),
+            if (_hasPhoto)
+              Center(
+                child: TextButton.icon(
+                  onPressed: _clearPhoto,
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(l10n.removePhoto),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red.shade800),
+                ),
+              ),
+            Center(
+              child: Text(l10n.profilePhotoNotice, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade700)),
+            ),
+            const SizedBox(height: 22),
 
             // CAMPOS DE TEXTO TRADUCIDOS
             _buildTextField(l10n.fullName, 'Jane Doe', _nameController),
@@ -186,8 +237,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             Row(
               children: [
-                Expanded(child: _buildTextField(l10n.age, '25', _ageController, isNumber: true)),
-                const SizedBox(width: 20),
                 Expanded(
                   child: GestureDetector(
                     onTap: _pickDate,
@@ -287,12 +336,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   /// La foto elegida recién, si no la guardada; null sin ninguna.
+  /// Decodificada al tamaño del círculo (no a la resolución de la foto).
   ImageProvider? _avatarImage() {
     final picked = _imageFile;
-    if (picked != null) return FileImage(picked);
+    if (picked != null) return ResizeImage(FileImage(picked), width: _avatarDecodePx);
     final saved = _currentPhotoPath;
-    return saved != null && saved.isNotEmpty ? FileImage(File(saved)) : null;
+    if (_removePhoto || saved == null || saved.isEmpty) return null;
+    return ResizeImage(FileImage(File(saved)), width: _avatarDecodePx);
   }
+
+  static const int _avatarDecodePx = 300;
 
   Widget _buildTextField(String label, String hint, TextEditingController controller, {bool isNumber = false}) {
     return TextFormField(

@@ -20,7 +20,6 @@
     "joinSubtitle": "Junte-se à Lumière Beauty para uma experiência cosmética única.",
     "fullName": "Nome Completo",
     "email": "E-mail",
-    "age": "Idade",
     "dob": "Data de Nascimento",
     "skinType": "Tipo de Pele",
     "skinTone": "Tom de Pele",
@@ -42,14 +41,9 @@
     "security": "Segurança",
     "changePassword": "Mudar Senha",
     "changePasswordDesc": "Digite sua senha atual e escolha uma nova.",
-    "notifications": "Notificações",
-    "pushNotif": "Notificações Push",
-    "pushNotifDesc": "Alertas sobre novos looks e recursos.",
-    "emailNotif": "Boletim por E-mail",
-    "emailNotifDesc": "Dicas de beleza semanais e inspiração.",
     "dangerZone": "Zona de Perigo",
     "deleteAccount": "Excluir Conta",
-    "deleteAccountDesc": "Depois de excluir sua conta, não há como voltar. Tenha certeza.",
+    "deleteAccountDesc": "São apagados deste telefone sua conta, seu perfil, sua foto, seus looks salvos e Meus looks. Não é possível desfazer. Se você tem VIP, excluir a conta não cancela a assinatura: cancele-a na loja.",
     "deleteMyAccountBtn": "Excluir Minha Conta",
     "selectLanguageTitle": "Idioma / Language",
     "selectLanguageDesc": "Selecione seu idioma preferido para o aplicativo.",
@@ -348,7 +342,7 @@
     "vipNothingToRestore": "Não encontramos compras para restaurar.",
     "vipRestore": "Restaurar compras",
     "vipNoPlans": "Ainda não há nenhum plano VIP configurado.",
-    "vipHeadline": "Desbloqueie os vídeos de todos os tutoriais",
+    "vipHeadline": "Desbloqueie os vídeos dos tutoriais que os incluem",
     "signupPhotoFailed": "Sua conta foi criada, mas não conseguimos salvar a foto. Você pode adicioná-la depois pelo seu perfil.",
     "startupError": "Não foi possível iniciar o app. Verifique sua conexão.",
     "commonRetry": "Tentar de novo",
@@ -401,5 +395,143 @@
     "currentPassword": "Senha atual",
     "newPassword": "Nova senha",
     "passwordChanged": "Senha alterada.",
-    "changeBtn": "Alterar"
+    "changeBtn": "Alterar",
+    "privacyPolicy": "Política de privacidade",
+    "termsOfService": "Termos e condições",
+    "thirdPartyLicenses": "Licenças de terceiros",
+    "legalDraftBanner": "RASCUNHO — não publicar: faltam dados do responsável ou a revisão jurídica.",
+    "legalLoadError": "Não foi possível abrir o documento.",
+    "privacyCenterTitle": "Privacidade e dados",
+    "privacyCenterIntro": "Sua conta e seu perfil ficam guardados só neste telefone. A câmera e as fotos que você escolhe são processadas no telefone e não são enviadas.",
+    "privacyYourData": "Seus dados neste telefone",
+    "privacyCopyData": "Copiar meus dados",
+    "privacyDataCopied": "Seus dados foram copiados para a área de transferência.",
+    "privacyRightsTitle": "Seus direitos",
+    "privacyRightsBody": "Aqui você pode ver e copiar seus dados; corrigi-los em Editar perfil e apagá-los com Excluir conta. Para outros pedidos escreva para: {contact}",
+    "@privacyRightsBody": {
+        "description": "Cómo ejercer los derechos; contact es el email del responsable o un marcador.",
+        "placeholders": {
+            "contact": {
+                "type": "String"
+            }
+        }
+    },
+    "manageSubscription": "Gerenciar ou cancelar a assinatura",
+    "manageSubscriptionAndroid": "Abra o Google Play > seu perfil > Pagamentos e assinaturas > Assinaturas, escolha este app e toque em Cancelar assinatura.",
+    "manageSubscriptionIos": "Abra Ajustes > seu nome > Assinaturas, escolha este app e toque em Cancelar Assinatura.",
+    "manageSubscriptionNote": "Excluir a conta ou desinstalar o app não cancela a assinatura.",
+    "manageSubscriptionLink": "Link da loja",
+    "copyLink": "Copiar link",
+    "linkCopied": "Link copiado.",
+    "signupAcceptLegal": "Li e aceito a política de privacidade e os termos e condições.",
+    "signupMustAccept": "Para criar a conta você precisa aceitar a política de privacidade e os termos.",
+    "signupUnderMinimumAge": "Para criar uma conta você precisa ter pelo menos {age} anos.",
+    "@signupUnderMinimumAge": {
+        "description": "Error: no llega a la edad mínima configurada.",
+        "placeholders": {
+            "age": {
+                "type": "int"
+            }
+        }
+    },
+    "signupLocalNotice": "Sua conta fica guardada só neste telefone. Sem servidor não há recuperação de senha por e-mail.",
+    "profilePhotoNotice": "Opcional. Fica só neste telefone, reduzida e sem dados de localização.",
+    "profilePhotoA11y": "Foto de perfil. Toque para trocá-la.",
+    "removePhoto": "Remover foto",
+    "deleteAccountPartial": "Sua conta foi excluída, mas não foi possível remover a foto de perfil. Desinstalar o app a apaga.",
+    "deleteAccountError": "Não foi possível excluir a conta. Nada foi alterado; tente de novo.",
+    "vipPricePerPeriod": "{price} a cada {period}",
+    "@vipPricePerPeriod": {
+        "description": "Precio de un plan con renovación.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            },
+            "period": {
+                "type": "String"
+            }
+        }
+    },
+    "vipOneTime": "{price}, pagamento único",
+    "@vipOneTime": {
+        "description": "Precio de un pago único.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            }
+        }
+    },
+    "vipFreeTrial": "Teste grátis: {duration}",
+    "@vipFreeTrial": {
+        "description": "Prueba gratuita informada por la tienda.",
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "vipIntroOffer": "Preço promocional: {price} por {duration}",
+    "@vipIntroOffer": {
+        "description": "Precio de introducción informado por la tienda.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "vipAutoRenewNotice": "As assinaturas são renovadas automaticamente ao fim de cada período, pelo preço indicado, até você cancelá-las em {store}. A cobrança é feita na sua conta {store} ao confirmar a compra. Cancele antes da renovação para não ser cobrado pelo período seguinte. Excluir a conta ou o app não cancela a assinatura.",
+    "@vipAutoRenewNotice": {
+        "description": "Aviso de renovación automática; store es Google Play o App Store.",
+        "placeholders": {
+            "store": {
+                "type": "String"
+            }
+        }
+    },
+    "vipPeriodDays": "{count, plural, =1{dia} other{{count} dias}}",
+    "@vipPeriodDays": {
+        "description": "Duración en días.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodWeeks": "{count, plural, =1{semana} other{{count} semanas}}",
+    "@vipPeriodWeeks": {
+        "description": "Duración en semanas.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodMonths": "{count, plural, =1{mês} other{{count} meses}}",
+    "@vipPeriodMonths": {
+        "description": "Duración en meses.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodYears": "{count, plural, =1{ano} other{{count} anos}}",
+    "@vipPeriodYears": {
+        "description": "Duración en años.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "cameraRationaleTitle": "Acesso à câmera",
+    "cameraRationaleBody": "A câmera mostra ao vivo a maquiagem virtual e o guia de maquiagem. As imagens são processadas neste telefone: não são gravadas nem enviadas.",
+    "cameraRationaleContinue": "Continuar",
+    "cameraRationaleNotNow": "Agora não",
+    "cameraDeniedBody": "Sem acesso à câmera não é possível mostrar a maquiagem ao vivo. Você pode permitir quando quiser.",
+    "cameraAllow": "Permitir câmera",
+    "cameraOpenSettings": "Abrir ajustes"
 }

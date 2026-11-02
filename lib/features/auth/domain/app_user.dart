@@ -50,8 +50,9 @@ final class AppUser {
   final String email;
   final UserProfile profile;
 
-  /// Puede usar el Studio y el editor del catálogo. Sin servidor, lo es la
-  /// primera cuenta creada en el dispositivo.
+  /// Puede usar el Studio y el editor del catálogo y ve los videos VIP. Sin
+  /// servidor, lo es la primera cuenta creada en el dispositivo, y solo en
+  /// builds internos ([LocalAdminPolicy]).
   final bool isAdmin;
 
   /// Vencimiento del VIP (entitlement de RevenueCat); null sin VIP.
@@ -64,6 +65,18 @@ final class AppUser {
 
   /// Ve los videos de los tutoriales: VIP vigente o admin.
   bool canSeePremiumAt(DateTime now) => isAdmin || isPremiumAt(now);
+}
+
+/// Quién puede ser admin sin servidor (docs/compliance/LEGAL_MATRIX.md, H1).
+///
+/// En un build de tienda la primera cuenta de cada teléfono sería admin: vería
+/// el Studio, el editor y los videos VIP sin pagar. Por eso el admin local
+/// solo existe en debug y profile (medir en el E20) o con
+/// `--dart-define=LOCAL_ADMIN=true` en un build interno. Cuando haya
+/// servidor, el rol vuelve a decidirlo el servidor.
+abstract final class LocalAdminPolicy {
+  static const bool enabled =
+      bool.fromEnvironment('LOCAL_ADMIN', defaultValue: !bool.fromEnvironment('dart.vm.product'));
 }
 
 /// Por qué falló una operación de la cuenta.
@@ -116,6 +129,9 @@ abstract interface class IAuthRepository {
   /// Guarda el vencimiento del VIP que informó RevenueCat.
   Future<void> setPremiumUntil(DateTime? until);
 
-  /// Borra la cuenta y todos sus datos del dispositivo, y cierra la sesión.
+  /// Borra la cuenta y sus datos de la base en una transacción (sesión,
+  /// guardados, Mis looks, borradores del Studio; los looks que publicó
+  /// quedan sin autor) y cierra la sesión. La foto de perfil es un archivo:
+  /// la borra quien llama (ProfilePhotoStore.deleteAllFor).
   Future<void> deleteAccount();
 }

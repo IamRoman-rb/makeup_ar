@@ -25,6 +25,8 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - `flutter pub get` · `flutter analyze` · `flutter test`
 - Medir rendimiento siempre en profile: `flutter run --profile -d <id>`. Nunca en debug.
 - Keys de RevenueCat (VIP): `--dart-define-from-file=env/revenuecat.json` en `flutter run`/`flutter build` (plantilla en `env/revenuecat.example.json`, el real está en `.gitignore`). Sin eso compila igual y el VIP queda desactivado.
+- Datos legales del responsable (política, términos, edad mínima): `--dart-define-from-file=env/legal.json` (plantilla `env/legal.example.json`). Sin eso los textos de `assets/legal/` muestran `[COMPLETAR: …]` y el banner BORRADOR. Inventario de datos, matriz legal y checklist de publicación en `docs/compliance/`.
+- Admin local (Studio, editor del catálogo): solo en debug/profile o con `--dart-define=LOCAL_ADMIN=true`; en release nadie es admin. `flutter build appbundle`/`assembleRelease` fallan sin `android/key.properties` o con `applicationId` `com.example.*` (probar en el teléfono con `--profile`).
 - Arranque de la app: líneas `STARTUP <etapa> <ms>` en logcat (`lib/startup_trace.dart`); protocolo de arranque en frío con `adb shell am start -W` en `docs/ar_engine/STARTUP.md`.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
 - Base local SQLite (drift; sin Firebase): si cambian las tablas de `lib/shared/data/local_db/tables.dart`, `dart run build_runner build` regenera `app_database.g.dart` (versionado). Esquema, decisiones y plan de sincronización con el servidor en `docs/ar_engine/LOCAL_DB.md`. Widget tests con la base: `test/helpers/memory_database.dart` (si no, drift deja timers pendientes y el test falla o se cuelga); conviene `flutter test --timeout 60s`.
