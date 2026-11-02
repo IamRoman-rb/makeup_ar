@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
+import 'package:ar_makeup_app/features/catalog/domain/catalog_look.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_labels.dart';
-import 'package:ar_makeup_app/features/vip/data/premium_content.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
 
 const List<String> kFilterCategories = ['Lips', 'Eyes', 'Complexion'];
@@ -21,11 +21,11 @@ class _StepDraft {
         image = TextEditingController(text: image),
         description = TextEditingController(text: description);
 
-  Map<String, String> toMap() => {
-        'title': title.text.trim(),
-        'image': image.text.trim(),
-        'description': description.text.trim(),
-      };
+  TutorialStep toStep() => TutorialStep(
+        title: title.text.trim(),
+        image: image.text.trim(),
+        description: description.text.trim(),
+      );
 
   bool get isEmpty => title.text.trim().isEmpty && description.text.trim().isEmpty && image.text.trim().isEmpty;
 
@@ -59,12 +59,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
 
   // Una vez: creado en build, cada setState (agregar un paso, cambiar la
   // categoría) se resuscribía y reemplazaba el formulario por un spinner.
-  late final Stream<DocumentSnapshot>? _userStream = _userSnapshots();
-
-  static Stream<DocumentSnapshot>? _userSnapshots() {
-    final user = FirebaseAuth.instance.currentUser;
-    return user == null ? null : FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
-  }
+  late final Stream<AppUser?> _userStream = AppServices.auth.watchCurrentUser();
 
   @override
   void initState() {
@@ -90,30 +85,17 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
     if (lookId == null) return;
     setState(() => _isLoading = true);
     try {
-      final doc = await FirebaseFirestore.instance.collection('looks').doc(lookId).get();
-      if (doc.exists && doc.data() != null) {
-        final data = doc.data()!;
-        _nameController.text = data['name'] ?? "Look sin nombre";
-        _imageController.text = data['image'] ?? "";
-        // El video vive en premium/content (AUDIT.md §5.2); los looks sin
-        // migrar lo tienen en el documento y se mueve al guardar.
-        _videoController.text = await PremiumContent.videoUrl(lookId) ?? (data['video_url'] as String? ?? "");
-        final category = data['category'] as String?;
-        if (category != null && kFilterCategories.contains(category)) {
-          _category = category;
+      final catalog = AppServices.catalog;
+      final look = await catalog.look(lookId);
+      if (look != null) {
+        _nameController.text = look.name;
+        _imageController.text = look.image ?? '';
+        _videoController.text = await catalog.videoUrl(lookId) ?? '';
+        if (kFilterCategories.contains(look.category)) {
+          _category = look.category;
         }
-
-        final rawSteps = data['steps'];
-        if (rawSteps is List) {
-          for (final step in rawSteps) {
-            if (step is Map) {
-              _steps.add(_StepDraft(
-                title: (step['title'] ?? '').toString(),
-                image: (step['image'] ?? '').toString(),
-                description: (step['description'] ?? '').toString(),
-              ));
-            }
-          }
+        for (final step in look.steps) {
+          _steps.add(_StepDraft(title: step.title, image: step.image, description: step.description));
         }
       }
     } catch (e) {
@@ -130,42 +112,25 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
         _steps.removeAt(index);
       });
 
-  // ☁️ Crea o actualiza
-  Future<void> _saveLookToFirebase() async {
+  // 💾 Crea o actualiza (la receta del look, si tiene, no se toca)
+  Future<void> _saveLook() async {
     final l10n = AppLocalizations.of(context)!;
+    final user = AppServices.auth.currentUser;
+    if (user == null) return;
     setState(() => _isSaving = true);
 
     try {
-      final steps = _steps.where((s) => !s.isEmpty).map((s) => s.toMap()).toList();
-
-      final lookData = {
-        "name": _nameController.text.trim(),
-        "category": _category,
-        "steps": steps,
-        "updated_at": FieldValue.serverTimestamp(),
-        if (_imageController.text.trim().isNotEmpty) "image": _imageController.text.trim(),
-      };
-      final videoUrl = _videoController.text.trim();
-
-      // El look y su video en un batch: el video va a premium/content (solo
-      // VIP y admins lo leen) y nunca al documento del look, que es público.
-      final looks = FirebaseFirestore.instance.collection('looks');
-      final batch = FirebaseFirestore.instance.batch();
-      final existingId = widget.lookId;
-      final lookRef = existingId == null ? looks.doc() : looks.doc(existingId);
-      if (existingId == null) {
-        lookData["order"] = DateTime.now().millisecondsSinceEpoch;
-        batch.set(lookRef, lookData);
-      } else {
-        batch.update(lookRef, {...lookData, "video_url": FieldValue.delete()});
-      }
-      final premiumRef = PremiumContent.ref(lookRef.id);
-      if (videoUrl.isNotEmpty) {
-        batch.set(premiumRef, {"video_url": videoUrl});
-      } else if (existingId != null) {
-        batch.delete(premiumRef);
-      }
-      await batch.commit();
+      await AppServices.catalog.saveTutorial(
+        TutorialEdit(
+          name: _nameController.text.trim(),
+          category: _category,
+          image: _imageController.text,
+          videoUrl: _videoController.text,
+          steps: [for (final step in _steps) step.toStep()],
+        ),
+        id: widget.lookId,
+        userId: user.id,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -202,10 +167,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
     if (confirm == true) {
       setState(() => _isSaving = true);
       try {
-        final batch = FirebaseFirestore.instance.batch()
-          ..delete(PremiumContent.ref(lookId))
-          ..delete(FirebaseFirestore.instance.collection('looks').doc(lookId));
-        await batch.commit();
+        await AppServices.catalog.deleteLook(lookId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(l10n.filterEditorDeleted), backgroundColor: Colors.red),
@@ -236,15 +198,11 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
+    return StreamBuilder<AppUser?>(
       stream: _userStream,
+      initialData: AppServices.auth.currentUser,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(backgroundColor: Color(0xFF121212), body: Center(child: CircularProgressIndicator(color: Colors.pinkAccent)));
-        }
-
-        final data = snapshot.data?.data() as Map<String, dynamic>?;
-        final isAdmin = data?['is_admin'] == true;
+        final isAdmin = snapshot.data?.isAdmin ?? false;
 
         if (!isAdmin) {
           return Scaffold(
@@ -286,7 +244,7 @@ class _FilterEditorScreenState extends State<FilterEditorScreen> {
               ? const Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator(color: Colors.pink))
               : IconButton(
             icon: const Icon(Icons.cloud_upload_rounded, color: Colors.pinkAccent),
-            onPressed: _saveLookToFirebase,
+            onPressed: _saveLook,
             tooltip: l10n.save,
           )
         ],

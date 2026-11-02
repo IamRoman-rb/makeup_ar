@@ -15,18 +15,18 @@ void main() {
       model: 'gemini-3.5-flash',
       image: 'https://example.com/a.jpg',
     );
-    final data = look.toFirestore();
+    final data = look.toMap();
     expect(data['recipeSchema'], kMakeupRecipeSchemaV2);
     expect(data['minEngine'], kMakeupEngineVersion);
     expect(data['category'], 'Lips');
-    final back = StudioLook.fromFirestore('d1', data);
+    final back = StudioLook.fromMap('d1', data);
     expect(back?.id, 'd1');
     expect(back?.name, red.name);
     expect(back?.sourceType, LookSourceType.prompt);
     expect(back?.sourcePrompt, 'labios rojos');
     expect(back?.model, 'gemini-3.5-flash');
     expect(back?.image, 'https://example.com/a.jpg');
-    expect(StudioLook(recipe: red, category: LookCategory.lips).toFirestore().containsKey('image'), isFalse);
+    expect(StudioLook(recipe: red, category: LookCategory.lips).toMap().containsKey('image'), isFalse);
   });
 
   test('lookRecipe: solo recetas válidas para este motor', () {
@@ -35,7 +35,7 @@ void main() {
     expect(lookRecipe({'recipe': red.toJson(), 'minEngine': kMakeupEngineVersion})?.name, red.name);
     expect(lookRecipe({'recipe': red.toJson(), 'minEngine': kMakeupEngineVersion + 1}), isNull);
     expect(lookRecipe({'recipe': {...red.toJson(), 'shader': 'x'}}), isNull);
-    expect(StudioLook.fromFirestore('x', {'recipe': 'roto'}), isNull);
+    expect(StudioLook.fromMap('x', {'recipe': 'roto'}), isNull);
   });
 
   test('categoría por defecto según las regiones', () {

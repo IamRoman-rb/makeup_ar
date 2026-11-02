@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/data/picked_files.dart';
 import '../../ar/domain/i_makeup_renderer.dart';
 import '../../ar/domain/makeup_recipe.dart';
 import '../../ar/presentation/test_filter_view.dart';
@@ -20,10 +21,16 @@ import 'recipe_editor_panel.dart';
 /// Elige una foto y devuelve sus bytes (null si se cancela).
 typedef ImageBytesPicker = Future<Uint8List?> Function();
 
-/// Galería con image_picker. La foto queda en memoria: no se guarda.
+/// Galería con image_picker. La foto queda en memoria: no se guarda, y la
+/// copia que deja image_picker en la caché se borra apenas se lee.
 Future<Uint8List?> pickGalleryImage() async {
   final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 2048, maxHeight: 2048, imageQuality: 95);
-  return file?.readAsBytes();
+  if (file == null) return null;
+  try {
+    return await file.readAsBytes();
+  } finally {
+    await discardPickedFile(file.path);
+  }
 }
 
 /// Studio (F3, solo admins): prompt -> 3 variantes generadas por IA, vista
@@ -38,9 +45,10 @@ Future<Uint8List?> pickGalleryImage() async {
 /// corren en el teléfono ([IImageLookAnalyzer]); la foto no se sube ni se
 /// guarda (docs/ar_engine/F4_PLAN.md).
 ///
-/// La IA solo elige parámetros: cada variante llega validada por la función
-/// y otra vez por la app (CloudRecipeGenerator), y cada edición pasa por
-/// RecipeEdits, que nunca produce una receta inválida.
+/// La IA solo elige parámetros: cada variante se valida en el servidor y otra
+/// vez en la app (el IRecipeGenerator), y cada edición pasa por RecipeEdits,
+/// que nunca produce una receta inválida. Sin servidor, el generador es local
+/// (LocalRecipeGenerator: el preset más parecido).
 class StudioScreen extends StatefulWidget {
   const StudioScreen({
     super.key,
@@ -146,6 +154,7 @@ class _StudioScreenState extends State<StudioScreen> {
         GenerationFailure.unavailable => l10n.studioErrorUnavailable,
         GenerationFailure.appCheck => l10n.studioErrorAppCheck,
         GenerationFailure.noValidVariants => l10n.studioFallback,
+        GenerationFailure.localOnly => l10n.studioLocalOnly,
         GenerationFailure.unknown => l10n.studioErrorUnknown,
       };
 
@@ -179,9 +188,12 @@ class _StudioScreenState extends State<StudioScreen> {
         _model = null;
         _draftId = null;
       }
+      // noValidVariants y localOnly ya dicen que se muestra el preset.
       _message = failure == null
           ? null
-          : failure == GenerationFailure.noValidVariants || result.fallback == null
+          : failure == GenerationFailure.noValidVariants ||
+                  failure == GenerationFailure.localOnly ||
+                  result.fallback == null
               ? _failureText(l10n, failure)
               : '${_failureText(l10n, failure)} ${l10n.studioFallback}';
     });

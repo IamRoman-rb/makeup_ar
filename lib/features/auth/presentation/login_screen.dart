@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/presentation/auth_messages.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_screen.dart';
 import 'package:ar_makeup_app/features/auth/presentation/signup_screen.dart';
 
@@ -29,20 +32,28 @@ class _LoginScreenState extends State<LoginScreen> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
+      final failure = await AppServices.auth.signIn(
+        email: _emailController.text,
         password: _passwordController.text.trim(),
       );
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const CatalogScreen()),
+      if (!mounted) return;
+      if (failure != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authFailureText(l10n, failure), style: GoogleFonts.inter())),
         );
+        return;
       }
-    } on FirebaseAuthException catch (e) {
+      final user = AppServices.auth.currentUser;
+      if (user != null) unawaited(AppServices.afterSignIn(user.id));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const CatalogScreen()),
+      );
+    } catch (e) {
+      // Error inesperado de la base (no una contraseña mala).
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.loginError(e.message ?? e.code), style: GoogleFonts.inter())),
+        SnackBar(content: Text(l10n.loginError('$e'), style: GoogleFonts.inter())),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

@@ -1,9 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/legal/domain/legal_document.dart';
+import 'package:ar_makeup_app/features/legal/presentation/legal_document_screen.dart';
 import 'package:ar_makeup_app/features/vip/data/vip_service.dart';
+import 'package:ar_makeup_app/features/vip/domain/subscription_terms.dart';
+import 'package:ar_makeup_app/features/vip/presentation/manage_subscription_screen.dart';
+import 'package:ar_makeup_app/features/vip/presentation/subscription_texts.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
 
 /// Por qué no se muestra el catálogo. El texto se arma en build: _load corre
@@ -12,6 +20,11 @@ enum _PaywallError { unavailable, loadFailed }
 
 /// Ventana de la pasarela de pago: muestra los planes VIP disponibles y
 /// permite comprar uno (o restaurar una compra previa).
+///
+/// Antes de comprar se ve, por plan, el precio con su período y la prueba
+/// gratis o el precio de introducción si la tienda los informa; abajo, el
+/// aviso de renovación automática y los enlaces a términos, privacidad y
+/// cómo cancelar (Ley 24.240 art. 4; App Store 3.1.2; Google Play).
 class VipPaywallScreen extends StatefulWidget {
   const VipPaywallScreen({super.key});
 
@@ -46,7 +59,8 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
       _error = null;
     });
     try {
-      await VipService.loginCurrentUser();
+      final user = AppServices.auth.currentUser;
+      if (user != null) await VipService.loginUser(user.id);
       final offering = await VipService.fetchCurrentOffering();
       if (!mounted) return;
       setState(() => _offering = offering);
@@ -70,9 +84,11 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isPurchasing = true);
     try {
-      final isVip = await VipService.purchase(package);
+      final until = await VipService.purchase(package);
+      // Sin webhook: el vencimiento que informa RevenueCat se guarda en el usuario.
+      if (until != null) await AppServices.auth.setPremiumUntil(until);
       if (!mounted) return;
-      if (isVip) {
+      if (until != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.vipPurchased), backgroundColor: Colors.green),
         );
@@ -81,8 +97,9 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
     } on PlatformException catch (e) {
       final code = PurchasesErrorHelper.getErrorCode(e);
       if (code != PurchasesErrorCode.purchaseCancelledError && mounted) {
+        // El código, no el mensaje crudo del SDK (puede traer ids internos).
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.vipPurchaseError(e.message ?? code.name))),
+          SnackBar(content: Text(l10n.vipPurchaseError(code.name))),
         );
       }
     } catch (e) {
@@ -96,7 +113,9 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isPurchasing = true);
     try {
-      final isVip = await VipService.restore();
+      final until = await VipService.restore();
+      if (until != null) await AppServices.auth.setPremiumUntil(until);
+      final isVip = until != null;
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(isVip ? l10n.vipRestored : l10n.vipNothingToRestore)),
@@ -170,13 +189,51 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
           style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 30),
-        for (final package in packages) _buildPackageTile(package),
+        for (final package in packages) _buildPackageTile(l10n, package),
+        if (packages.any((package) => _terms(package).isAutoRenewing)) ...[
+          const SizedBox(height: 8),
+          Text(
+            l10n.vipAutoRenewNotice(Platform.isIOS || Platform.isMacOS ? 'App Store' : 'Google Play'),
+            style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.4),
+          ),
+        ],
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 4,
+          children: [
+            _footerLink(l10n.termsOfService, () => _open(const LegalDocumentScreen(kind: LegalDocumentKind.terms))),
+            _footerLink(l10n.privacyPolicy, () => _open(const LegalDocumentScreen(kind: LegalDocumentKind.privacy))),
+            _footerLink(l10n.manageSubscription, () => _open(const ManageSubscriptionScreen())),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _buildPackageTile(Package package) {
+  void _open(Widget screen) => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => screen));
+
+  Widget _footerLink(String label, VoidCallback onTap) => TextButton(
+        onPressed: onTap,
+        child: Text(label, style: const TextStyle(color: Color(0xFFD4AF37), decoration: TextDecoration.underline)),
+      );
+
+  static SubscriptionTerms _terms(Package package) {
     final product = package.storeProduct;
+    final intro = product.introductoryPrice;
+    return SubscriptionTerms.fromStore(
+      priceString: product.priceString,
+      subscriptionPeriod: product.subscriptionPeriod,
+      introPrice: intro?.price,
+      introPriceString: intro?.priceString,
+      introPeriod: intro?.period,
+      introCycles: intro?.cycles ?? 1,
+    );
+  }
+
+  Widget _buildPackageTile(AppLocalizations l10n, Package package) {
+    final product = package.storeProduct;
+    final terms = _terms(package);
+    final intro = introText(l10n, terms);
     return Card(
       color: Colors.white12,
       margin: const EdgeInsets.only(bottom: 16),
@@ -184,7 +241,16 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         title: Text(product.title, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-        subtitle: Text(product.description, style: GoogleFonts.inter(color: Colors.white54, fontSize: 13)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (product.description.isNotEmpty)
+              Text(product.description, style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
+            const SizedBox(height: 4),
+            Text(priceText(l10n, terms), style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+            if (intro != null) Text(intro, style: GoogleFonts.inter(color: const Color(0xFFD4AF37), fontSize: 13)),
+          ],
+        ),
         trailing: _isPurchasing
             ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFD4AF37)))
             : Text(product.priceString, style: GoogleFonts.inter(color: const Color(0xFFD4AF37), fontWeight: FontWeight.bold, fontSize: 16)),

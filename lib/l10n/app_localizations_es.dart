@@ -77,9 +77,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get email => 'Correo Electrónico';
 
   @override
-  String get age => 'Edad';
-
-  @override
   String get dob => 'Fecha de Nacimiento';
 
   @override
@@ -140,25 +137,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get changePassword => 'Cambiar Contraseña';
 
   @override
-  String get changePasswordDesc => 'Enviaremos un enlace a tu correo.';
-
-  @override
-  String get sendLink => 'Enviar Enlace';
-
-  @override
-  String get notifications => 'Notificaciones';
-
-  @override
-  String get pushNotif => 'Notificaciones Push';
-
-  @override
-  String get pushNotifDesc => 'Alertas sobre nuevos looks y funciones.';
-
-  @override
-  String get emailNotif => 'Boletín por Correo';
-
-  @override
-  String get emailNotifDesc => 'Inspiración y tips de belleza semanales.';
+  String get changePasswordDesc =>
+      'Ingresá tu contraseña actual y elegí una nueva.';
 
   @override
   String get dangerZone => 'Zona de Peligro';
@@ -168,7 +148,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deleteAccountDesc =>
-      'Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, asegúrate.';
+      'Se borran de este teléfono tu cuenta, tu perfil, tu foto, tus looks guardados y Mis looks. No se puede deshacer. Si tenés VIP, borrar la cuenta no cancela la suscripción: cancelala en la tienda.';
 
   @override
   String get deleteMyAccountBtn => 'Eliminar Mi Cuenta';
@@ -767,18 +747,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get becomeVip => 'Hazte VIP';
 
   @override
-  String passwordEmailSent(String email) {
-    return 'Te enviamos un correo a $email';
-  }
-
-  @override
-  String get passwordEmailError => 'No se pudo enviar el correo.';
-
-  @override
-  String get deleteAccountReauth =>
-      'Cierra sesión y vuelve a iniciarla antes de eliminar tu cuenta.';
-
-  @override
   String profileLoadError(String details) {
     return 'Error al cargar el perfil: $details';
   }
@@ -866,11 +834,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get vipNoPlans => 'Todavía no hay ningún plan VIP configurado.';
 
   @override
-  String get vipHeadline => 'Desbloquea los videos de todos los tutoriales';
+  String get vipHeadline =>
+      'Desbloqueá los videos de los tutoriales que los incluyen';
 
   @override
   String get signupPhotoFailed =>
-      'Tu cuenta se creó, pero no pudimos subir la foto. Puedes agregarla después desde tu perfil.';
+      'Tu cuenta se creó, pero no pudimos guardar la foto. Puedes agregarla después desde tu perfil.';
 
   @override
   String get startupError => 'No se pudo iniciar la app. Revisa tu conexión.';
@@ -1018,4 +987,229 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get coachZoneShadowBrowBone => 'Bajo la ceja';
+
+  @override
+  String get studioLocalOnly =>
+      'La IA todavía no está conectada: se muestra el preset más parecido a tu pedido.';
+
+  @override
+  String get myAiLooksLocalOnly =>
+      'La IA todavía no está conectada: te sugerimos un look parecido.';
+
+  @override
+  String get authErrorInvalidEmail => 'El correo no es válido.';
+
+  @override
+  String authErrorWeakPassword(int min) {
+    return 'La contraseña debe tener al menos $min caracteres.';
+  }
+
+  @override
+  String get authErrorEmailInUse => 'Ya hay una cuenta con ese correo.';
+
+  @override
+  String get authErrorWrongCredentials => 'Correo o contraseña incorrectos.';
+
+  @override
+  String get currentPassword => 'Contraseña actual';
+
+  @override
+  String get newPassword => 'Contraseña nueva';
+
+  @override
+  String get passwordChanged => 'Contraseña cambiada.';
+
+  @override
+  String get changeBtn => 'Cambiar';
+
+  @override
+  String get privacyPolicy => 'Política de privacidad';
+
+  @override
+  String get termsOfService => 'Términos y condiciones';
+
+  @override
+  String get thirdPartyLicenses => 'Licencias de terceros';
+
+  @override
+  String get legalDraftBanner =>
+      'BORRADOR — no publicar: faltan datos del responsable o la revisión legal.';
+
+  @override
+  String get legalLoadError => 'No se pudo abrir el documento.';
+
+  @override
+  String get privacyCenterTitle => 'Privacidad y datos';
+
+  @override
+  String get privacyCenterIntro =>
+      'Tu cuenta y tu perfil se guardan solo en este teléfono. La cámara y las fotos que elegís se procesan en el teléfono y no se suben.';
+
+  @override
+  String get privacyYourData => 'Tus datos en este teléfono';
+
+  @override
+  String get privacyCopyData => 'Copiar mis datos';
+
+  @override
+  String get privacyDataCopied => 'Tus datos se copiaron al portapapeles.';
+
+  @override
+  String get privacyRightsTitle => 'Tus derechos';
+
+  @override
+  String privacyRightsBody(String contact) {
+    return 'Acá podés ver y copiar tus datos; corregirlos en Editar perfil y borrarlos con Eliminar cuenta. Para otros pedidos escribí a: $contact';
+  }
+
+  @override
+  String get manageSubscription => 'Gestionar o cancelar la suscripción';
+
+  @override
+  String get manageSubscriptionAndroid =>
+      'Abrí Google Play > tu perfil > Pagos y suscripciones > Suscripciones, elegí esta app y tocá Cancelar suscripción.';
+
+  @override
+  String get manageSubscriptionIos =>
+      'Abrí Ajustes > tu nombre > Suscripciones, elegí esta app y tocá Cancelar suscripción.';
+
+  @override
+  String get manageSubscriptionNote =>
+      'Borrar la cuenta o desinstalar la app no cancela la suscripción.';
+
+  @override
+  String get manageSubscriptionLink => 'Enlace de la tienda';
+
+  @override
+  String get copyLink => 'Copiar enlace';
+
+  @override
+  String get linkCopied => 'Enlace copiado.';
+
+  @override
+  String get signupAcceptLegal =>
+      'Leí y acepto la política de privacidad y los términos y condiciones.';
+
+  @override
+  String get signupMustAccept =>
+      'Para crear la cuenta tenés que aceptar la política de privacidad y los términos.';
+
+  @override
+  String signupUnderMinimumAge(int age) {
+    return 'Para crear una cuenta tenés que tener al menos $age años.';
+  }
+
+  @override
+  String get signupLocalNotice =>
+      'Tu cuenta se guarda solo en este teléfono. Sin servidor no hay recuperación de contraseña por email.';
+
+  @override
+  String get profilePhotoNotice =>
+      'Opcional. Se guarda solo en este teléfono, achicada y sin datos de ubicación.';
+
+  @override
+  String get profilePhotoA11y => 'Foto de perfil. Tocá para cambiarla.';
+
+  @override
+  String get removePhoto => 'Quitar foto';
+
+  @override
+  String get deleteAccountPartial =>
+      'Tu cuenta se borró, pero no se pudo quitar la foto de perfil. Desinstalar la app la borra.';
+
+  @override
+  String get deleteAccountError =>
+      'No se pudo borrar la cuenta. No se cambió nada; probá de nuevo.';
+
+  @override
+  String vipPricePerPeriod(String price, String period) {
+    return '$price cada $period';
+  }
+
+  @override
+  String vipOneTime(String price) {
+    return '$price, pago único';
+  }
+
+  @override
+  String vipFreeTrial(String duration) {
+    return 'Prueba gratis: $duration';
+  }
+
+  @override
+  String vipIntroOffer(String price, String duration) {
+    return 'Precio de introducción: $price durante $duration';
+  }
+
+  @override
+  String vipAutoRenewNotice(String store) {
+    return 'Las suscripciones se renuevan solas al final de cada período, al precio indicado, hasta que las canceles en $store. El cobro se hace en tu cuenta de $store al confirmar la compra. Cancelá antes de la renovación para que no se cobre el período siguiente. Borrar la cuenta o la app no cancela la suscripción.';
+  }
+
+  @override
+  String vipPeriodDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count días',
+      one: 'día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String vipPeriodWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count semanas',
+      one: 'semana',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String vipPeriodMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count meses',
+      one: 'mes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String vipPeriodYears(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count años',
+      one: 'año',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cameraRationaleTitle => 'Acceso a la cámara';
+
+  @override
+  String get cameraRationaleBody =>
+      'La cámara muestra en vivo el maquillaje virtual y la guía de maquillaje. Las imágenes se procesan en este teléfono: no se graban ni se envían.';
+
+  @override
+  String get cameraRationaleContinue => 'Continuar';
+
+  @override
+  String get cameraRationaleNotNow => 'Ahora no';
+
+  @override
+  String get cameraDeniedBody =>
+      'Sin acceso a la cámara no se puede mostrar el maquillaje en vivo. Podés permitirlo cuando quieras.';
+
+  @override
+  String get cameraAllow => 'Permitir cámara';
+
+  @override
+  String get cameraOpenSettings => 'Abrir ajustes';
 }

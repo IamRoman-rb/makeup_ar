@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
 import 'package:ar_makeup_app/features/ar/domain/makeup_recipe.dart';
 import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
+import 'package:ar_makeup_app/features/catalog/domain/catalog_look.dart';
 import 'package:ar_makeup_app/features/coach/presentation/coach_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
-import 'package:ar_makeup_app/features/studio/data/cloud_recipe_generator.dart';
 import 'package:ar_makeup_app/features/studio/data/engine_image_analyzer.dart';
-import 'package:ar_makeup_app/features/studio/data/firestore_look_repository.dart';
-import 'package:ar_makeup_app/features/studio/domain/studio_look.dart';
 import 'package:ar_makeup_app/features/studio/presentation/studio_screen.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/filter_editor_screen.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/step_by_step_screen.dart';
@@ -17,7 +15,6 @@ import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importamos el traductor
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_labels.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/look_cover.dart';
-import 'package:ar_makeup_app/features/catalog/domain/catalog_order.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -27,7 +24,7 @@ class CatalogScreen extends StatefulWidget {
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
-  // Claves internas para buscar en Firebase (Nunca se traducen)
+  // Claves internas de categoría guardadas en la base (Nunca se traducen)
   final List<String> internalCategories = ['All', 'Lips', 'Eyes', 'Complexion'];
   int selectedCategoryIndex = 0;
 
@@ -35,19 +32,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
   String _searchQuery = '';
 
   // Una vez: creados en build, cada tecla de la búsqueda o cada categoría se
-  // resuscribía a Firestore y la lista pasaba por el spinner.
-  final User? _user = FirebaseAuth.instance.currentUser;
-  late final Stream<DocumentSnapshot>? _userStream =
-      _user == null ? null : FirebaseFirestore.instance.collection('users').doc(_user.uid).snapshots();
-  // Sin orderBy('order'): Firestore excluye los documentos sin ese campo
-  // (los publicados desde el Studio). Se ordena en el cliente (catalog_order).
-  late final Stream<QuerySnapshot> _looksStream = FirebaseFirestore.instance.collection('looks').snapshots();
-
-  static int _sortKey(QueryDocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    final createdAt = data['createdAt'];
-    return catalogSortKey(order: data['order'], createdAt: createdAt is Timestamp ? createdAt.toDate() : null);
-  }
+  // resuscribía y la lista pasaba por el spinner.
+  final AppUser? _user = AppServices.auth.currentUser;
+  late final Stream<AppUser?> _userStream = AppServices.auth.watchCurrentUser();
+  late final Stream<Set<String>> _savedStream = AppServices.savedLooks.watchSavedIds(_user?.id ?? '');
+  // Ya ordenado por el repositorio (catalog_order).
+  late final Stream<List<CatalogLook>> _looksStream = AppServices.catalog.watchLooks();
 
   @override
   void initState() {
@@ -115,8 +105,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
     if (choice == 'studio') {
       await navigator.push(MaterialPageRoute<void>(
         builder: (_) => StudioScreen(
-          generator: CloudRecipeGenerator(),
-          repository: FirestoreLookRepository(uid: uid),
+          generator: AppServices.recipeGenerator,
+          repository: AppServices.studioLooks(uid),
           imageAnalyzer: EngineImageAnalyzer(),
         ),
       ));
@@ -127,7 +117,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _user;
     final l10n = AppLocalizations.of(context)!; // <-- 2. Instanciamos el traductor
 
     if (user == null) return Scaffold(body: Center(child: Text(l10n.loginFirst)));
@@ -140,12 +130,16 @@ class _CatalogScreenState extends State<CatalogScreen> {
       l10n.categoryComplexion,
     ];
 
-    return StreamBuilder<DocumentSnapshot>(
+    return StreamBuilder<AppUser?>(
       stream: _userStream,
+      initialData: user,
       builder: (context, userSnapshot) {
-        final userData = userSnapshot.data?.data() as Map<String, dynamic>? ?? {};
-        final savedLooks = List<String>.from(userData['saved_looks'] ?? []);
-        final isAdmin = userData['is_admin'] == true;
+        final isAdmin = userSnapshot.data?.isAdmin ?? false;
+
+        return StreamBuilder<Set<String>>(
+          stream: _savedStream,
+          builder: (context, savedSnapshot) {
+        final savedLooks = savedSnapshot.data ?? const <String>{};
 
         return Scaffold(
       backgroundColor: const Color(0xFFFDF7F8),
@@ -153,7 +147,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ? FloatingActionButton(
               backgroundColor: const Color(0xFF1A1A1A),
               tooltip: l10n.catalogCreateLookTooltip,
-              onPressed: () => _openAdminMenu(context, user.uid),
+              onPressed: () => _openAdminMenu(context, user.id),
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
@@ -226,7 +220,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 const SizedBox(height: 30),
 
                 // LISTA DE FILTROS
-                StreamBuilder<QuerySnapshot>(
+                StreamBuilder<List<CatalogLook>>(
                         stream: _looksStream,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
@@ -236,22 +230,19 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           }
 
                           // Caso de base de datos vacía general
-                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          final allLooks = snapshot.data ?? const <CatalogLook>[];
+                          if (allLooks.isEmpty) {
                             return Padding(padding: const EdgeInsets.all(40.0), child: Text(l10n.noLooksFound(l10n.categoryAll)));
                           }
 
-                          final allLooks = sortCatalog(snapshot.data!.docs, keyOf: _sortKey, idOf: (doc) => doc.id);
-
                           // LÓGICA DE DOBLE FILTRADO
-                          final filteredLooks = allLooks.where((doc) {
-                            final data = doc.data() as Map<String, dynamic>;
-
+                          final filteredLooks = allLooks.where((look) {
                             // 1. Validar barra de búsqueda
-                            final name = (data['name'] ?? '').toString().toLowerCase();
+                            final name = look.name.toLowerCase();
                             final matchesSearch = name.contains(_searchQuery);
 
-                            // 2. Validar categoría de Firebase (Usa la categoría interna en inglés)
-                            final dbCategory = (data['category'] ?? '').toString().toLowerCase();
+                            // 2. Validar categoría (Usa la categoría interna en inglés)
+                            final dbCategory = look.category.toLowerCase();
                             final internalSelectedCategory = internalCategories[selectedCategoryIndex].toLowerCase();
 
                             final matchesCategory = selectedCategoryIndex == 0 || dbCategory.contains(internalSelectedCategory);
@@ -278,18 +269,17 @@ class _CatalogScreenState extends State<CatalogScreen> {
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: filteredLooks.length,
                             itemBuilder: (context, index) {
-                              final doc = filteredLooks[index];
-                              final data = doc.data() as Map<String, dynamic>;
-                              final name = data['name'] ?? 'Unknown Look';
-                              final category = data['category'] ?? 'COMPLEXION & LIPS';
-                              final image = data['image'];
+                              final look = filteredLooks[index];
+                              final name = look.name.isEmpty ? l10n.unknownLook : look.name;
+                              final category = look.category;
+                              final image = look.image;
 
-                              final isSaved = savedLooks.contains(doc.id);
+                              final isSaved = savedLooks.contains(look.id);
                               // Looks del Studio: receta válida para este motor.
-                              final recipe = lookRecipe(data);
+                              final recipe = look.recipe;
 
                               return GestureDetector(
-                                onTap: () => _openLook(context, doc.id, recipe),
+                                onTap: () => _openLook(context, look.id, recipe),
                                 child: Container(
                                   margin: const EdgeInsets.only(bottom: 30),
                                   child: Column(
@@ -298,20 +288,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                         children: [
                                           ClipRRect(
                                             borderRadius: BorderRadius.circular(15),
-                                            child: LookCover(imageUrl: image is String ? image : null, recipe: recipe),
+                                            child: LookCover(imageUrl: image, recipe: recipe),
                                           ),
                                           Positioned(
                                             top: 15,
                                             right: 15,
                                             child: GestureDetector(
-                                              onTap: () async {
-                                                final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-                                                if (isSaved) {
-                                                  await userRef.update({'saved_looks': FieldValue.arrayRemove([doc.id])});
-                                                } else {
-                                                  await userRef.update({'saved_looks': FieldValue.arrayUnion([doc.id])});
-                                                }
-                                              },
+                                              onTap: () => AppServices.savedLooks.toggle(userId: user.id, lookId: look.id),
                                               child: Container(
                                                 padding: const EdgeInsets.all(8),
                                                 decoration: BoxDecoration(
@@ -333,7 +316,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                               left: 15,
                                               child: GestureDetector(
                                                 onTap: () => Navigator.push(context, MaterialPageRoute(
-                                                  builder: (_) => FilterEditorScreen(lookId: doc.id),
+                                                  builder: (_) => FilterEditorScreen(lookId: look.id),
                                                 )),
                                                 child: Container(
                                                   padding: const EdgeInsets.all(8),
@@ -368,6 +351,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
       ),
       bottomNavigationBar: const SharedBottomNav(currentIndex: 0),
     );
+          },
+        );
       },
     );
   }

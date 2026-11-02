@@ -57,6 +57,12 @@ python tools/ios/check_ios_cpp.py
 4. `flutter run --profile -t lib/main_tracker.dart -d <iphone>`: el arnés del tracker, con las líneas `TRACK` en la consola de Xcode.
 5. Si algo no compila, mandame el error de Xcode tal cual: el Swift se escribió sin compilador.
 
+### Antes de publicar (docs/compliance/RELEASE_CHECKLIST.md, B9)
+
+- **Podfile:** `permission_handler` compila en iOS solo los permisos habilitados en el Podfile. La app no lo usa en iOS (la cámara la pide `EngineSession.swift`; el pedido en contexto de `camera_permission_gate.dart` corre solo en Android), pero el arnés sí (`main_tracker.dart`, `engine_spike_screen.dart` llaman a `Permission.camera.request()`): sin `'PERMISSION_CAMERA=1'` en `GCC_PREPROCESSOR_DEFINITIONS` (bloque `post_install`) devuelve "denegado" sin mostrar nada.
+- **Privacy manifest:** crear `ios/Runner/PrivacyInfo.xcprivacy` desde Xcode (File > New > App Privacy) y agregarlo al target Runner. Declarar `NSPrivacyTracking = false`, sin dominios de tracking, y los tipos de datos de `DATA_INVENTORY.md` §6 (identificador de usuario y compras, vinculados, sin tracking). Revisar el reporte de privacidad de Xcode (Product > Archive > Generate Privacy Report) para las APIs de motivo obligatorio de los pods.
+- **Textos de permisos:** `Info.plist` tiene `NSCameraUsageDescription` y `NSPhotoLibraryUsageDescription` en español (se quitó la del micrófono, sin uso). Para inglés, portugués y francés agregar `InfoPlist.strings` localizados desde Xcode.
+
 ## Checklist de paridad visual con Android (criterio de salida de la fase 4)
 
 Con el arnés, en el iPhone y en el E20, con la misma luz:

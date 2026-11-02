@@ -1,17 +1,26 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
+import 'package:ar_makeup_app/features/auth/presentation/auth_messages.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_screen.dart';
+import 'package:ar_makeup_app/features/legal/domain/legal_document.dart';
+import 'package:ar_makeup_app/features/legal/domain/legal_info.dart';
+import 'package:ar_makeup_app/features/legal/presentation/legal_document_screen.dart';
+import 'package:ar_makeup_app/shared/data/picked_files.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 import 'package:ar_makeup_app/features/profile/presentation/profile_labels.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  const SignUpScreen({super.key, this.legalInfo = const LegalInfo.fromEnvironment(), this.clock = DateTime.now});
+
+  /// Edad mínima y datos de los textos legales (por `--dart-define`).
+  final LegalInfo legalInfo;
+  final DateTime Function() clock;
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -20,12 +29,14 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _ageController = TextEditingController();
   final _passwordController = TextEditingController();
 
   DateTime? _selectedDate;
   bool _obscurePassword = true;
   bool _isLoading = false;
+
+  /// Aceptó la política de privacidad y los términos (obligatorio).
+  bool _acceptedLegal = false;
 
   // Variables para la foto de perfil
   File? _imageFile;
@@ -35,7 +46,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String _selectedSkinTone = 'Light';
   final Set<String> _selectedPreferences = {};
 
-  // Valores internos que van a Firebase (no se traducen para evitar errores en BDD)
+  // Valores internos que se guardan en la base (no se traducen: se traducen al mostrarlos)
   final List<String> skinTypes = ['Combined', 'Oily', 'Dry', 'Sensitive'];
   final List<Map<String, dynamic>> skinTones = [
     {'name': 'Light', 'color': const Color(0xFFFCE5D8)},
@@ -49,13 +60,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _ageController.dispose();
     _passwordController.dispose();
+    // Foto elegida y nunca guardada (se fue sin registrarse): fuera de la caché.
+    final picked = _imageFile;
+    if (picked != null) unawaited(discardPickedFile(picked.path));
     super.dispose();
   }
 
   Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    // Se achica de entrada; al guardarla se vuelve a codificar sin metadatos
+    // (ProfilePhotoStore.save).
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 1024, maxHeight: 1024);
     if (pickedFile != null) {
       setState(() => _imageFile = File(pickedFile.path));
     }
@@ -84,55 +99,70 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.fillRequiredFields)));
       return;
     }
+    if (!_acceptedLegal) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.signupMustAccept)));
+      return;
+    }
+    final now = widget.clock();
+    final minimumAge = widget.legalInfo.minimumAge;
+    if (AgePolicy.check(birthDate: _selectedDate, now: now, minimumAge: minimumAge) == AgeCheck.underMinimum) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.signupUnderMinimumAge(minimumAge))));
+      return;
+    }
+    final birthDate = _selectedDate;
 
     setState(() => _isLoading = true);
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      final auth = AppServices.auth;
+      final profile = UserProfile(
+        name: _nameController.text.trim(),
+        birthDate: birthDate,
+        // Se calcula de la fecha: no se pide dos veces el mismo dato.
+        age: birthDate == null ? 0 : AgePolicy.ageAt(birthDate, now),
+        skinType: _selectedSkinType,
+        skinTone: _selectedSkinTone,
+        preferences: _selectedPreferences.toList(),
       );
+      final failure = await auth.signUp(
+        email: _emailController.text,
+        password: _passwordController.text.trim(),
+        profile: profile,
+      );
+      if (failure != null) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(authFailureText(l10n, failure))));
+        return;
+      }
+      final user = auth.currentUser;
+      if (user == null) return;
+      unawaited(AppServices.afterSignIn(user.id));
 
-      // Subir la imagen a Firebase Storage. Si falla (Storage sin Blaze, red),
-      // la cuenta se crea igual sin foto: antes la excepción cortaba el
-      // registro y quedaba el usuario de Auth sin documento en users/{uid}.
-      String? imageUrl;
+      // La foto se copia a la carpeta de la app. Si falla, la cuenta queda
+      // creada igual sin foto, y se avisa.
       var photoFailed = false;
       final imageFile = _imageFile;
       if (imageFile != null) {
         try {
-          final ref = FirebaseStorage.instance.ref().child('profile_pictures/${userCredential.user!.uid}.jpg');
-          await ref.putFile(imageFile);
-          imageUrl = await ref.getDownloadURL();
-        } on FirebaseException catch (e) {
-          debugPrint('Foto de perfil no subida: ${e.code}');
+          final path = await AppServices.photos.save(user.id, imageFile.path);
+          await auth.updateProfile(profile.copyWith(photoPath: path));
+        } catch (e) {
+          debugPrint('Foto de perfil no guardada (${e.runtimeType})');
           photoFailed = true;
+        } finally {
+          await discardPickedFile(imageFile.path);
         }
       }
-
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'nombre': _nameController.text.trim(),
-        'correo': _emailController.text.trim(),
-        'edad': int.tryParse(_ageController.text) ?? 0,
-        'fecha_nacimiento': DateFormat('yyyy-MM-dd').format(_selectedDate!),
-        'tipo_piel': _selectedSkinType,
-        'tono_piel': _selectedSkinTone,
-        'gustos_personales': _selectedPreferences.toList(),
-        'fecha_registro': FieldValue.serverTimestamp(),
-        'foto_perfil': imageUrl,
-      });
 
       if (mounted) {
         final messenger = ScaffoldMessenger.of(context);
         Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const CatalogScreen()), (route) => false);
         if (photoFailed) messenger.showSnackBar(SnackBar(content: Text(l10n.signupPhotoFailed)));
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
+      // Error inesperado de la base. Sin el detalle en pantalla: puede traer
+      // rutas internas o datos de la cuenta.
+      debugPrint('Registro falló (${e.runtimeType})');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? l10n.registrationError)));
-    } on FirebaseException catch (e) {
-      // Firestore u otro servicio: antes se perdía sin aviso.
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.registrationError}: ${e.message ?? e.code}')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.registrationError)));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -163,30 +193,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
             // WIDGET DE FOTO DE PERFIL
             Center(
-              child: GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: _imageFile != null ? FileImage(_imageFile!) : null,
-                      child: _imageFile == null ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: const Color(0xFFD4AF37), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+              child: Semantics(
+                button: true,
+                label: l10n.profilePhotoA11y,
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey.shade300,
+                        backgroundImage: _avatarImage(),
+                        child: _imageFile == null ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: const Color(0xFFD4AF37), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(l10n.profilePhotoNotice, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade700)),
+            ),
+            const SizedBox(height: 22),
 
             _buildTextField(l10n.fullName, 'Jane Doe', _nameController),
             const SizedBox(height: 15),
@@ -195,8 +233,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
             Row(
               children: [
-                Expanded(child: _buildTextField(l10n.age, '25', _ageController, isNumber: true)),
-                const SizedBox(width: 20),
                 Expanded(
                   child: GestureDetector(
                     onTap: _pickDate,
@@ -302,7 +338,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
+
+            Text(l10n.signupLocalNotice, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade700, height: 1.4)),
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              key: const ValueKey('accept-legal'),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              activeColor: const Color(0xFF1A1A1A),
+              value: _acceptedLegal,
+              onChanged: (value) => setState(() => _acceptedLegal = value ?? false),
+              title: Text(l10n.signupAcceptLegal, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A1A1A))),
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: () => _openLegal(LegalDocumentKind.privacy),
+                  child: Text(l10n.privacyPolicy),
+                ),
+                TextButton(
+                  onPressed: () => _openLegal(LegalDocumentKind.terms),
+                  child: Text(l10n.termsOfService),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
 
             SizedBox(
               width: double.infinity,
@@ -331,6 +393,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
+
+  /// Decodificada al tamaño del círculo, no a la de la foto.
+  ImageProvider? _avatarImage() {
+    final picked = _imageFile;
+    return picked == null ? null : ResizeImage(FileImage(picked), width: 300);
+  }
+
+  void _openLegal(LegalDocumentKind kind) => Navigator.push(
+        context,
+        MaterialPageRoute<void>(builder: (_) => LegalDocumentScreen(kind: kind, info: widget.legalInfo)),
+      );
 
   Widget _buildTextField(String label, String hint, TextEditingController controller, {bool isNumber = false}) {
     return TextFormField(

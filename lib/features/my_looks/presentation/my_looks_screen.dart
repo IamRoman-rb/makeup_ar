@@ -122,6 +122,7 @@ class _MyLooksScreenState extends State<MyLooksScreen> {
         GenerationFailure.unauthenticated => l10n.myAiLooksErrorLogin,
         GenerationFailure.invalidInput => l10n.myAiLooksInvalidPrompt(AiLookLimits.maxPromptLength),
         GenerationFailure.noValidVariants || GenerationFailure.unavailable => l10n.myAiLooksFallback,
+        GenerationFailure.localOnly => l10n.myAiLooksLocalOnly,
         _ => l10n.myAiLooksErrorGeneric,
       };
 

@@ -20,7 +20,6 @@
     "joinSubtitle": "Join Lumière Beauty for a curated cosmetic experience.",
     "fullName": "Full Name",
     "email": "Email Address",
-    "age": "Age",
     "dob": "Date of Birth",
     "skinType": "Skin Type",
     "skinTone": "Skin Tone",
@@ -41,16 +40,10 @@
     "logOut": "Log Out",
     "security": "Security",
     "changePassword": "Change Password",
-    "changePasswordDesc": "We will send a reset link to your email.",
-    "sendLink": "Send Link",
-    "notifications": "Notifications",
-    "pushNotif": "Push Notifications",
-    "pushNotifDesc": "Alerts for new looks and features.",
-    "emailNotif": "Email Newsletters",
-    "emailNotifDesc": "Weekly beauty tips and inspiration.",
+    "changePasswordDesc": "Enter your current password and choose a new one.",
     "dangerZone": "Danger Zone",
     "deleteAccount": "Delete Account",
-    "deleteAccountDesc": "Once you delete your account, there is no going back. Please be certain.",
+    "deleteAccountDesc": "This deletes from this phone your account, profile, photo, saved looks and My looks. It cannot be undone. If you have VIP, deleting the account does not cancel the subscription: cancel it in the store.",
     "deleteMyAccountBtn": "Delete My Account",
     "selectLanguageTitle": "Language / Idioma",
     "selectLanguageDesc": "Select your preferred language for the application.",
@@ -485,16 +478,6 @@
     "tutorialVipTitle": "VIP tutorial",
     "tutorialVipBody": "Unlock the secrets of this look.",
     "becomeVip": "Go VIP",
-    "passwordEmailSent": "Email sent to {email}",
-    "@passwordEmailSent": {
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
-    "passwordEmailError": "Couldn't send the email.",
-    "deleteAccountReauth": "Log out and log back in before deleting your account.",
     "profileLoadError": "Couldn't load your profile: {details}",
     "@profileLoadError": {
         "placeholders": {
@@ -548,8 +531,8 @@
     "vipNothingToRestore": "No purchases to restore.",
     "vipRestore": "Restore purchases",
     "vipNoPlans": "No VIP plan is set up yet.",
-    "vipHeadline": "Unlock the videos of every tutorial",
-    "signupPhotoFailed": "Your account was created, but we couldn't upload the photo. You can add it later from your profile.",
+    "vipHeadline": "Unlock the videos of the tutorials that include one",
+    "signupPhotoFailed": "Your account was created, but we couldn't save the photo. You can add it later from your profile.",
     "startupError": "Couldn't start the app. Check your connection.",
     "commonRetry": "Retry",
     "coachGuideMe": "Guide me",
@@ -640,5 +623,259 @@
     "coachZoneShadowCrease": "Crease shadow",
     "coachZoneShadowOuterV": "Outer V shadow",
     "coachZoneShadowInnerCorner": "Inner corner",
-    "coachZoneShadowBrowBone": "Brow bone"
+    "coachZoneShadowBrowBone": "Brow bone",
+    "studioLocalOnly": "The AI isn't connected yet: showing the preset closest to your request.",
+    "myAiLooksLocalOnly": "The AI isn't connected yet: here's a similar look.",
+    "authErrorInvalidEmail": "That email isn't valid.",
+    "authErrorWeakPassword": "The password must have at least {min} characters.",
+    "@authErrorWeakPassword": {
+        "placeholders": {
+            "min": {
+                "type": "int"
+            }
+        }
+    },
+    "authErrorEmailInUse": "There's already an account with that email.",
+    "authErrorWrongCredentials": "Wrong email or password.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "passwordChanged": "Password changed.",
+    "changeBtn": "Change",
+    "privacyPolicy": "Privacy policy",
+    "@privacyPolicy": {
+        "description": "Título y enlace de la política de privacidad."
+    },
+    "termsOfService": "Terms and conditions",
+    "@termsOfService": {
+        "description": "Título y enlace de los términos y condiciones."
+    },
+    "thirdPartyLicenses": "Third-party licences",
+    "@thirdPartyLicenses": {
+        "description": "Enlace a las licencias de terceros."
+    },
+    "legalDraftBanner": "DRAFT — not for publication: operator details or legal review are missing.",
+    "@legalDraftBanner": {
+        "description": "Banner mientras faltan datos del responsable o la revisión legal."
+    },
+    "legalLoadError": "The document could not be opened.",
+    "@legalLoadError": {
+        "description": "No se pudo abrir el documento legal."
+    },
+    "privacyCenterTitle": "Privacy and data",
+    "@privacyCenterTitle": {
+        "description": "Pantalla de privacidad y datos."
+    },
+    "privacyCenterIntro": "Your account and profile are stored only on this phone. The camera and the photos you choose are processed on the phone and are not uploaded.",
+    "@privacyCenterIntro": {
+        "description": "Resumen de dónde quedan los datos."
+    },
+    "privacyYourData": "Your data on this phone",
+    "@privacyYourData": {
+        "description": "Sección con los datos de la cuenta."
+    },
+    "privacyCopyData": "Copy my data",
+    "@privacyCopyData": {
+        "description": "Botón para copiar los datos de la cuenta."
+    },
+    "privacyDataCopied": "Your data was copied to the clipboard.",
+    "@privacyDataCopied": {
+        "description": "Aviso al copiar los datos."
+    },
+    "privacyRightsTitle": "Your rights",
+    "@privacyRightsTitle": {
+        "description": "Sección de derechos."
+    },
+    "privacyRightsBody": "Here you can see and copy your data; correct it in Edit profile and delete it with Delete account. For other requests write to: {contact}",
+    "@privacyRightsBody": {
+        "description": "Cómo ejercer los derechos; contact es el email del responsable o un marcador.",
+        "placeholders": {
+            "contact": {
+                "type": "String"
+            }
+        }
+    },
+    "manageSubscription": "Manage or cancel subscription",
+    "@manageSubscription": {
+        "description": "Gestionar o cancelar el VIP."
+    },
+    "manageSubscriptionAndroid": "Open Google Play > your profile > Payments & subscriptions > Subscriptions, choose this app and tap Cancel subscription.",
+    "@manageSubscriptionAndroid": {
+        "description": "Pasos para cancelar en Google Play."
+    },
+    "manageSubscriptionIos": "Open Settings > your name > Subscriptions, choose this app and tap Cancel Subscription.",
+    "@manageSubscriptionIos": {
+        "description": "Pasos para cancelar en el iPhone."
+    },
+    "manageSubscriptionNote": "Deleting your account or uninstalling the app does not cancel the subscription.",
+    "@manageSubscriptionNote": {
+        "description": "Aviso: borrar la cuenta no cancela."
+    },
+    "manageSubscriptionLink": "Store link",
+    "@manageSubscriptionLink": {
+        "description": "Título del enlace de la tienda."
+    },
+    "copyLink": "Copy link",
+    "@copyLink": {
+        "description": "Botón copiar enlace."
+    },
+    "linkCopied": "Link copied.",
+    "@linkCopied": {
+        "description": "Aviso al copiar un enlace."
+    },
+    "signupAcceptLegal": "I have read and accept the privacy policy and the terms and conditions.",
+    "@signupAcceptLegal": {
+        "description": "Casilla de aceptación en el registro."
+    },
+    "signupMustAccept": "To create an account you must accept the privacy policy and the terms.",
+    "@signupMustAccept": {
+        "description": "Error: falta aceptar."
+    },
+    "signupUnderMinimumAge": "You must be at least {age} years old to create an account.",
+    "@signupUnderMinimumAge": {
+        "description": "Error: no llega a la edad mínima configurada.",
+        "placeholders": {
+            "age": {
+                "type": "int"
+            }
+        }
+    },
+    "signupLocalNotice": "Your account is stored only on this phone. Without a server there is no email password recovery.",
+    "@signupLocalNotice": {
+        "description": "Aviso: la cuenta es local."
+    },
+    "profilePhotoNotice": "Optional. Stored only on this phone, reduced and without location data.",
+    "@profilePhotoNotice": {
+        "description": "Aviso bajo la foto de perfil."
+    },
+    "profilePhotoA11y": "Profile photo. Tap to change it.",
+    "@profilePhotoA11y": {
+        "description": "Etiqueta de accesibilidad del avatar editable."
+    },
+    "removePhoto": "Remove photo",
+    "@removePhoto": {
+        "description": "Botón quitar la foto de perfil."
+    },
+    "deleteAccountPartial": "Your account was deleted, but the profile photo could not be removed. Uninstalling the app removes it.",
+    "@deleteAccountPartial": {
+        "description": "La cuenta se borró pero quedó algún archivo."
+    },
+    "deleteAccountError": "The account could not be deleted. Nothing was changed; please try again.",
+    "@deleteAccountError": {
+        "description": "No se pudo borrar la cuenta."
+    },
+    "vipPricePerPeriod": "{price} every {period}",
+    "@vipPricePerPeriod": {
+        "description": "Precio de un plan con renovación.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            },
+            "period": {
+                "type": "String"
+            }
+        }
+    },
+    "vipOneTime": "{price}, one-time payment",
+    "@vipOneTime": {
+        "description": "Precio de un pago único.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            }
+        }
+    },
+    "vipFreeTrial": "Free trial: {duration}",
+    "@vipFreeTrial": {
+        "description": "Prueba gratuita informada por la tienda.",
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "vipIntroOffer": "Introductory price: {price} for {duration}",
+    "@vipIntroOffer": {
+        "description": "Precio de introducción informado por la tienda.",
+        "placeholders": {
+            "price": {
+                "type": "String"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "vipAutoRenewNotice": "Subscriptions renew automatically at the end of each period at the price shown until you cancel them in {store}. Payment is charged to your {store} account when you confirm the purchase. Cancel before the renewal to avoid being charged for the next period. Deleting your account or the app does not cancel the subscription.",
+    "@vipAutoRenewNotice": {
+        "description": "Aviso de renovación automática; store es Google Play o App Store.",
+        "placeholders": {
+            "store": {
+                "type": "String"
+            }
+        }
+    },
+    "vipPeriodDays": "{count, plural, =1{day} other{{count} days}}",
+    "@vipPeriodDays": {
+        "description": "Duración en días.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodWeeks": "{count, plural, =1{week} other{{count} weeks}}",
+    "@vipPeriodWeeks": {
+        "description": "Duración en semanas.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodMonths": "{count, plural, =1{month} other{{count} months}}",
+    "@vipPeriodMonths": {
+        "description": "Duración en meses.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "vipPeriodYears": "{count, plural, =1{year} other{{count} years}}",
+    "@vipPeriodYears": {
+        "description": "Duración en años.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "cameraRationaleTitle": "Camera access",
+    "@cameraRationaleTitle": {
+        "description": "Título de la explicación antes del permiso de cámara."
+    },
+    "cameraRationaleBody": "The camera shows the virtual makeup and the makeup guide live. Images are processed on this phone: they are not recorded or sent.",
+    "@cameraRationaleBody": {
+        "description": "Para qué se usa la cámara (antes del diálogo del sistema)."
+    },
+    "cameraRationaleContinue": "Continue",
+    "@cameraRationaleContinue": {
+        "description": "Seguir al diálogo del sistema."
+    },
+    "cameraRationaleNotNow": "Not now",
+    "@cameraRationaleNotNow": {
+        "description": "No pedir el permiso ahora."
+    },
+    "cameraDeniedBody": "Without camera access the live makeup can't be shown. You can allow it whenever you want.",
+    "@cameraDeniedBody": {
+        "description": "Sin permiso de cámara."
+    },
+    "cameraAllow": "Allow camera",
+    "@cameraAllow": {
+        "description": "Volver a pedir el permiso de cámara."
+    },
+    "cameraOpenSettings": "Open settings",
+    "@cameraOpenSettings": {
+        "description": "Abrir los ajustes de la app (permiso denegado para siempre)."
+    }
 }

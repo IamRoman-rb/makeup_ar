@@ -49,6 +49,11 @@ app.*.map.json
 /env/revenuecat.json
 /lib/vip/revenue_cat_keys.dart
 
+# Variables locales de las Functions (emulador/keys): nunca al repo.
+functions/.env
+functions/.env.*
+!functions/.env.example
+
 # Claude Code: preferencias personales y settings locales
 CLAUDE.local.md
 .claude/settings.local.json
