@@ -1,9 +1,9 @@
-/// Looks del Studio (F3): borradores y publicados, sin Flutter ni Firebase.
+/// Looks del Studio (F3): borradores y publicados. Dominio puro.
 ///
-/// Firestore (docs/ar_engine/motor_ar_propio.md §10.12):
-///   look_drafts/{id}  borradores, solo admins (firestore.rules)
-///   looks/{id}        catálogo, lectura pública; los nuevos traen `recipe`,
-///                     `recipeSchema`, `minEngine` y `source`
+/// Base local (docs/ar_engine/LOCAL_DB.md):
+///   look_drafts  borradores, solo admins
+///   looks        catálogo; los del Studio traen `recipe`, `recipeSchema`,
+///                `minEngine` y `source`
 library;
 
 import '../../ar/domain/makeup_recipe.dart';
@@ -88,7 +88,7 @@ final class StudioLook {
       );
 
   /// Campos comunes de borrador y look publicado.
-  Map<String, Object?> toFirestore() => {
+  Map<String, Object?> toMap() => {
         'name': recipe.name,
         'category': category.wireName,
         'recipe': recipe.toJson(),
@@ -103,7 +103,7 @@ final class StudioLook {
       };
 
   /// Un borrador guardado; null si su receta no valida.
-  static StudioLook? fromFirestore(String id, Map<String, Object?> data) {
+  static StudioLook? fromMap(String id, Map<String, Object?> data) {
     final recipe = lookRecipe(data);
     if (recipe == null) return null;
     final source = data['source'];

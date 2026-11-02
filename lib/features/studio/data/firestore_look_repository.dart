@@ -19,7 +19,7 @@ final class FirestoreLookRepository implements ILookRepository {
     final id = look.id;
     final ref = id == null ? _drafts.doc() : _drafts.doc(id);
     await ref.set({
-      ...look.toFirestore(),
+      ...look.toMap(),
       'createdBy': uid,
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -30,7 +30,7 @@ final class FirestoreLookRepository implements ILookRepository {
   Future<List<StudioLook>> drafts() async {
     final snapshot = await _drafts.orderBy('updatedAt', descending: true).limit(50).get();
     // Los que no validan (receta rota o de un motor más nuevo) se omiten.
-    return [for (final doc in snapshot.docs) ?StudioLook.fromFirestore(doc.id, doc.data())];
+    return [for (final doc in snapshot.docs) ?StudioLook.fromMap(doc.id, doc.data())];
   }
 
   @override
@@ -41,7 +41,7 @@ final class FirestoreLookRepository implements ILookRepository {
     final ref = _looks.doc();
     final batch = _db.batch()
       ..set(ref, {
-        ...look.toFirestore(),
+        ...look.toMap(),
         // Lo que el catálogo y el paso a paso ya leen.
         'steps': const <Object?>[],
         // Mismo criterio que el editor de looks (ms de creación): al final
