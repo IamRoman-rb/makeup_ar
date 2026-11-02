@@ -64,6 +64,14 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
   bool _showTarget = false;
   CoachPrompt? _prompt;
 
+  /// Se está saliendo de la guía (pop en curso): dispose llega recién al
+  /// terminar la transición y hasta entonces no se mide ni se habla.
+  bool _leaving = false;
+
+  /// Sube con cada pausa: una muestra pedida antes no vale después, aunque la
+  /// app ya haya vuelto (es de la cámara anterior).
+  int _epoch = 0;
+
   /// El motor no puede dibujar en este equipo (o AR_RENDERER=painter): sin
   /// cara en vivo no hay qué medir.
   bool _unavailable = false;
@@ -93,6 +101,7 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive && _inForeground) {
+      _epoch++;
       _timer?.cancel();
       _timer = null;
       unawaited(_voice.stop());
@@ -112,11 +121,20 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
     final session = _session;
     if (session == null) return;
     setState(() => _phase = _Phase.reference);
+    final epoch = _epoch;
     final samples = <LookMeasurements>[];
-    for (var i = 0; i < CoachPolicy.referenceSamples && mounted && _inForeground; i++) {
-      samples.add(await _sampler.sample());
+    for (var i = 0; i < CoachPolicy.referenceSamples; i++) {
+      final sample = await _sampler.sample();
+      if (!_active || epoch != _epoch) break;
+      samples.add(sample);
     }
-    if (!mounted) return;
+    if (!mounted || _leaving) return;
+    // Se pausó en medio: una referencia a medias confunde más que ninguna.
+    // Vuelve a "Antes de empezar" para tomarla de nuevo o saltearla.
+    if (!_active || epoch != _epoch) {
+      setState(() => _phase = _Phase.intro);
+      return;
+    }
     if (!session.setBaseline(samples)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.coachReferenceFailed)),
@@ -130,8 +148,12 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
     _startLoop();
   }
 
+  /// Mide solo con la guía a la vista: en segundo plano, saliendo o sin motor
+  /// no hay cámara que medir ni nadie a quien hablarle.
+  bool get _active => mounted && _inForeground && !_leaving && !_unavailable;
+
   void _startLoop() {
-    if (_unavailable) return;
+    if (!_active) return;
     _timer?.cancel();
     _timer = Timer.periodic(CoachPolicy.samplePeriod, (_) => unawaited(_tick()));
     unawaited(_tick());
@@ -140,21 +162,26 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
   /// Una muestra a la vez: si la anterior no terminó, esta se descarta.
   Future<void> _tick() async {
     final session = _session;
-    if (_inFlight || session == null || !_inForeground) return;
+    if (_inFlight || session == null || !_active) return;
     _inFlight = true;
+    final epoch = _epoch;
     try {
       final watch = Stopwatch()..start();
       final measurement = await _sampler.sample();
       final ms = watch.elapsedMilliseconds;
-      if (!mounted) return;
+      // Se pausó o se salió mientras se medía (aunque ya haya vuelto): la
+      // muestra es de la cámara anterior y se descarta.
+      if (!_active || epoch != _epoch) return;
       final before = session.verdicts;
       final wasDone = session.done;
       final toSay = session.add(measurement, _clock.elapsed);
       setState(() => _prompt = session.current);
       _hapticFor(before, session, wasDone);
-      if (toSay != null && !_muted) await _say(toSay);
+      // Sin esperar a la voz: si el TextToSpeech tarda en arrancar (o no
+      // responde), las muestras siguen.
+      if (toSay != null) unawaited(_say(toSay));
       // Para medir en el E20 (profile/debug); en release no se pide nada más.
-      if (!kReleaseMode) await _log(measurement, ms, session);
+      if (!kReleaseMode && _active) await _log(measurement, ms, session);
     } finally {
       _inFlight = false;
     }
@@ -173,12 +200,14 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
     if (newlyOk) unawaited(HapticFeedback.lightImpact());
   }
 
+  /// Dice [prompt] con el mismo texto que la pantalla y en el idioma de la
+  /// app; corta lo que se estaba diciendo.
   Future<void> _say(CoachPrompt prompt) async {
-    if (!mounted) return;
+    if (!_active || _muted) return;
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     final spoken = await _voice.speak(coachPromptText(l10n, prompt), locale: _locale(context));
-    if (!spoken && !_voiceWarned && mounted) {
+    if (!spoken && !_voiceWarned && _active) {
       _voiceWarned = true;
       messenger.showSnackBar(SnackBar(content: Text(l10n.coachVoiceUnavailable)));
     }
@@ -201,9 +230,27 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
         'focus=${session.focus?.name ?? '-'} verdicts=[$verdicts]');
   }
 
+  /// Silenciar corta la voz en el acto; al reactivarla se dice la indicación
+  /// que está en pantalla (si viene de una muestra válida).
   void _toggleMute() {
-    setState(() => _muted = !_muted);
-    if (_muted) unawaited(_voice.stop());
+    final muted = !_muted;
+    setState(() => _muted = muted);
+    if (muted) {
+      unawaited(_voice.stop());
+      return;
+    }
+    final prompt = _phase == _Phase.running && _active ? _session?.resume(_clock.elapsed) : null;
+    if (prompt != null) unawaited(_say(prompt));
+  }
+
+  /// Al salir (atrás o gesto del sistema) la voz se calla enseguida, sin
+  /// esperar a que termine la transición; dispose libera el motor de voz.
+  void _onPop(bool didPop, Object? _) {
+    if (!didPop || _leaving) return;
+    _leaving = true;
+    _timer?.cancel();
+    _timer = null;
+    unawaited(_voice.stop());
   }
 
   void _setShowTarget(bool value) {
@@ -232,46 +279,53 @@ class _CoachScreenState extends State<CoachScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final session = _session;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return PopScope<Object?>(
+      onPopInvokedWithResult: _onPop,
+      child: Scaffold(
         backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: Text(l10n.coachTitle),
-        actions: [
-          IconButton(
-            key: const ValueKey('coach-mute'),
-            tooltip: _muted ? l10n.coachUnmute : l10n.coachMute,
-            icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
-            onPressed: _toggleMute,
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: _inForeground
-                ? TestFilterView(
-                    renderer: _renderer,
-                    options: _showTarget ? _target : _bare,
-                    initialOptionId: _showTarget ? widget.look.id : _bare.first.id,
-                    controls: TestFilterControls.none,
-                    showHud: false,
-                    labels: _labels(l10n),
-                    onUnavailable: _onEngineUnavailable,
-                  )
-                : const SizedBox.expand(),
-          ),
-          if (_unavailable)
-            _bottomCard(child: Text(l10n.testFilterUnavailable, style: const TextStyle(fontSize: 16)))
-          else if (session == null)
-            _bottomCard(child: Text(l10n.coachNoZones, style: const TextStyle(fontSize: 16)))
-          else ...[
-            Positioned(top: 8, left: 8, right: 8, child: _ZoneChips(session: session)),
-            _bottomCard(child: _cardContent(l10n)),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          title: Text(l10n.coachTitle),
+          actions: [
+            IconButton(
+              key: const ValueKey('coach-mute'),
+              tooltip: _muted ? l10n.coachUnmute : l10n.coachMute,
+              icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
+              onPressed: _toggleMute,
+            ),
           ],
-        ],
+        ),
+        body: _body(l10n, session),
       ),
+    );
+  }
+
+  Widget _body(AppLocalizations l10n, CoachSession? session) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: _inForeground
+              ? TestFilterView(
+                  renderer: _renderer,
+                  options: _showTarget ? _target : _bare,
+                  initialOptionId: _showTarget ? widget.look.id : _bare.first.id,
+                  controls: TestFilterControls.none,
+                  showHud: false,
+                  labels: _labels(l10n),
+                  onUnavailable: _onEngineUnavailable,
+                )
+              : const SizedBox.expand(),
+        ),
+        if (_unavailable)
+          _bottomCard(child: Text(l10n.testFilterUnavailable, style: const TextStyle(fontSize: 16)))
+        else if (session == null)
+          _bottomCard(child: Text(l10n.coachNoZones, style: const TextStyle(fontSize: 16)))
+        else ...[
+          Positioned(top: 8, left: 8, right: 8, child: _ZoneChips(session: session)),
+          _bottomCard(child: _cardContent(l10n)),
+        ],
+      ],
     );
   }
 

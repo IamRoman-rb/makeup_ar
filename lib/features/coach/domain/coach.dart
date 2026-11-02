@@ -306,6 +306,7 @@ final class CoachSession {
   CoachIssue? _issue;
   CoachPrompt? _lastSpoken;
   Duration? _lastSpokenAt;
+  bool _doneSpoken = false;
 
   /// Veredicto estable por zona (las que todavía no se midieron no están).
   Map<CoachZone, CoachVerdict> get verdicts => Map.unmodifiable(_stable);
@@ -340,14 +341,29 @@ final class CoachSession {
 
   /// Agrega una medida tomada en [now]. Devuelve la indicación para decir en
   /// voz alta, o null si no cambió (o se dijo hace menos de repeatAfter).
+  ///
+  /// Una muestra inválida (sin cara, lejos, sin luz) no toca los veredictos y
+  /// no se dice: el aviso queda en pantalla ([current]). Así una mano o el
+  /// pincel delante de la cara no cortan la indicación que se está diciendo,
+  /// y al volver la cara la misma indicación no se repite antes de tiempo.
   CoachPrompt? add(LookMeasurements m, Duration now) {
     final issue = issueOf(m.status);
     _issue = issue;
-    if (issue == null) {
-      final raw = CoachEvaluator.evaluate(target, m, baseline: baseline);
-      raw.forEach(_confirm);
-    }
+    if (issue != null) return null;
+    final raw = CoachEvaluator.evaluate(target, m, baseline: baseline);
+    raw.forEach(_confirm);
     return _toSpeak(now);
+  }
+
+  /// La indicación a decir al volver a activar la voz: la que está en
+  /// pantalla, salvo que venga de una muestra inválida o sea "Listo" (que se
+  /// dice una sola vez). Cuenta como dicha en [now].
+  CoachPrompt? resume(Duration now) {
+    final prompt = current;
+    if (_issue != null || prompt == null || prompt.done) return null;
+    _lastSpoken = prompt;
+    _lastSpokenAt = now;
+    return prompt;
   }
 
   /// Promedio de las muestras con la cara lavada (las que salieron bien).
@@ -382,6 +398,11 @@ final class CoachSession {
   CoachPrompt? _toSpeak(Duration now) {
     final prompt = current;
     if (prompt == null) return null;
+    // "Listo" una sola vez por sesión, aunque una zona se mueva y vuelva.
+    if (prompt.done) {
+      if (_doneSpoken) return null;
+      _doneSpoken = true;
+    }
     final last = _lastSpoken;
     final lastAt = _lastSpokenAt;
     final repeat = !prompt.done && lastAt != null && now - lastAt >= CoachPolicy.repeatAfter;

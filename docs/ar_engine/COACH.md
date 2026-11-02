@@ -25,9 +25,11 @@ Pedido de la clienta: mientras la usuaria se maquilla de verdad, la app compara 
   - **Cejas:** no están en el esquema de recetas. La etapa 2 cambia el esquema (hay que aprobarlo), agrega mapas UV y la ceja virtual.
   - **Base, contorno, iluminador y pestañas:** no se miden con confianza.
 - **Voz:** TextToSpeech de Android dentro del plugin (`CoachVoice.kt`), sin dependencias nuevas.
-  - Cada indicación corta la anterior.
-  - Botón para silenciar.
-  - Si el teléfono no tiene voz para el idioma, se avisa una vez y queda solo el texto.
+  - Cada indicación corta la anterior. Dice el mismo texto que la pantalla, en el idioma de la app.
+  - Los avisos de una muestra inválida (sin cara, lejos, sin luz) solo se muestran: no se dicen ni cortan la indicación en curso, y al volver la cara la misma indicación no se repite antes de 6 s.
+  - Botón para silenciar; al reactivar la voz se dice la indicación en pantalla (salvo "Listo", que se dice una sola vez).
+  - Si el teléfono no tiene voz para el idioma, se avisa una vez y queda solo el texto. Mientras el TextToSpeech arranca, la respuesta del primer pedido espera a saber si hay voz, así el aviso sale con la primera indicación.
+  - Al pausar la app o salir (atrás) la voz se calla en el acto y la muestra en vuelo se descarta; al cerrar se libera el TextToSpeech.
   - El manifest del plugin declara la consulta del servicio de voz (`<queries>`), obligatoria desde Android 11.
 - **Privacidad:** el recorte de la cara vive en memoria nativa, se mide y se descarta. No se guarda ni se sube ninguna imagen; solo salen números.
 
