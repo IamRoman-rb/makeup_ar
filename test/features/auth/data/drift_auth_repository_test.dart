@@ -2,6 +2,7 @@ import 'package:ar_makeup_app/features/auth/data/drift_auth_repository.dart';
 import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
 import 'package:ar_makeup_app/features/auth/domain/password_hasher.dart';
 import 'package:ar_makeup_app/shared/data/local_db/app_database.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -124,6 +125,13 @@ void main() {
     await repo.setPremiumUntil(DateTime(2026, 12, 1));
     expect(repo.currentUser?.isPremiumAt(now), isTrue);
     expect(repo.currentUser?.isPremiumAt(DateTime(2027)), isFalse, reason: 'vence solo');
+
+    // Mismo vencimiento (refreshVip en cada arranque): no escribe ni marca dirty.
+    await (db.update(db.users)..where((u) => u.email.equals('bea@mail.com')))
+        .write(const UsersCompanion(dirty: Value(false)));
+    await repo.setPremiumUntil(DateTime(2026, 12, 1));
+    final row = await (db.select(db.users)..where((u) => u.email.equals('bea@mail.com'))).getSingle();
+    expect(row.dirty, isFalse);
 
     await repo.signOut();
     await repo.signIn(email: 'ana@mail.com', password: 'secreta');

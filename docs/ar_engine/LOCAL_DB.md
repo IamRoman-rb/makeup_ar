@@ -73,6 +73,21 @@ Plan para el servidor (no implementado):
 - `test/features/*/data/drift_*_test.dart`: cada repositorio con `NativeDatabase.memory()`.
 - Widget tests con la base: usar `test/helpers/memory_database.dart` (`closeStreamsSynchronously`; sin eso drift deja un Timer pendiente y `testWidgets` falla o se cuelga), y `tester.runAsync` para lo que corre en otro isolate (el hash).
 
+## Revisión perf-auditor (2026-11-02)
+
+**Corregido:**
+- `setPremiumUntil` no escribe si el vencimiento no cambió (`refreshVip` corre en cada arranque: marcaba la fila `dirty` y redibujaba el catálogo).
+- `AppServices.retry()` reabre la base de cero si la primera apertura falló.
+- El tope de Mis looks cuenta con `COUNT` en lugar de traer las filas.
+
+**Pendiente, a decidir con mediciones del E20** (con 5 presets son baratos; crecen con el catálogo):
+- `watchLooks` decodifica JSON y valida la receta de todas las filas en el hilo de UI en cada cambio de cualquier look, y una vez por pantalla que escucha (catálogo y guardados). Posible arreglo: memoizar por `id` + `updated_at` y compartir un solo stream.
+- Avatar: `FileImage` sin `ResizeImage`/`cacheWidth` y `pickImage` sin `maxWidth`. Una foto de 12 MP se decodifica a ~48 MB para un círculo de 100 px (riesgo de memoria con 2 GB).
+- Catálogo: la lista no es perezosa (`shrinkWrap`) y los `StreamBuilder` de usuario y guardados envuelven toda la pantalla; cada corazón reconstruye todos los items. Portadas de red sin `cacheWidth`.
+- Arranque: `VipService.configure` espera a la base; son independientes y podrían ir en paralelo. Medir `db` y `revenuecat`.
+- PBKDF2: medir el login (20000 iteraciones).
+- SQLite sin WAL: solo si las escrituras se notan.
+
 ## En el E20 (pendiente)
 
 Anotar con el protocolo de `STARTUP.md`:

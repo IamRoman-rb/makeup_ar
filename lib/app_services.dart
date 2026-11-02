@@ -45,7 +45,18 @@ abstract final class AppServices {
     // Un reintento no abre la base dos veces si la primera vez llegó a hacerlo.
     final database = _database ??= AppDatabase.open(seed: CatalogSeed.insertPresets);
     final auth = _auth ??= DriftAuthRepository(database);
-    final user = await auth.restoreSession();
+    final AppUser? user;
+    try {
+      user = await auth.restoreSession();
+    } catch (_) {
+      // La base no abrió: el reintento la abre de cero, no reusa la rota.
+      _database = null;
+      _auth = null;
+      _catalog = null;
+      _savedLooks = null;
+      await database.close().catchError((Object _) {});
+      rethrow;
+    }
     StartupTrace.mark('db');
     await VipService.configure();
     StartupTrace.mark('revenuecat');

@@ -129,6 +129,9 @@ final class DriftAuthRepository implements IAuthRepository {
   Future<void> setPremiumUntil(DateTime? until) async {
     final user = _current;
     if (user == null) return;
+    // Sin cambios no se escribe: refreshVip corre en cada arranque y una
+    // escritura igual marcaría la fila dirty y redibujaría el catálogo.
+    if (user.premiumUntil?.millisecondsSinceEpoch == until?.millisecondsSinceEpoch) return;
     await (_db.update(_db.users)..where((u) => u.id.equals(user.id))).write(UsersCompanion(
       premiumUntil: Value(until?.millisecondsSinceEpoch),
       updatedAt: Value(_clock().millisecondsSinceEpoch),

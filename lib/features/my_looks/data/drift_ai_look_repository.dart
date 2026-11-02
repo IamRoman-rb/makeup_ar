@@ -42,7 +42,12 @@ final class DriftAiLookRepository implements IAiLookRepository {
     // Misma validación que la callable: lo que se guarda vuelve a validar.
     if (const RecipeValidator().validate(json).recipe == null) return AiLookFailure.invalid;
     return _db.transaction(() async {
-      final count = (await _alive().get()).length;
+      final countAll = _db.aiLooks.id.count();
+      final count = await (_db.selectOnly(_db.aiLooks)
+            ..addColumns([countAll])
+            ..where(_db.aiLooks.userId.equals(userId) & _db.aiLooks.deletedAt.isNull()))
+          .map((row) => row.read(countAll) ?? 0)
+          .getSingle();
       if (count >= AiLookLimits.maxSaved) return AiLookFailure.full;
       final now = _clock().millisecondsSinceEpoch;
       await _db.into(_db.aiLooks).insert(AiLooksCompanion.insert(
