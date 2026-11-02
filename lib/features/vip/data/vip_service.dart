@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
@@ -9,9 +8,10 @@ import 'package:ar_makeup_app/features/vip/data/revenue_cat_config.dart';
 /// Wrapper sobre el SDK de RevenueCat para la suscripción VIP que
 /// desbloquea los videos de los tutoriales.
 ///
-/// El cliente no escribe el estado VIP (firestore.rules lo prohíbe): lo pone
-/// el webhook de RevenueCat en `users/{uid}.premium_until` segundos después de
-/// la compra (functions/src/revenueCatWebhook.ts, AUDIT.md §5.2).
+/// Sin servidor no hay webhook: el vencimiento del entitlement lo informa el
+/// SDK en el teléfono ([purchase], [restore], [activeUntil]) y la app lo
+/// guarda en el usuario local (IAuthRepository.setPremiumUntil). Cuando haya
+/// servidor, el webhook vuelve a ser la fuente (docs/ar_engine/LOCAL_DB.md).
 ///
 /// Sin key de RevenueCat (ver [RevenueCatConfig]) el SDK no se configura:
 /// [isAvailable] es false y ninguna operación lo toca.
@@ -41,14 +41,12 @@ class VipService {
     _available = true;
   }
 
-  /// Ata las compras al usuario logueado de Firebase, para que la
-  /// suscripción se reconozca aunque cambie de dispositivo.
-  static Future<void> loginCurrentUser() async {
+  /// Ata las compras al usuario local [userId], para que la suscripción se
+  /// reconozca en otro dispositivo con la misma cuenta.
+  static Future<void> loginUser(String userId) async {
     if (!_available) return;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
     try {
-      await Purchases.logIn(uid);
+      await Purchases.logIn(userId);
     } catch (e) {
       debugPrint('Error en Purchases.logIn: $e');
     }
@@ -61,19 +59,43 @@ class VipService {
     return offerings.current;
   }
 
-  /// Compra el paquete. Devuelve true si RevenueCat confirma el entitlement
-  /// VIP; el acceso a los videos llega con el webhook.
-  static Future<bool> purchase(Package package) async {
+  /// Compra el paquete. Devuelve el vencimiento del VIP si RevenueCat
+  /// confirma el entitlement; null si no quedó activo.
+  static Future<DateTime?> purchase(Package package) async {
     if (!_available) throw StateError('RevenueCat no está configurado.');
     final result = await Purchases.purchase(PurchaseParams.package(package));
-    return result.customerInfo.entitlements.all[RevenueCatConfig.entitlementId]?.isActive ?? false;
+    return _until(result.customerInfo);
   }
 
-  /// Restaura compras previas (requisito de las tiendas). Devuelve true si
-  /// encontró el entitlement VIP activo; false sin RevenueCat configurado.
-  static Future<bool> restore() async {
-    if (!_available) return false;
-    final customerInfo = await Purchases.restorePurchases();
-    return customerInfo.entitlements.all[RevenueCatConfig.entitlementId]?.isActive ?? false;
+  /// Restaura compras previas (requisito de las tiendas). Devuelve el
+  /// vencimiento del VIP si lo encontró activo; null si no, o sin RevenueCat.
+  static Future<DateTime?> restore() async {
+    if (!_available) return null;
+    return _until(await Purchases.restorePurchases());
   }
+
+  /// Vencimiento del VIP según RevenueCat ahora; null si no está activo o
+  /// sin RevenueCat. Hace una consulta de red: no llamar en el arranque con
+  /// await.
+  static Future<DateTime?> activeUntil() async {
+    if (!_available) return null;
+    return _until(await Purchases.getCustomerInfo());
+  }
+
+  static DateTime? _until(CustomerInfo info) {
+    final entitlement = info.entitlements.all[RevenueCatConfig.entitlementId];
+    return untilFrom(isActive: entitlement?.isActive ?? false, expirationDate: entitlement?.expirationDate);
+  }
+
+  /// Vencimiento de un entitlement: null si no está activo; sin fecha
+  /// (compra de por vida) o con fecha ilegible pero activo, [lifetime].
+  @visibleForTesting
+  static DateTime? untilFrom({required bool isActive, String? expirationDate}) {
+    if (!isActive) return null;
+    final parsed = expirationDate == null ? null : DateTime.tryParse(expirationDate);
+    return parsed ?? lifetime;
+  }
+
+  /// Vencimiento de un VIP sin fecha de fin.
+  static final DateTime lifetime = DateTime.utc(9999);
 }

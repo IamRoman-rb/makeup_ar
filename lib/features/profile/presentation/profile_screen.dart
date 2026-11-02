@@ -1,7 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
 import 'package:ar_makeup_app/shared/widgets/shared_bottom_nav.dart';
 import 'package:ar_makeup_app/features/profile/presentation/edit_profile_screen.dart';
 import 'package:ar_makeup_app/features/auth/presentation/login_screen.dart';
@@ -11,52 +13,55 @@ import 'package:ar_makeup_app/features/profile/presentation/language_screen.dart
 import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
 import 'package:ar_makeup_app/features/coach/presentation/coach_screen.dart';
-import 'package:ar_makeup_app/features/my_looks/data/firestore_ai_look_repository.dart';
 import 'package:ar_makeup_app/features/my_looks/presentation/my_looks_screen.dart';
-import 'package:ar_makeup_app/features/studio/data/cloud_recipe_generator.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 import 'package:ar_makeup_app/features/profile/presentation/profile_labels.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  // Una vez: creados en build, cada redibujo se volvía a suscribir.
+  late final Stream<AppUser?> _userStream = AppServices.auth.watchCurrentUser();
+  final String? _userId = AppServices.auth.currentUser?.id;
+  late final Stream<Set<String>> _savedStream = AppServices.savedLooks.watchSavedIds(_userId ?? '');
+
+  @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     final l10n = AppLocalizations.of(context)!; // <-- 2. Instancia del traductor
 
-    if (user == null) return Scaffold(body: Center(child: Text(l10n.loginFirst)));
+    if (_userId == null) return Scaffold(body: Center(child: Text(l10n.loginFirst)));
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF7F8),
       body: SafeArea(
-        child: StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+        child: StreamBuilder<AppUser?>(
+            stream: _userStream,
+            initialData: AppServices.auth.currentUser,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
-              }
-
               if (snapshot.hasError) {
                 return Center(child: Text(l10n.profileLoadError('${snapshot.error}')));
               }
 
-              if (!snapshot.hasData || !snapshot.data!.exists) {
+              final user = snapshot.data;
+              if (user == null) {
                 return Center(child: Text(l10n.profileNoData));
               }
 
-              final data = snapshot.data!.data() as Map<String, dynamic>;
-              final nombre = data['nombre'] ?? 'Beauty Lover';
-              final tipoPiel = data['tipo_piel'] ?? '-';
-              final tonoPiel = data['tono_piel'] ?? '-';
+              final profile = user.profile;
+              final nombre = profile.name.isEmpty ? 'Beauty Lover' : profile.name;
+              final tipoPiel = profile.skinType;
+              final tonoPiel = profile.skinTone;
+              final photoPath = profile.photoPath;
+              final hasPhoto = photoPath != null && photoPath.isNotEmpty;
 
-              // Lógica de favoritos
-              final savedLooks = List<String>.from(data['saved_looks'] ?? []);
-              final savedCount = savedLooks.length.toString();
-
-              List<dynamic> rawPrefs = data['gustos_personales'] ?? [];
+              final rawPrefs = profile.preferences;
               String descripcion = rawPrefs.isNotEmpty
-                  ? l10n.profilePreferences(rawPrefs.map((p) => preferenceLabel(l10n, '$p')).join(' | '))
+                  ? l10n.profilePreferences(rawPrefs.map((p) => preferenceLabel(l10n, p)).join(' | '))
                   : l10n.profileDefaultBio;
 
               return SingleChildScrollView(
@@ -71,12 +76,8 @@ class ProfileScreen extends StatelessWidget {
                             radius: 50,
                             backgroundColor: Colors.grey.shade300,
                             // Sin foto, un ícono local (antes una foto de Unsplash en cada apertura).
-                            backgroundImage: (data['foto_perfil'] != null && data['foto_perfil'].toString().isNotEmpty)
-                                ? NetworkImage(data['foto_perfil'].toString())
-                                : null,
-                            child: (data['foto_perfil'] != null && data['foto_perfil'].toString().isNotEmpty)
-                                ? null
-                                : Icon(Icons.person, size: 56, color: Colors.grey.shade600),
+                            backgroundImage: hasPhoto ? FileImage(File(photoPath)) : null,
+                            child: hasPhoto ? null : Icon(Icons.person, size: 56, color: Colors.grey.shade600),
                           ),
                           Positioned(
                             bottom: 0,
@@ -115,7 +116,7 @@ class ProfileScreen extends StatelessWidget {
                           Column(
                             children: [
                               Text(l10n.skinTypeLabel, style: GoogleFonts.inter(fontSize: 10, color: Colors.grey)), // <-- Traducido
-                              Text(skinTypeLabel(l10n, '$tipoPiel'), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37))),
+                              Text(skinTypeLabel(l10n, tipoPiel), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37))),
                             ],
                           ),
                           const SizedBox(width: 20),
@@ -124,7 +125,7 @@ class ProfileScreen extends StatelessWidget {
                           Column(
                             children: [
                               Text(l10n.toneLabel, style: GoogleFonts.inter(fontSize: 10, color: Colors.grey)), // <-- Traducido
-                              Text(skinToneLabel(l10n, '$tonoPiel'), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37))),
+                              Text(skinToneLabel(l10n, tonoPiel), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37))),
                             ],
                           ),
                         ],
@@ -137,7 +138,10 @@ class ProfileScreen extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildStatCard(savedCount, l10n.savedLooks), // <-- Traducido
+                          StreamBuilder<Set<String>>(
+                            stream: _savedStream,
+                            builder: (context, saved) => _buildStatCard('${saved.data?.length ?? 0}', l10n.savedLooks),
+                          ),
                         ],
                       ),
                     ),
@@ -173,7 +177,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    // Looks generados con IA por el usuario (functions/src/aiLooks.ts).
+                    // Looks del usuario ("Mis looks"), guardados en la base local.
                     Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: OutlinedButton.icon(
@@ -182,8 +186,8 @@ class ProfileScreen extends StatelessWidget {
                           style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                           onPressed: () => Navigator.push(context, MaterialPageRoute(
                             builder: (_) => MyLooksScreen(
-                              repository: FirestoreAiLookRepository(uid: user.uid),
-                              generator: CloudRecipeGenerator(),
+                              repository: AppServices.aiLooks(user.id),
+                              generator: AppServices.recipeGenerator,
                               onTryOn: (recipe) {
                                 final look = TestFilterOption(id: 'ai-${recipe.name.hashCode}', label: recipe.name, recipe: recipe);
                                 Navigator.push(context, MaterialPageRoute(
@@ -235,7 +239,7 @@ class ProfileScreen extends StatelessWidget {
 
                           GestureDetector(
                             onTap: () async {
-                              await FirebaseAuth.instance.signOut();
+                              await AppServices.auth.signOut();
                               if (context.mounted) {
                                 Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
                               }

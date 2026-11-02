@@ -1,11 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 import 'package:ar_makeup_app/features/profile/presentation/profile_labels.dart';
 
@@ -25,7 +24,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _isSaving = false;
 
   File? _imageFile;
-  String? _currentImageUrl;
+
+  /// Foto guardada (ruta local); null sin foto.
+  String? _currentPhotoPath;
   final ImagePicker _picker = ImagePicker();
 
   String _selectedSkinType = 'Combined';
@@ -49,37 +50,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
     try {
-      if (user == null) return;
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      final data = doc.data();
-      if (data != null && mounted) {
-        setState(() {
-          _nameController.text = data['nombre'] ?? '';
-          _ageController.text = (data['edad'] ?? '').toString();
-          _currentImageUrl = data['foto_perfil'];
-
-          if (data['fecha_nacimiento'] != null && data['fecha_nacimiento'].toString().isNotEmpty) {
-            try {
-              _selectedDate = DateFormat('yyyy-MM-dd').parse(data['fecha_nacimiento']);
-            } catch (e) {
-              debugPrint("Error parseando fecha");
-            }
-          }
-
-          _selectedSkinType = data['tipo_piel'] ?? 'Combined';
-          _selectedSkinTone = data['tono_piel'] ?? 'Light';
-
-          if (data['gustos_personales'] != null) {
-            _selectedPreferences = Set<String>.from(data['gustos_personales']);
-          }
-        });
-      }
+      final user = await AppServices.auth.restoreSession();
+      if (user == null || !mounted) return;
+      final profile = user.profile;
+      setState(() {
+        _nameController.text = profile.name;
+        _ageController.text = profile.age == 0 ? '' : '${profile.age}';
+        _currentPhotoPath = profile.photoPath;
+        _selectedDate = profile.birthDate;
+        _selectedSkinType = profile.skinType;
+        _selectedSkinTone = profile.skinTone;
+        _selectedPreferences = profile.preferences.toSet();
+      });
     } catch (e) {
       debugPrint('Error cargando el perfil: $e');
     } finally {
-      // Antes, un error de Firestore dejaba el spinner para siempre.
+      // Un error de la base no deja el spinner para siempre.
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -109,24 +96,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final l10n = AppLocalizations.of(context)!; // Traductor para los mensajes de éxito/error
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = AppServices.auth.currentUser;
       if (user != null) {
-        String? updatedImageUrl = _currentImageUrl;
-        if (_imageFile != null) {
-          final ref = FirebaseStorage.instance.ref().child('profile_pictures/${user.uid}.jpg');
-          await ref.putFile(_imageFile!);
-          updatedImageUrl = await ref.getDownloadURL();
+        final previousPhoto = _currentPhotoPath;
+        var photoPath = previousPhoto;
+        final imageFile = _imageFile;
+        if (imageFile != null) {
+          photoPath = await AppServices.photos.save(user.id, imageFile.path);
         }
 
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-          'nombre': _nameController.text.trim(),
-          'edad': int.tryParse(_ageController.text) ?? 0,
-          'fecha_nacimiento': _selectedDate != null ? DateFormat('yyyy-MM-dd').format(_selectedDate!) : null,
-          'tipo_piel': _selectedSkinType,
-          'tono_piel': _selectedSkinTone,
-          'gustos_personales': _selectedPreferences.toList(),
-          'foto_perfil': updatedImageUrl,
-        });
+        final failure = await AppServices.auth.updateProfile(UserProfile(
+          name: _nameController.text.trim(),
+          age: int.tryParse(_ageController.text) ?? 0,
+          birthDate: _selectedDate,
+          skinType: _selectedSkinType,
+          skinTone: _selectedSkinTone,
+          preferences: _selectedPreferences.toList(),
+          photoPath: photoPath,
+        ));
+        if (failure != null) throw StateError(failure.name);
+        // La foto anterior ya no la usa nadie.
+        if (photoPath != previousPhoto) await AppServices.photos.delete(previousPhoto);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.profileUpdated, style: GoogleFonts.inter())));
@@ -172,14 +162,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.grey.shade300,
-                      backgroundImage: _imageFile != null
-                          ? FileImage(_imageFile!) as ImageProvider
-                          : (_currentImageUrl != null && _currentImageUrl!.isNotEmpty)
-                          ? NetworkImage(_currentImageUrl!) as ImageProvider
-                          : null,
-                      child: (_imageFile == null && (_currentImageUrl == null || _currentImageUrl!.isEmpty))
-                          ? const Icon(Icons.person, size: 50, color: Colors.white)
-                          : null,
+                      backgroundImage: _avatarImage(),
+                      child: _avatarImage() == null ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
                     ),
                     Positioned(
                       bottom: 0,
@@ -300,6 +284,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       ),
     );
+  }
+
+  /// La foto elegida recién, si no la guardada; null sin ninguna.
+  ImageProvider? _avatarImage() {
+    final picked = _imageFile;
+    if (picked != null) return FileImage(picked);
+    final saved = _currentPhotoPath;
+    return saved != null && saved.isNotEmpty ? FileImage(File(saved)) : null;
   }
 
   Widget _buildTextField(String label, String hint, TextEditingController controller, {bool isNumber = false}) {

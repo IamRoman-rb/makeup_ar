@@ -1,11 +1,12 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
+import 'package:ar_makeup_app/features/auth/presentation/auth_messages.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_screen.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 import 'package:ar_makeup_app/features/profile/presentation/profile_labels.dart';
@@ -35,7 +36,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String _selectedSkinTone = 'Light';
   final Set<String> _selectedPreferences = {};
 
-  // Valores internos que van a Firebase (no se traducen para evitar errores en BDD)
+  // Valores internos que se guardan en la base (no se traducen: se traducen al mostrarlos)
   final List<String> skinTypes = ['Combined', 'Oily', 'Dry', 'Sensitive'];
   final List<Map<String, dynamic>> skinTones = [
     {'name': 'Light', 'color': const Color(0xFFFCE5D8)},
@@ -87,52 +88,51 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     setState(() => _isLoading = true);
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      final auth = AppServices.auth;
+      final profile = UserProfile(
+        name: _nameController.text.trim(),
+        birthDate: _selectedDate,
+        age: int.tryParse(_ageController.text) ?? 0,
+        skinType: _selectedSkinType,
+        skinTone: _selectedSkinTone,
+        preferences: _selectedPreferences.toList(),
       );
+      final failure = await auth.signUp(
+        email: _emailController.text,
+        password: _passwordController.text.trim(),
+        profile: profile,
+      );
+      if (failure != null) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(authFailureText(l10n, failure))));
+        return;
+      }
+      final user = auth.currentUser;
+      if (user == null) return;
+      unawaited(AppServices.afterSignIn(user.id));
 
-      // Subir la imagen a Firebase Storage. Si falla (Storage sin Blaze, red),
-      // la cuenta se crea igual sin foto: antes la excepción cortaba el
-      // registro y quedaba el usuario de Auth sin documento en users/{uid}.
-      String? imageUrl;
+      // La foto se copia a la carpeta de la app. Si falla, la cuenta queda
+      // creada igual sin foto, y se avisa.
       var photoFailed = false;
       final imageFile = _imageFile;
       if (imageFile != null) {
         try {
-          final ref = FirebaseStorage.instance.ref().child('profile_pictures/${userCredential.user!.uid}.jpg');
-          await ref.putFile(imageFile);
-          imageUrl = await ref.getDownloadURL();
-        } on FirebaseException catch (e) {
-          debugPrint('Foto de perfil no subida: ${e.code}');
+          final path = await AppServices.photos.save(user.id, imageFile.path);
+          await auth.updateProfile(profile.copyWith(photoPath: path));
+        } catch (e) {
+          debugPrint('Foto de perfil no guardada: $e');
           photoFailed = true;
         }
       }
-
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'nombre': _nameController.text.trim(),
-        'correo': _emailController.text.trim(),
-        'edad': int.tryParse(_ageController.text) ?? 0,
-        'fecha_nacimiento': DateFormat('yyyy-MM-dd').format(_selectedDate!),
-        'tipo_piel': _selectedSkinType,
-        'tono_piel': _selectedSkinTone,
-        'gustos_personales': _selectedPreferences.toList(),
-        'fecha_registro': FieldValue.serverTimestamp(),
-        'foto_perfil': imageUrl,
-      });
 
       if (mounted) {
         final messenger = ScaffoldMessenger.of(context);
         Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const CatalogScreen()), (route) => false);
         if (photoFailed) messenger.showSnackBar(SnackBar(content: Text(l10n.signupPhotoFailed)));
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
+      // Error inesperado de la base.
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? l10n.registrationError)));
-    } on FirebaseException catch (e) {
-      // Firestore u otro servicio: antes se perdía sin aviso.
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.registrationError}: ${e.message ?? e.code}')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.registrationError}: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

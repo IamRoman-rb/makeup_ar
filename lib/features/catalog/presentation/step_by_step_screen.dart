@@ -1,17 +1,16 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
 import 'package:ar_makeup_app/features/ar/presentation/camera_screen.dart';
+import 'package:ar_makeup_app/features/catalog/domain/catalog_look.dart';
 import 'package:ar_makeup_app/features/coach/presentation/coach_screen.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
-import 'package:ar_makeup_app/features/studio/domain/studio_look.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
-import 'package:ar_makeup_app/features/vip/data/premium_content.dart';
 import 'package:ar_makeup_app/features/vip/presentation/vip_paywall_screen.dart';
 
 class StepByStepScreen extends StatefulWidget {
@@ -30,17 +29,11 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
   // Los streams se crean una vez: creados en build, cada setState (por ejemplo
   // el swipe de paso) se resuscribía, pasaba por "waiting" y reemplazaba la
   // pantalla por un spinner, destruyendo el reproductor de video.
-  late final Stream<DocumentSnapshot> _lookStream =
-      FirebaseFirestore.instance.collection('looks').doc(widget.lookId).snapshots();
-  late final Stream<DocumentSnapshot>? _userStream = _userSnapshots();
+  late final Stream<CatalogLook?> _lookStream = AppServices.catalog.watchLook(widget.lookId);
+  late final Stream<AppUser?> _userStream = AppServices.auth.watchCurrentUser();
 
   /// Para pausar el video antes de abrir la cámara AR.
   final GlobalKey<_TutorialVideoSectionState> _videoKey = GlobalKey();
-
-  static Stream<DocumentSnapshot>? _userSnapshots() {
-    final user = FirebaseAuth.instance.currentUser;
-    return user == null ? null : FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
-  }
 
   @override
   void dispose() {
@@ -52,7 +45,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return StreamBuilder<DocumentSnapshot>(
+    return StreamBuilder<CatalogLook?>(
       stream: _lookStream,
       builder: (context, lookSnapshot) {
         if (lookSnapshot.connectionState == ConnectionState.waiting) {
@@ -63,20 +56,17 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
           return Scaffold(body: Center(child: Text(l10n.errorWithDetails('${lookSnapshot.error}'))));
         }
 
-        final data = lookSnapshot.data?.data() as Map<String, dynamic>?;
-        final lookName = data?['name'] as String? ?? l10n.stepByStepTitle;
-        // Solo looks sin migrar: el video nuevo vive en premium/content.
-        final legacyVideoUrl = data?['video_url'] as String?;
-        final recipe = data == null ? null : lookRecipe(data);
-        final rawSteps = data?['steps'];
-        final steps = rawSteps is List
-            ? rawSteps.whereType<Map>().map((s) => Map<String, dynamic>.from(s)).toList()
-            : <Map<String, dynamic>>[];
+        final look = lookSnapshot.data;
+        final lookName = look?.name ?? l10n.stepByStepTitle;
+        final recipe = look?.recipe;
+        final steps = look?.steps ?? const <TutorialStep>[];
 
-        return StreamBuilder<DocumentSnapshot>(
+        return StreamBuilder<AppUser?>(
           stream: _userStream,
+          initialData: AppServices.auth.currentUser,
           builder: (context, userSnapshot) {
-            final isPremium = isPremiumUser(userSnapshot.data?.data() as Map<String, dynamic>?);
+            // VIP vigente o admin: el video del tutorial.
+            final isPremium = userSnapshot.data?.canSeePremiumAt(DateTime.now()) ?? false;
 
             return Scaffold(
               backgroundColor: const Color(0xFFFDF7F8),
@@ -122,7 +112,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
                   ),
                 ],
               ),
-              body: _buildContent(steps, legacyVideoUrl, isPremium),
+              body: _buildContent(steps, isPremium),
             );
           },
         );
@@ -143,7 +133,7 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
     );
   }
 
-  Widget _buildContent(List<Map<String, dynamic>> steps, String? legacyVideoUrl, bool isPremium) {
+  Widget _buildContent(List<TutorialStep> steps, bool isPremium) {
     return Column(
       children: [
         // El video/paywall VIP siempre se muestra, tenga o no video este look.
@@ -152,7 +142,6 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
           child: TutorialVideoSection(
             key: _videoKey,
             lookId: widget.lookId,
-            legacyVideoUrl: legacyVideoUrl,
             isPremium: isPremium,
           ),
         ),
@@ -188,9 +177,9 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
               itemCount: steps.length,
               itemBuilder: (context, index) {
                 final step = steps[index];
-                final title = (step['title'] as String?) ?? '';
-                final image = (step['image'] as String?) ?? '';
-                final description = (step['description'] as String?) ?? '';
+                final title = step.title;
+                final image = step.image;
+                final description = step.description;
 
                 return SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -299,19 +288,15 @@ class _StepByStepScreenState extends State<StepByStepScreen> {
 /// necesita una cuenta de RevenueCat con al menos un producto y sus keys por
 /// --dart-define-from-file=env/revenuecat.json (lib/features/vip/data/revenue_cat_config.dart).
 ///
-/// La URL se pide solo si el usuario es VIP: vive en looks/{id}/premium/content,
-/// que las reglas dejan leer solo a VIP vigentes y admins (PremiumContent).
+/// La URL se pide solo si el usuario puede verla (VIP vigente o admin,
+/// AppUser.canSeePremiumAt).
 class TutorialVideoSection extends StatefulWidget {
   final String lookId;
-
-  /// video_url del documento del look: solo en looks sin migrar.
-  final String? legacyVideoUrl;
   final bool isPremium;
 
   const TutorialVideoSection({
     super.key,
     required this.lookId,
-    required this.legacyVideoUrl,
     required this.isPremium,
   });
 
@@ -355,7 +340,7 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> with Widget
   @override
   void didUpdateWidget(covariant TutorialVideoSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final changed = oldWidget.lookId != widget.lookId || oldWidget.legacyVideoUrl != widget.legacyVideoUrl;
+    final changed = oldWidget.lookId != widget.lookId;
     if (widget.isPremium && (!oldWidget.isPremium || changed)) {
       _resolveVideo();
     } else if (!widget.isPremium && oldWidget.isPremium) {
@@ -368,19 +353,16 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> with Widget
     final request = ++_request;
     _disposeVideo();
     setState(() => _resolving = true);
-    String? premiumUrl;
+    String? url;
     try {
-      premiumUrl = await PremiumContent.videoUrl(widget.lookId);
+      url = await AppServices.catalog.videoUrl(widget.lookId);
     } catch (e) {
-      // videoUrl ya atrapa los errores de Firestore; esto cubre el resto.
       debugPrint('Video del tutorial: $e');
     } finally {
       // Si este pedido sigue vigente, nunca queda el spinner trabado.
       if (mounted && request == _request) setState(() => _resolving = false);
     }
     if (!mounted || request != _request) return;
-    final legacy = widget.legacyVideoUrl;
-    final url = premiumUrl ?? (legacy != null && legacy.isNotEmpty ? legacy : null);
     setState(() => _videoUrl = url);
     if (url != null) _initializeVideo(url);
   }
@@ -419,8 +401,8 @@ class _TutorialVideoSectionState extends State<TutorialVideoSection> with Widget
 
   Future<void> _openVipPaywall() async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => const VipPaywallScreen()));
-    // El estado de is_premium se refresca solo: viene de un StreamBuilder
-    // sobre el documento del usuario en el screen padre.
+    // El estado VIP se refresca solo: el paywall lo guarda en el usuario y el
+    // screen padre lo escucha (watchCurrentUser).
   }
 
   @override

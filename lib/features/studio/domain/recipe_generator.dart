@@ -1,6 +1,9 @@
-/// Generación de recetas con IA (F2): contrato del dominio, sin Flutter ni
-/// Firebase. La implementación llama a la Cloud Function `generateRecipe`
-/// (functions/src/generateRecipe.ts) y vuelve a validar cada variante.
+/// Generación de recetas con IA (F2): contrato del dominio, sin Flutter.
+///
+/// Hoy la única implementación es LocalRecipeGenerator (sin IA: el preset
+/// más parecido). Cuando haya servidor, otra implementación lo llama (la key
+/// del modelo vive en el servidor, nunca en la app) y vuelve a validar cada
+/// variante; functions/src/generateRecipe.ts queda como referencia.
 library;
 
 import '../../ar/domain/makeup_recipe.dart';
@@ -27,6 +30,9 @@ enum GenerationFailure {
 
   /// El modelo respondió, pero ninguna variante validó.
   noValidVariants,
+
+  /// No hay IA conectada (versión sin servidor): solo el respaldo local.
+  localOnly,
 
   /// Cualquier otro error.
   unknown,

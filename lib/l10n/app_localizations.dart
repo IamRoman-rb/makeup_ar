@@ -357,14 +357,8 @@ abstract class AppLocalizations {
   /// No description provided for @changePasswordDesc.
   ///
   /// In en, this message translates to:
-  /// **'We will send a reset link to your email.'**
+  /// **'Enter your current password and choose a new one.'**
   String get changePasswordDesc;
-
-  /// No description provided for @sendLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Send Link'**
-  String get sendLink;
 
   /// No description provided for @notifications.
   ///
@@ -1482,24 +1476,6 @@ abstract class AppLocalizations {
   /// **'Go VIP'**
   String get becomeVip;
 
-  /// No description provided for @passwordEmailSent.
-  ///
-  /// In en, this message translates to:
-  /// **'Email sent to {email}'**
-  String passwordEmailSent(String email);
-
-  /// No description provided for @passwordEmailError.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t send the email.'**
-  String get passwordEmailError;
-
-  /// No description provided for @deleteAccountReauth.
-  ///
-  /// In en, this message translates to:
-  /// **'Log out and log back in before deleting your account.'**
-  String get deleteAccountReauth;
-
   /// No description provided for @profileLoadError.
   ///
   /// In en, this message translates to:
@@ -1659,7 +1635,7 @@ abstract class AppLocalizations {
   /// No description provided for @signupPhotoFailed.
   ///
   /// In en, this message translates to:
-  /// **'Your account was created, but we couldn\'t upload the photo. You can add it later from your profile.'**
+  /// **'Your account was created, but we couldn\'t save the photo. You can add it later from your profile.'**
   String get signupPhotoFailed;
 
   /// No description provided for @startupError.
@@ -1913,6 +1889,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Brow bone'**
   String get coachZoneShadowBrowBone;
+
+  /// No description provided for @studioLocalOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI isn\'t connected yet: showing the preset closest to your request.'**
+  String get studioLocalOnly;
+
+  /// No description provided for @myAiLooksLocalOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI isn\'t connected yet: here\'s a similar look.'**
+  String get myAiLooksLocalOnly;
+
+  /// No description provided for @authErrorInvalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'That email isn\'t valid.'**
+  String get authErrorInvalidEmail;
+
+  /// No description provided for @authErrorWeakPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'The password must have at least {min} characters.'**
+  String authErrorWeakPassword(int min);
+
+  /// No description provided for @authErrorEmailInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s already an account with that email.'**
+  String get authErrorEmailInUse;
+
+  /// No description provided for @authErrorWrongCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong email or password.'**
+  String get authErrorWrongCredentials;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get currentPassword;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @passwordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed.'**
+  String get passwordChanged;
+
+  /// No description provided for @changeBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get changeBtn;
 }
 
 class _AppLocalizationsDelegate

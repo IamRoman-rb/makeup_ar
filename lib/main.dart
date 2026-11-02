@@ -9,9 +9,9 @@ import 'startup_trace.dart';
 void main() {
   StartupTrace.start();
   final binding = WidgetsFlutterBinding.ensureInitialized();
-  // Firebase, App Check y RevenueCat arrancan en paralelo con el splash, que
-  // los espera (AppServices.ready) antes de navegar: el primer frame no
-  // espera a Firebase (docs/ar_engine/STARTUP.md).
+  // La base local y RevenueCat arrancan en paralelo con el splash, que los
+  // espera (AppServices.ready) antes de navegar: el primer frame no espera a
+  // la base (docs/ar_engine/STARTUP.md).
   runApp(const ARMakeupApp());
   unawaited(AppServices.ready.catchError((Object _) {}));
   binding.waitUntilFirstFrameRasterized.then((_) => StartupTrace.mark('first_frame'));

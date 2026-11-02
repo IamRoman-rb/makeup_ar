@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ar_makeup_app/app_services.dart';
+import 'package:ar_makeup_app/features/auth/domain/app_user.dart';
+import 'package:ar_makeup_app/features/catalog/domain/catalog_look.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/step_by_step_screen.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart'; // <-- 1. Importación del traductor
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_labels.dart';
@@ -14,12 +15,11 @@ class SavedLooksScreen extends StatefulWidget {
 }
 
 class _SavedLooksScreenState extends State<SavedLooksScreen> {
-  // Una vez: el de looks se recreaba con cada cambio del documento del usuario
-  // (quitar un favorito volvía a pedir toda la colección y mostraba el spinner).
-  final User? _user = FirebaseAuth.instance.currentUser;
-  late final Stream<DocumentSnapshot>? _userStream =
-      _user == null ? null : FirebaseFirestore.instance.collection('users').doc(_user.uid).snapshots();
-  late final Stream<QuerySnapshot> _looksStream = FirebaseFirestore.instance.collection('looks').snapshots();
+  // Una vez: creados en build, quitar un favorito volvía a pedir todo el
+  // catálogo y mostraba el spinner.
+  final AppUser? _user = AppServices.auth.currentUser;
+  late final Stream<Set<String>> _savedStream = AppServices.savedLooks.watchSavedIds(_user?.id ?? '');
+  late final Stream<List<CatalogLook>> _looksStream = AppServices.catalog.watchLooks();
 
   Widget _buildSafeImage(String imageUrl) {
     // Si la URL está vacía, mostramos un fondo elegante con un ícono
@@ -34,7 +34,7 @@ class _SavedLooksScreenState extends State<SavedLooksScreen> {
       );
     }
 
-    // Si es una imagen de la web (Firebase Storage)
+    // Si es una imagen de la web
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       return Image.network(
         imageUrl,
@@ -57,7 +57,7 @@ class _SavedLooksScreenState extends State<SavedLooksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _user;
     final l10n = AppLocalizations.of(context)!; // <-- 2. Instancia del traductor
 
     if (user == null) return Scaffold(body: Center(child: Text(l10n.loginFirst)));
@@ -71,15 +71,14 @@ class _SavedLooksScreenState extends State<SavedLooksScreen> {
         iconTheme: const IconThemeData(color: Color(0xFF1A1A1A)),
         centerTitle: true,
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: _userStream,
-        builder: (context, userSnapshot) {
-          if (userSnapshot.connectionState == ConnectionState.waiting) {
+      body: StreamBuilder<Set<String>>(
+        stream: _savedStream,
+        builder: (context, savedSnapshot) {
+          if (savedSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
           }
 
-          final userData = userSnapshot.data?.data() as Map<String, dynamic>? ?? {};
-          final savedLooks = List<String>.from(userData['saved_looks'] ?? []);
+          final savedLooks = savedSnapshot.data ?? const <String>{};
 
           if (savedLooks.isEmpty) {
             return Center(
@@ -91,36 +90,34 @@ class _SavedLooksScreenState extends State<SavedLooksScreen> {
             );
           }
 
-          return StreamBuilder<QuerySnapshot>(
+          return StreamBuilder<List<CatalogLook>>(
             stream: _looksStream,
             builder: (context, looksSnapshot) {
               if (looksSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
               }
-              final looksData = looksSnapshot.data;
-              if (looksSnapshot.hasError || looksData == null) {
+              final allLooks = looksSnapshot.data;
+              if (looksSnapshot.hasError || allLooks == null) {
                 return Center(child: Text(l10n.catalogLoadError('${looksSnapshot.error ?? ''}')));
               }
 
-              final allLooks = looksData.docs;
-              // Filtramos localmente para solo mostrar los que están en nuestro arreglo de guardados
-              final filteredLooks = allLooks.where((doc) => savedLooks.contains(doc.id)).toList();
+              // Solo los guardados (y que sigan en el catálogo).
+              final filteredLooks = allLooks.where((look) => savedLooks.contains(look.id)).toList();
 
               return ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 itemCount: filteredLooks.length,
                 itemBuilder: (context, index) {
-                  final doc = filteredLooks[index];
-                  final data = doc.data() as Map<String, dynamic>;
-                  final name = data['name'] ?? l10n.unknownLook; // <-- Traducido
-                  final category = data['category'] ?? 'COMPLEXION & LIPS'; // (Esto viene de DB, se mantiene intacto)
-                  final image = data['image'] ?? '';
+                  final look = filteredLooks[index];
+                  final name = look.name.isEmpty ? l10n.unknownLook : look.name; // <-- Traducido
+                  final category = look.category; // (Esto viene de DB, se mantiene intacto)
+                  final image = look.image ?? '';
 
                   return GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => StepByStepScreen(lookId: doc.id)),
+                        MaterialPageRoute(builder: (context) => StepByStepScreen(lookId: look.id)),
                       );
                     },
                     child: Container(
@@ -137,11 +134,7 @@ class _SavedLooksScreenState extends State<SavedLooksScreen> {
                                 top: 15,
                                 right: 15,
                                 child: GestureDetector(
-                                  onTap: () async {
-                                    await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-                                      'saved_looks': FieldValue.arrayRemove([doc.id])
-                                    });
-                                  },
+                                  onTap: () => AppServices.savedLooks.toggle(userId: user.id, lookId: look.id),
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle),

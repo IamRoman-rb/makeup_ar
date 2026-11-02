@@ -41,8 +41,7 @@
     "logOut": "Log Out",
     "security": "Security",
     "changePassword": "Change Password",
-    "changePasswordDesc": "We will send a reset link to your email.",
-    "sendLink": "Send Link",
+    "changePasswordDesc": "Enter your current password and choose a new one.",
     "notifications": "Notifications",
     "pushNotif": "Push Notifications",
     "pushNotifDesc": "Alerts for new looks and features.",
@@ -485,16 +484,6 @@
     "tutorialVipTitle": "VIP tutorial",
     "tutorialVipBody": "Unlock the secrets of this look.",
     "becomeVip": "Go VIP",
-    "passwordEmailSent": "Email sent to {email}",
-    "@passwordEmailSent": {
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
-    "passwordEmailError": "Couldn't send the email.",
-    "deleteAccountReauth": "Log out and log back in before deleting your account.",
     "profileLoadError": "Couldn't load your profile: {details}",
     "@profileLoadError": {
         "placeholders": {
@@ -549,7 +538,7 @@
     "vipRestore": "Restore purchases",
     "vipNoPlans": "No VIP plan is set up yet.",
     "vipHeadline": "Unlock the videos of every tutorial",
-    "signupPhotoFailed": "Your account was created, but we couldn't upload the photo. You can add it later from your profile.",
+    "signupPhotoFailed": "Your account was created, but we couldn't save the photo. You can add it later from your profile.",
     "startupError": "Couldn't start the app. Check your connection.",
     "commonRetry": "Retry",
     "coachGuideMe": "Guide me",
@@ -640,5 +629,22 @@
     "coachZoneShadowCrease": "Crease shadow",
     "coachZoneShadowOuterV": "Outer V shadow",
     "coachZoneShadowInnerCorner": "Inner corner",
-    "coachZoneShadowBrowBone": "Brow bone"
+    "coachZoneShadowBrowBone": "Brow bone",
+    "studioLocalOnly": "The AI isn't connected yet: showing the preset closest to your request.",
+    "myAiLooksLocalOnly": "The AI isn't connected yet: here's a similar look.",
+    "authErrorInvalidEmail": "That email isn't valid.",
+    "authErrorWeakPassword": "The password must have at least {min} characters.",
+    "@authErrorWeakPassword": {
+        "placeholders": {
+            "min": {
+                "type": "int"
+            }
+        }
+    },
+    "authErrorEmailInUse": "There's already an account with that email.",
+    "authErrorWrongCredentials": "Wrong email or password.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "passwordChanged": "Password changed.",
+    "changeBtn": "Change"
 }

@@ -37,11 +37,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   permission_handler: ^11.3.1
-  firebase_core: ^4.13.0
-  cloud_firestore: ^6.8.0
-  firebase_storage: ^13.4.6
   google_fonts: ^8.2.1
-  firebase_auth: ^6.5.7
   intl: ^0.20.3
   image_picker: 1.0.8
   no_screenshot: ^2.0.1
@@ -52,8 +48,6 @@ dependencies:
   # Motor AR propio (plugin local, ver packages/makeup_engine).
   makeup_engine:
     path: packages/makeup_engine
-  cloud_functions: ^6.5.0
-  firebase_app_check: ^0.4.8
   # Base local SQLite (docs/ar_engine/LOCAL_DB.md).
   drift: ^2.35.3
   drift_flutter: ^0.3.1

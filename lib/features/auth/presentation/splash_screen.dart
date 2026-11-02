@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ar_makeup_app/features/auth/presentation/login_screen.dart';
 import 'package:ar_makeup_app/features/catalog/presentation/catalog_screen.dart';
 import 'package:ar_makeup_app/app_services.dart';
@@ -55,8 +54,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     if (!mounted) return;
 
-    // Magia de Firebase: Verificamos si ya hay una sesión activa
-    final user = FirebaseAuth.instance.currentUser;
+    // Sesión guardada en la base local (AppServices.ready ya la leyó).
+    final user = AppServices.auth.currentUser;
     StartupTrace.mark(user != null ? 'splash_done_catalog' : 'splash_done_login');
 
     // Navegación con transición suave (Fade)

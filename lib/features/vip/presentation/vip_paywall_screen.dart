@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
+import 'package:ar_makeup_app/app_services.dart';
 import 'package:ar_makeup_app/features/vip/data/vip_service.dart';
 import 'package:ar_makeup_app/l10n/app_localizations.dart';
 
@@ -46,7 +47,8 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
       _error = null;
     });
     try {
-      await VipService.loginCurrentUser();
+      final user = AppServices.auth.currentUser;
+      if (user != null) await VipService.loginUser(user.id);
       final offering = await VipService.fetchCurrentOffering();
       if (!mounted) return;
       setState(() => _offering = offering);
@@ -70,9 +72,11 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isPurchasing = true);
     try {
-      final isVip = await VipService.purchase(package);
+      final until = await VipService.purchase(package);
+      // Sin webhook: el vencimiento que informa RevenueCat se guarda en el usuario.
+      if (until != null) await AppServices.auth.setPremiumUntil(until);
       if (!mounted) return;
-      if (isVip) {
+      if (until != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.vipPurchased), backgroundColor: Colors.green),
         );
@@ -96,7 +100,9 @@ class _VipPaywallScreenState extends State<VipPaywallScreen> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isPurchasing = true);
     try {
-      final isVip = await VipService.restore();
+      final until = await VipService.restore();
+      if (until != null) await AppServices.auth.setPremiumUntil(until);
+      final isVip = until != null;
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(isVip ? l10n.vipRestored : l10n.vipNothingToRestore)),

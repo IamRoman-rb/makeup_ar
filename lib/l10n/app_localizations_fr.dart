@@ -142,10 +142,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get changePasswordDesc =>
-      'Nous enverrons un lien de réinitialisation sur votre e-mail.';
-
-  @override
-  String get sendLink => 'Envoyer le Lien';
+      'Saisissez votre mot de passe actuel et choisissez-en un nouveau.';
 
   @override
   String get notifications => 'Notifications';
@@ -776,18 +773,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get becomeVip => 'Devenez VIP';
 
   @override
-  String passwordEmailSent(String email) {
-    return 'E-mail envoyé à $email';
-  }
-
-  @override
-  String get passwordEmailError => 'Impossible d\'envoyer l\'e-mail.';
-
-  @override
-  String get deleteAccountReauth =>
-      'Déconnectez-vous puis reconnectez-vous avant de supprimer votre compte.';
-
-  @override
   String profileLoadError(String details) {
     return 'Impossible de charger le profil : $details';
   }
@@ -879,7 +864,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get signupPhotoFailed =>
-      'Votre compte a été créé, mais la photo n\'a pas pu être envoyée. Vous pourrez l\'ajouter plus tard depuis votre profil.';
+      'Votre compte a été créé, mais la photo n\'a pas pu être enregistrée. Vous pourrez l\'ajouter plus tard depuis votre profil.';
 
   @override
   String get startupError =>
@@ -1030,4 +1015,38 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get coachZoneShadowBrowBone => 'Sous le sourcil';
+
+  @override
+  String get studioLocalOnly =>
+      'L\'IA n\'est pas encore connectée : voici le preset le plus proche de votre demande.';
+
+  @override
+  String get myAiLooksLocalOnly =>
+      'L\'IA n\'est pas encore connectée : voici un look similaire.';
+
+  @override
+  String get authErrorInvalidEmail => 'Cet e-mail n\'est pas valide.';
+
+  @override
+  String authErrorWeakPassword(int min) {
+    return 'Le mot de passe doit contenir au moins $min caractères.';
+  }
+
+  @override
+  String get authErrorEmailInUse => 'Un compte existe déjà avec cet e-mail.';
+
+  @override
+  String get authErrorWrongCredentials => 'E-mail ou mot de passe incorrect.';
+
+  @override
+  String get currentPassword => 'Mot de passe actuel';
+
+  @override
+  String get newPassword => 'Nouveau mot de passe';
+
+  @override
+  String get passwordChanged => 'Mot de passe modifié.';
+
+  @override
+  String get changeBtn => 'Modifier';
 }
