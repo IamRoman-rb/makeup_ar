@@ -10,15 +10,15 @@ Antes de optimizar hay que saber qué etapa se lleva el tiempo.
 
 ## Qué se ejecuta hoy antes de que la app sea usable
 
-1. **Android `onCreate`:** arranca el motor de Flutter y registra los plugins.
-2. **`main()`**, todo en serie y antes de `runApp`:
-   - `Firebase.initializeApp`;
-   - `activateAppCheck`;
-   - `VipService.configure` (RevenueCat).
+Desde 2026-11 no hay Firebase (docs/ar_engine/LOCAL_DB.md). La sección "Medición 1" de más abajo es de antes de ese cambio.
 
-   Los tres corren en el hilo principal de Android.
+1. **Android `onCreate`:** arranca el motor de Flutter y registra los plugins.
+2. **`runApp`** con el splash, y en paralelo `AppServices.ready` (`lib/app_services.dart`):
+   - abre la base SQLite en un isolate de fondo y lee la sesión guardada (en la primera apertura, además crea el esquema y siembra el catálogo);
+   - `VipService.configure` (RevenueCat);
+   - con sesión, refresca el VIP sin esperar (red).
 3. **Primer frame:** el splash.
-4. **Splash:** una espera fija de 3 s y después una transición de 0,8 s al catálogo o al login.
+4. **Splash:** espera a `AppServices.ready`, con un mínimo de 800 ms, y una transición de 0,8 s al catálogo o al login.
 
 ## Marcas
 
@@ -27,11 +27,12 @@ Antes de optimizar hay que saber qué etapa se lleva el tiempo.
 | Etapa | Momento |
 |---|---|
 | `main` | Inicio de `main()` (0). |
-| `firebase` | `Firebase.initializeApp` terminado. |
-| `app_check` | `activateAppCheck` terminado. |
+| `db` | Base abierta y sesión leída. |
 | `revenuecat` | `VipService.configure` terminado. |
 | `first_frame` | Primer frame rasterizado: el splash ya se ve. |
 | `splash_done_catalog` / `splash_done_login` | El splash termina y navega. |
+
+Las mediciones viejas tienen `firebase` y `app_check` en lugar de `db`.
 
 ## Protocolo (lo corrés vos)
 

@@ -27,6 +27,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Keys de RevenueCat (VIP): `--dart-define-from-file=env/revenuecat.json` en `flutter run`/`flutter build` (plantilla en `env/revenuecat.example.json`, el real está en `.gitignore`). Sin eso compila igual y el VIP queda desactivado.
 - Arranque de la app: líneas `STARTUP <etapa> <ms>` en logcat (`lib/startup_trace.dart`); protocolo de arranque en frío con `adb shell am start -W` en `docs/ar_engine/STARTUP.md`.
 - Regenerar i18n: `flutter gen-l10n` (usa `l10n.yaml`).
+- Base local SQLite (drift; sin Firebase): si cambian las tablas de `lib/shared/data/local_db/tables.dart`, `dart run build_runner build` regenera `app_database.g.dart` (versionado). Esquema, decisiones y plan de sincronización con el servidor en `docs/ar_engine/LOCAL_DB.md`. Widget tests con la base: `test/helpers/memory_database.dart` (si no, drift deja timers pendientes y el test falla o se cuelga); conviene `flutter test --timeout 60s`.
 - Benchmark del tracker (LiteRT, GPU vs CPU; imagen sintética): `flutter run --profile -t lib/main_benchmark.dart -d <id>`. Resultados en pantalla y en logcat (`makeup_bench`).
 - Renderer de maquillaje: `--dart-define=AR_RENDERER=native|painter` (por defecto native; `painter` = respaldo sin maquillaje, muestra el espejo con un aviso). Contrato en `lib/features/ar/domain/i_makeup_renderer.dart`.
 - Arnés del tracker (P3; filtro de prueba sin Firebase, línea `TRACK` cada 5 s en logcat): `flutter run --profile -t lib/main_tracker.dart -d <id>`. Protocolo en `docs/ar_engine/TRACKER.md`. Botones "Foto" y "Paleta" (F4: foto de referencia → receta, foto de producto → paleta; líneas `PHOTO` y `PALETTE`), ver `docs/ar_engine/F4_PLAN.md`.
@@ -42,10 +43,7 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Spike del motor nativo: `flutter run --profile -t lib/main_spike.dart -d <id>` (no carga Firebase ni RevenueCat).
 - Tests del plugin: `flutter test` dentro de `packages/makeup_engine` (Dart) y `android/gradlew.bat :makeup_engine:testDebugUnitTest` (JVM; necesita `JAVA_HOME` apuntando al JBR de Android Studio).
 - Tests de host del C++ del motor (matemática del tracker, sin GL; necesita Visual Studio con C++): `packages\makeup_engine\test_native\run_host_tests.cmd [filtro]`.
-- Reglas de Firestore (emulador, sin dependencias npm; necesita `JAVA_HOME` al JBR de Android Studio): `firebase emulators:exec --only firestore --project demo-armakeup "node --test --test-reporter=tap firestore-tests/rules.test.mjs"`.
-- Cloud Functions (`functions/`, Node 22 + TypeScript): `npm install` y `npm test` dentro de `functions/` (con la cuota contra el emulador: `npm run test:emulator`, necesita `JAVA_HOME` y java en el PATH). Deploy (lo corre el usuario): `firebase deploy --only functions --project armakeupapp`. Diseño y pasos en `docs/ar_engine/F2_PLAN.md`.
-- App Check: `--dart-define=APP_CHECK=debug|playIntegrity` (por defecto debug fuera de release). Callables contra el emulador: `--dart-define=FUNCTIONS_EMULATOR=127.0.0.1:5001` + `adb reverse tcp:5001 tcp:5001`.
-- Probar el Studio y "Mis looks" sin deploy (sin Blaze): `firebase emulators:start --only functions --project armakeupapp` (Enter en los dos parámetros). En el emulador el LLM es falso (`fake-emulator`; `#unavailable` en el prompt simula la caída) y App Check no se exige; Firestore y Auth son los reales. Pasos en `docs/ar_engine/F2_PLAN.md`.
+- Firebase quedó solo como referencia para el servidor futuro (la app ya no lo usa; ver `docs/ar_engine/LOCAL_DB.md`): `functions/` (validación del esquema, cuota, prompts del LLM, webhook de RevenueCat), `firestore.rules` y `firestore-tests/`. Sus tests siguen andando: `npm install` y `npm test` dentro de `functions/` (Node 22 + TypeScript); reglas con `firebase emulators:exec --only firestore --project demo-armakeup "node --test --test-reporter=tap firestore-tests/rules.test.mjs"` (necesita `JAVA_HOME` al JBR de Android Studio). Diseño viejo en `docs/ar_engine/F2_PLAN.md`.
 - Paridad del esquema de recetas: `python tools/studio/validate_recipe_cases.py` (requiere `jsonschema`). Si tocás el esquema o `test/fixtures/recipe_v2_cases.json`, corré esto y `flutter test test/features`.
 - QA automático del Studio (F5): `python tools/studio/qa_reference.py` regenera `test/fixtures/qa_render_cases.json` (`--check` verifica, `--report` muestra los valores de los presets para calibrar umbrales). Si cambia la matemática de los shaders o una constante de `engine_config.h`, regenerá y corré `flutter test test/features/studio`.
 - Modelo propio (fase 3, solo infraestructura; sin datos ni entrenamiento): `python -m unittest discover -s tools/model` (necesita `torch`, `numpy` y `opencv-python`; ver `tools/model/requirements.txt`). Protocolo de datos en `tools/model/CONSENT.md` y pasos en `docs/ar_engine/MODEL.md`. Los datos viven fuera del repo.
@@ -59,8 +57,8 @@ Son los estándar de Flutter; si algo cambia en el repo, corregilo acá.
 - Prohibido crear objetos pesados (Paint, Path, Shader, listas) dentro de `paint()` o de loops por frame.
 - Cancelá en `dispose()` todo `StreamSubscription`, `Timer`, controller e `Isolate`.
 - Los frames se descartan con una bandera tipo `_frameInFlight`; nunca se encolan.
-- Arquitectura limpia, feature-first: `lib/features/<feature>/{domain,data,presentation}`. El dominio no depende de Flutter ni de Firebase.
-  Features: `ar` (motor y espejo), `studio`, `my_looks`, `coach` (guía de maquillaje en vivo), `auth`, `catalog` (catálogo, tutoriales, editor admin), `profile`, `vip`. Widgets compartidos en `lib/shared/widgets/`. En `lib/` solo quedan los `main*.dart`, `firebase_options.dart` y `startup_trace.dart`.
+- Arquitectura limpia, feature-first: `lib/features/<feature>/{domain,data,presentation}`. El dominio no depende de Flutter ni de la base; las pantallas usan los repositorios del dominio (nunca la base directo), que entrega `lib/app_services.dart`.
+  Features: `ar` (motor y espejo), `studio`, `my_looks`, `coach` (guía de maquillaje en vivo), `auth` (cuentas locales), `catalog` (catálogo, tutoriales, editor admin), `profile`, `vip`. Compartido en `lib/shared/` (`widgets/` y `data/local_db/`). En `lib/` solo quedan los `main*.dart`, `app_services.dart` y `startup_trace.dart`.
 - Código nuevo con tests. `flutter analyze` sin warnings antes de dar algo por terminado.
 
 ## Reglas del motor nativo y shaders
@@ -75,7 +73,7 @@ Las reglas detalladas se cargan solas desde `.claude/rules/` cuando tocás esos 
 
 - Un filtro es una receta JSON `makeup-recipe/2` validada contra `docs/ar_engine/recipe_v2.schema.json`. Nunca código ni shaders generados por IA.
 - Todo lo que venga de un LLM se valida (esquema + rangos) en el servidor y en la app. Si no valida, se descarta y se usa un preset local.
-- Ninguna API key dentro de la app. Los LLM se llaman desde Cloud Functions con Secret Manager, App Check, auth y cuota por usuario.
+- Ninguna API key dentro de la app. Los LLM se llaman desde el servidor, con la key en el servidor, auth y cuota por usuario. Hoy no hay servidor: el Studio y Mis looks usan `LocalRecipeGenerator` (sin IA, el preset más parecido).
 - Las fotos de referencia no se guardan: solo salen números.
 
 ## Seguridad y secretos
@@ -95,7 +93,7 @@ Las reglas detalladas se cargan solas desde `.claude/rules/` cuando tocás esos 
 
 - Agregar una dependencia (justificá licencia, tamaño y mantenimiento).
 - Usar un modelo o dataset (licencia: muchos son solo para investigación, no comerciales).
-- Modificar `firestore.rules`, cuotas o costos de servicios.
+- Modificar `firestore.rules`, el esquema de la base local (tablas o migraciones), cuotas o costos de servicios.
 - Cambiar la arquitectura de §4 del informe o el esquema de recetas.
 
 ## No hacer
