@@ -3,6 +3,7 @@ import 'package:ar_makeup_app/features/ar/domain/makeup_recipe.dart';
 import 'package:ar_makeup_app/features/ar/domain/recipe_adjustments.dart';
 import 'package:ar_makeup_app/features/ar/domain/recipe_presets.dart';
 import 'package:ar_makeup_app/features/ar/presentation/test_filter_view.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -242,6 +243,100 @@ void main() {
     await tester.pumpAndSettle();
     expect(renderer.recipes.last, isNull);
     expect(find.byType(Slider), findsNothing);
+  });
+
+  group('botón de comparar', () {
+    Future<void> phone(WidgetTester tester) async {
+      // Pantalla del E20 en dp (720 × 1600 px a 2x).
+      tester.view.physicalSize = const Size(720, 1600);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+    }
+
+    Widget intensityApp(IMakeupRenderer renderer, {Widget? action, ValueListenable<double>? covered}) => MaterialApp(
+          home: Scaffold(
+            body: TestFilterView(
+              labels: labels,
+              renderer: renderer,
+              options: [TestFilterOption(id: 'red', label: 'Rojo', recipe: RecipePresets.byId('classic_red').recipe)],
+              controls: TestFilterControls.intensity,
+              bottomAction: action,
+              coveredBottom: covered,
+            ),
+          ),
+        );
+
+    testWidgets('abajo a la derecha, encima del slider, con área táctil de 48 dp', (tester) async {
+      await phone(tester);
+      await tester.pumpWidget(intensityApp(FakeRenderer()));
+      await tester.pumpAndSettle();
+      final button = tester.getRect(find.byKey(const ValueKey('filter-compare')));
+      final slider = tester.getRect(find.byType(Slider));
+      final screen = tester.getRect(find.byType(TestFilterView));
+      expect(button.bottom, lessThanOrEqualTo(slider.top), reason: 'no tapa el slider');
+      expect(button.top, greaterThan(screen.height * 0.75), reason: 'en el cuarto de abajo, al alcance del pulgar');
+      expect(screen.right - button.right, closeTo(12, 0.5));
+      expect(button.height, greaterThanOrEqualTo(48));
+      expect(button.width, greaterThanOrEqualTo(48));
+      final semantics = tester.getSemantics(find.byKey(const ValueKey('filter-compare')));
+      expect(semantics.label, 'Comparar');
+    });
+
+    testWidgets('si el sistema cancela el toque, vuelve el look', (tester) async {
+      final renderer = FakeRenderer();
+      await tester.pumpWidget(intensityApp(renderer));
+      await tester.pumpAndSettle();
+      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('filter-compare'))));
+      await tester.pumpAndSettle();
+      expect(renderer.recipes.last, isNull);
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+      expect(renderer.recipes.last?.lips?.color.toHex(), '#B3122D');
+    });
+
+    testWidgets('la acción de quien monta la vista va en la misma fila, sin taparse', (tester) async {
+      await phone(tester);
+      var tapped = 0;
+      await tester.pumpWidget(intensityApp(
+        FakeRenderer(),
+        action: FilledButton(onPressed: () => tapped++, child: const Text('Guíame')),
+      ));
+      await tester.pumpAndSettle();
+      final action = tester.getRect(find.byType(FilledButton));
+      final button = tester.getRect(find.byKey(const ValueKey('filter-compare')));
+      expect(action.right, lessThan(button.left));
+      expect(action.bottom, closeTo(button.bottom, 0.5));
+      expect(button.bottom, lessThanOrEqualTo(tester.getRect(find.byType(Slider)).top));
+      await tester.tap(find.text('Guíame'));
+      expect(tapped, 1);
+    });
+
+    testWidgets('con un panel que tapa abajo, va encima y lo sigue', (tester) async {
+      await phone(tester);
+      final covered = ValueNotifier(0.3);
+      addTearDown(covered.dispose);
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: TestFilterView(
+            labels: labels,
+            renderer: FakeRenderer(),
+            controls: TestFilterControls.none,
+            coveredBottom: covered,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      final height = tester.getRect(find.byType(TestFilterView)).height;
+      Rect button() => tester.getRect(find.byKey(const ValueKey('filter-compare')));
+      expect(button().bottom, closeTo(height * 0.7 - 12, 0.5));
+      covered.value = 0.12;
+      await tester.pump();
+      expect(button().bottom, closeTo(height * 0.88 - 12, 0.5));
+      // Panel casi hasta arriba: el botón no se va de la vista.
+      covered.value = 1;
+      await tester.pump();
+      expect(button().top, greaterThanOrEqualTo(0));
+    });
   });
 
   testWidgets('"ver puntos" prende los landmarks', (tester) async {
